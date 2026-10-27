@@ -1,0 +1,24 @@
+{
+  "data": {
+    "id": "example.com",
+    "type": "domain",
+    "attributes": {
+      "registrar": "RESERVED-Internet Assigned Numbers Authority",
+      "creation_date": 808372800,
+      "categories": {
+        "Forcepoint ThreatSeeker": "reference materials",
+        "Sophos": "reference",
+        "BitDefender": "reference materials"
+      },
+      "reputation": 0,
+      "last_analysis_date": 1793000000,
+      "last_analysis_stats": {
+        "harmless": 66,
+        "malicious": 0,
+        "suspicious": 0,
+        "undetected": 28,
+        "timeout": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "data": {
+    "api_requests_daily": { "user": { "used": 37, "allowed": 500 } },
+    "api_requests_hourly": { "user": { "used": 4, "allowed": 240 } },
+    "api_requests_monthly": { "user": { "used": 812, "allowed": 15500 } }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "data": {
+    "id": "8d6c3fbd8b9e6a2b5a6b1f0f2a0f5e0d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a19",
+    "type": "url",
+    "attributes": {
+      "url": "http://malware.wicar.org/data/eicar.com",
+      "last_final_url": "https://malware.wicar.org/data/eicar.com",
+      "title": "Not Found",
+      "reputation": -7,
+      "last_analysis_date": 1793050000,
+      "last_analysis_stats": {
+        "harmless": 60,
+        "malicious": 1,
+        "suspicious": 1,
+        "undetected": 30,
+        "timeout": 0
+      }
+    }
+  }
+}

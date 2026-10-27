@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>4NTL settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <header class="masthead">
+        <img src="icons/icon-48.png" width="40" height="40" alt="" />
+        <div>
+          <h1>4NTL</h1>
+          <p>Threat-intel lookups straight from the right-click menu.</p>
+        </div>
+      </header>
+
+      <section class="panel" aria-labelledby="keys-title">
+        <h2 id="keys-title">API keys</h2>
+        <p class="hint">
+          Keys stay in this browser profile. They are never synced and are only ever sent to the
+          provider they belong to.
+        </p>
+        <div id="providers"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="options-title">
+        <h2 id="options-title">Lookup options</h2>
+        <div class="field">
+          <label for="max-age">AbuseIPDB report window</label>
+          <div class="input-row">
+            <input id="max-age" type="number" min="1" max="365" step="1" inputmode="numeric" />
+            <span>days</span>
+          </div>
+          <small>Only reports from this many past days count toward the abuse score.</small>
+        </div>
+        <div class="field">
+          <label for="cache-ttl">Reuse results for</label>
+          <div class="input-row">
+            <input id="cache-ttl" type="number" min="0" max="1440" step="1" inputmode="numeric" />
+            <span>minutes</span>
+          </div>
+          <small>Repeat lookups are instant and don't use API quota. 0 turns this off.</small>
+        </div>
+        <div class="input-row">
+          <button id="clear-cache" class="btn" type="button">Clear cached results</button>
+          <span id="cache-status" class="status" role="status"></span>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="usage-title">
+        <h2 id="usage-title">How to use</h2>
+        <ol class="steps">
+          <li>
+            Select an IP, domain, URL or file hash on any page. Defanged forms like
+            <code>1.2.3[.]4</code> or <code>hxxps://evil[.]com</code> work too.
+          </li>
+          <li>Right-click it → <b>4NTL</b> → pick a provider, or <b>All providers</b>.</li>
+          <li>
+            Or press <kbd id="shortcut">Alt+Shift+L</kbd> to check the selection everywhere at once.
+            <button id="change-shortcut" class="linklike" type="button">Change shortcut</button>
+          </li>
+        </ol>
+      </section>
+
+      <footer>
+        4NTL v<span id="version"></span> · Private and reserved IP addresses are never sent to any
+        provider.
+      </footer>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "detail": "Authentication failed. Your API key is either missing, incorrect, or revoked. Note: The APIv2 key differs from the APIv1 key.",
+      "status": 401
+    }
+  ]
+}
