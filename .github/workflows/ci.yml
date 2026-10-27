@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -30,24 +30,22 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:coverage
       - run: npm run build # includes the release guard (scripts/verify-dist.mjs)
-      - uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage/
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
+      # Artifacts are a convenience, not a quality gate: a full account storage
+      # quota must not turn a passing build red.
+      - uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: 4ntl-dist
           path: dist/
-          retention-days: 14
+          retention-days: 7
 
   e2e:
     name: End-to-end (Chromium)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -55,7 +53,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: playwright-report
           path: |
