@@ -1,6 +1,7 @@
 /**
  * Regenerates the README media in docs/media: an animated walkthrough
- * (demo.gif, needs ffmpeg on PATH) and screenshots of each theme.
+ * (demo.gif), an install walkthrough (install.gif; both need ffmpeg on PATH)
+ * and screenshots of each theme.
  *
  *   npm run demo
  *
@@ -20,7 +21,12 @@ const extension = path.join(root, 'dist-e2e');
 const media = path.join(root, 'docs', 'media');
 const videoDir = path.join(root, '.cache', 'demo-video');
 const DEMO_URL = 'http://4ntl.demo/';
-const VIEWPORT = { width: 1000, height: 720 };
+const VIEWPORT = { width: 900, height: 560 };
+/** README GIFs stay narrower than GitHub's README column on laptop screens. */
+const GIF_WIDTH = 700;
+/** The release build, for the install walkthrough (shows the real extension name). */
+const releaseBuild = path.join(root, 'dist');
+const RELEASES_URL = 'https://github.com/boode-hub/4ntl/releases/latest';
 
 const fixture = async (name) =>
   JSON.parse(await readFile(path.join(root, 'tests', 'fixtures', name), 'utf8'));
@@ -41,10 +47,10 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Incident 2
   :root { color-scheme: light dark; --bg: light-dark(#ffffff, #0b0f17); --fg: light-dark(#1e293b, #e2e8f0);
     --muted: light-dark(#64748b, #94a3b8); --code: light-dark(#f1f5f9, #151b26); }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.65 'Segoe UI', system-ui, sans-serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 36px 24px; }
+  main { max-width: 780px; margin: 0 auto; padding: 18px 24px; }
   .tlp { display: inline-block; font: 600 11px/1 system-ui; letter-spacing: .06em; padding: 4px 8px;
     border-radius: 4px; background: #f59e0b; color: #111; }
-  h1 { font-size: 22px; margin: 10px 0 2px; } h2 { font-size: 15px; margin: 22px 0 6px; }
+  h1 { font-size: 22px; margin: 10px 0 2px; } h2 { font-size: 15px; margin: 14px 0 4px; }
   .meta { color: var(--muted); margin: 0; font-size: 13px; }
   code, pre { font: 13px/1.6 Consolas, ui-monospace, monospace; background: var(--code); border-radius: 6px; }
   code { padding: 1px 5px; } pre { padding: 10px 12px; white-space: pre-wrap; word-break: break-all; }
@@ -258,7 +264,6 @@ async function useMenu(page, worker, selection, scope) {
 }
 
 async function recordWalkthrough() {
-  await rm(videoDir, { recursive: true, force: true });
   const { context, worker } = await launch(true);
   await setSettings(worker, { theme: 'sharingan', accent: '' });
   await installFakeApi(worker, 1100);
@@ -300,10 +305,15 @@ async function recordWalkthrough() {
   await useButtonCapture(page, worker, '#cta');
   await pause(page, 3400);
 
+  const clip = await finishClip(page, sceneStart);
+  await context.close();
+  return clip;
+}
+
+/** Closes a recorded page and returns its video, trimmed to start at the scene. */
+async function finishClip(page, sceneStart) {
   const sceneSeconds = (Date.now() - sceneStart) / 1000;
   await page.close();
-  await context.close();
-  // The recording starts with the page, before the scene: keep only the scene.
   const video = await page.video().path();
   const duration = Number(
     execFileSync('ffprobe', [
@@ -319,23 +329,209 @@ async function recordWalkthrough() {
   return { video, start: Math.max(0, duration - sceneSeconds) };
 }
 
-function toGif(video, start, output) {
-  const filters =
-    'fps=12,scale=820:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff:max_colors=200[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle';
+/** Joins clips and encodes a palette-optimised looping GIF. */
+function toGif(clips, output) {
+  const inputs = clips.flatMap(({ video, start }) => ['-ss', start.toFixed(2), '-i', video]);
+  const join =
+    clips.length > 1
+      ? `${clips.map((_, i) => `[${i}:v]`).join('')}concat=n=${clips.length}:v=1:a=0,`
+      : '';
+  const encode = `fps=12,scale=${GIF_WIDTH}:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff:max_colors=200[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle`;
   execFileSync('ffmpeg', [
     '-y',
     '-loglevel',
     'error',
-    '-ss',
-    start.toFixed(2),
-    '-i',
-    video,
-    '-vf',
-    filters,
+    ...inputs,
+    '-filter_complex',
+    join + encode,
     '-loop',
     '0',
     output,
   ]);
+}
+
+/**
+ * Caption bar, visible cursor and click ripples for pages we don't own (GitHub,
+ * the browser's extensions page). Runs inside the page; self-contained.
+ */
+function installOverlay() {
+  if (document.getElementById('demo-overlay')) return;
+  const ns = 'http://www.w3.org/2000/svg';
+  const cursor = document.createElementNS(ns, 'svg');
+  cursor.setAttribute('viewBox', '0 0 22 22');
+  cursor.setAttribute('width', '22');
+  cursor.setAttribute('height', '22');
+  const arrow = document.createElementNS(ns, 'path');
+  arrow.setAttribute('d', 'M3 2l0 16 4.2-3.9 2.7 6.1 2.6-1.1-2.7-6 5.7-.3z');
+  arrow.setAttribute('fill', '#111');
+  arrow.setAttribute('stroke', '#fff');
+  arrow.setAttribute('stroke-width', '1.3');
+  cursor.append(arrow);
+  Object.assign(cursor.style, {
+    position: 'fixed',
+    left: '-40px',
+    top: '-40px',
+    zIndex: '2147483647',
+    pointerEvents: 'none',
+  });
+
+  const bar = document.createElement('div');
+  bar.id = 'demo-overlay';
+  Object.assign(bar.style, {
+    position: 'fixed',
+    left: '50%',
+    bottom: '16px',
+    transform: 'translateX(-50%)',
+    zIndex: '2147483646',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px 18px 10px 10px',
+    borderRadius: '12px',
+    background: 'rgba(13, 10, 11, 0.94)',
+    color: '#fff',
+    font: '600 16px/1.3 "Segoe UI", system-ui, sans-serif',
+    boxShadow: '0 8px 28px rgba(0, 0, 0, 0.35)',
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap',
+  });
+  const badge = document.createElement('span');
+  Object.assign(badge.style, {
+    display: 'inline-grid',
+    placeItems: 'center',
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    background: '#ff2d3d',
+    font: '700 15px system-ui',
+  });
+  const text = document.createElement('span');
+  bar.append(badge, text);
+  document.documentElement.append(bar, cursor);
+
+  const ripple = (x, y) => {
+    const ring = document.createElement('div');
+    Object.assign(ring.style, {
+      position: 'fixed',
+      left: `${x - 14}px`,
+      top: `${y - 14}px`,
+      width: '28px',
+      height: '28px',
+      borderRadius: '50%',
+      border: '3px solid #ff2d3d',
+      zIndex: '2147483645',
+      pointerEvents: 'none',
+      transition: 'transform 0.45s, opacity 0.45s',
+    });
+    document.documentElement.append(ring);
+    requestAnimationFrame(() =>
+      Object.assign(ring.style, { transform: 'scale(1.9)', opacity: '0' }),
+    );
+    setTimeout(() => ring.remove(), 500);
+  };
+  addEventListener(
+    'mousemove',
+    (event) => {
+      cursor.style.left = `${event.clientX - 2}px`;
+      cursor.style.top = `${event.clientY - 1}px`;
+    },
+    true,
+  );
+  addEventListener('mousedown', (event) => ripple(event.clientX, event.clientY), true);
+  window.__ripple = ripple;
+  window.__caption = (step, words) => {
+    badge.textContent = step;
+    text.textContent = words;
+  };
+}
+
+async function caption(page, step, words) {
+  await page.evaluate(installOverlay);
+  await page.evaluate(([n, t]) => window.__caption(n, t), [String(step), words]);
+}
+
+/** Moves the visible cursor onto an element and returns its centre. */
+async function glideTo(page, locator, steps = 20) {
+  const box = await locator.boundingBox();
+  const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await glide(page, centre.x, centre.y, steps);
+  return centre;
+}
+
+/**
+ * Install walkthrough on the real Releases page and the browser's real
+ * extensions page. The download bar and the folder picker are browser UI that
+ * can't be recorded, so the captions say what happens there.
+ */
+async function recordInstall() {
+  const recorded = (extra) => ({
+    channel: 'chromium',
+    viewport: VIEWPORT,
+    recordVideo: { dir: videoDir, size: VIEWPORT },
+    ...extra,
+  });
+
+  // Before: nothing installed yet.
+  const before = await chromium.launchPersistentContext(
+    '',
+    recorded({ ignoreDefaultArgs: ['--disable-extensions'] }),
+  );
+  const page = before.pages()[0] ?? (await before.newPage());
+  await page.goto(RELEASES_URL);
+  const zip = page.locator('a[href$=".zip"]', { hasText: '4ntl-v' });
+  await zip.waitFor({ timeout: 30_000 });
+  await zip.evaluate((link) => link.scrollIntoView({ block: 'center' }));
+  await caption(page, 1, 'Download 4ntl-vX.Y.Z.zip from Releases, then unzip it');
+  await page.mouse.move(450, 120);
+  const startBefore = Date.now();
+  await pause(page, 900);
+  await glideTo(page, zip, 26);
+  await pause(page, 500);
+  await page.mouse.down();
+  await page.mouse.up();
+  await pause(page, 1700);
+
+  await page.goto('chrome://extensions');
+  await caption(page, 2, 'Open brave://extensions  (or chrome:// · edge://extensions)');
+  await page.mouse.move(450, 300);
+  await pause(page, 2000);
+  await caption(page, 3, 'Turn on Developer mode → Load unpacked → pick the folder');
+  await glideTo(page, page.locator('#devMode'), 24);
+  await pause(page, 400);
+  await page.locator('#devMode').click();
+  await pause(page, 900);
+  const load = await glideTo(page, page.locator('#loadUnpacked'), 20);
+  await pause(page, 400);
+  await page.evaluate(([x, y]) => window.__ripple(x, y), [load.x, load.y]);
+  await pause(page, 1800);
+  const first = await finishClip(page, startBefore);
+  await before.close();
+
+  // After: the folder is loaded.
+  const after = await chromium.launchPersistentContext(
+    '',
+    recorded({
+      args: [`--disable-extensions-except=${releaseBuild}`, `--load-extension=${releaseBuild}`],
+    }),
+  );
+  const worker = after.serviceWorkers()[0] ?? (await after.waitForEvent('serviceworker'));
+  const done = after.pages()[0] ?? (await after.newPage());
+  await done.goto('chrome://extensions');
+  await done.locator('#devMode').click();
+  await pause(done, 600);
+  await caption(done, 4, 'Done: 4NTL is installed');
+  await done.mouse.move(450, 120);
+  const startAfter = Date.now();
+  await glideTo(done, done.locator('extensions-item').first(), 22);
+  await pause(done, 1900);
+  await done.goto(`chrome-extension://${new URL(worker.url()).host}/options.html`);
+  await caption(done, 5, 'Paste your API keys, press Test, and you are ready');
+  await done.mouse.move(450, 120);
+  await glideTo(done, done.locator('#key-virustotal'), 22);
+  await pause(done, 2400);
+  const second = await finishClip(done, startAfter);
+  await after.close();
+  return [first, second];
 }
 
 async function screenshots() {
@@ -380,12 +576,15 @@ async function screenshots() {
 }
 
 await mkdir(media, { recursive: true });
+await rm(videoDir, { recursive: true, force: true });
 await screenshots();
 console.log('Screenshots written to docs/media.');
-const { video, start } = await recordWalkthrough();
-try {
-  toGif(video, start, path.join(media, 'demo.gif'));
-  console.log('Walkthrough written to docs/media/demo.gif.');
-} catch (error) {
-  console.warn(`Skipped demo.gif (ffmpeg needed on PATH): ${error.message}`);
+const gifs = { 'demo.gif': [await recordWalkthrough()], 'install.gif': await recordInstall() };
+for (const [file, clips] of Object.entries(gifs)) {
+  try {
+    toGif(clips, path.join(media, file));
+    console.log(`Wrote docs/media/${file}.`);
+  } catch (error) {
+    console.warn(`Skipped ${file} (ffmpeg needed on PATH): ${error.message}`);
+  }
 }

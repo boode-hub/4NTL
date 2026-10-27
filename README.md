@@ -14,7 +14,7 @@ Select an IP, domain, URL or file hash, right-click, and see the **VirusTotal** 
 ![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-16a34a)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-<img src="docs/media/demo.gif" width="820" alt="Selecting an IP in an incident report, right-clicking 4NTL, and seeing AbuseIPDB and VirusTotal verdicts in a card; then picking a hash out of a firewall log line." />
+<img src="docs/media/demo.gif" width="700" alt="Selecting an IP in an incident report and seeing AbuseIPDB and VirusTotal verdicts in a card; picking a hash out of a log line; checking a link; catching where a JavaScript-only button goes." />
 
 </div>
 
@@ -69,7 +69,9 @@ In the Sharingan theme the eye spins while results are loading.
 
 ## Install
 
-Works in Chrome, Edge, Brave and other Chromium browsers (version 123+).
+Works in Chrome, Edge, Brave and other Chromium browsers (version 123+). Takes about a minute:
+
+<img src="docs/media/install.gif" width="700" alt="Downloading the zip from Releases, opening the extensions page, turning on Developer mode, Load unpacked, and the installed 4NTL extension with its settings page." />
 
 1. Download the latest `4ntl-vX.Y.Z.zip` from
    [Releases](https://github.com/boode-hub/4ntl/releases/latest) and unzip it into
@@ -141,13 +143,13 @@ npm run dev
 | `npm run e2e`           | End-to-end tests in real Chromium with the extension loaded      |
 | `npm run check`         | Everything CI runs, except e2e                                   |
 | `npm run try`           | Opens a browser with 4NTL and a demo page, for trying it by hand |
-| `npm run demo`          | Regenerates the GIF and screenshots in `docs/media`              |
+| `npm run demo`          | Regenerates the GIFs and screenshots in `docs/media`             |
 | `npm run package`       | Builds and zips `4ntl-vX.Y.Z.zip` for release                    |
 
 First-time e2e setup: `npm run e2e:install`. If your machine blocks programs in
 `%LOCALAPPDATA%`, set `PLAYWRIGHT_BROWSERS_PATH` to a folder that's allowed
 (for example `.cache/ms-playwright`, which git ignores) before installing and running.
-`npm run demo` also needs `ffmpeg` on your PATH for the GIF.
+`npm run demo` also needs `ffmpeg` on your PATH for the GIFs.
 
 Every push runs lint, type-check, ~380 unit tests and the end-to-end suite in
 GitHub Actions; tagging `vX.Y.Z` publishes a release with the zip attached.

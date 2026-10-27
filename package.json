@@ -14,7 +14,7 @@
     "dev": "node scripts/build.mjs --watch",
     "try": "npm run build && node scripts/try.mjs",
     "icons": "node scripts/make-icons.mjs",
-    "demo": "node scripts/build.mjs --e2e && node scripts/demo.mjs",
+    "demo": "node scripts/build.mjs --e2e && node scripts/build.mjs && node scripts/demo.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
