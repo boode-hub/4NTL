@@ -50,7 +50,7 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
   anywhere, even when you right-click a link to them. API keys stay in your browser profile.
 - **Light.** Nothing runs on a page until you use 4NTL there. No background
   polling, no runtime dependencies.
-- **Out of your way.** The card opens about 5 cm beside the pointer, so it never
+- **Out of your way.** The card opens about 3 cm beside the pointer, so it never
   covers what you clicked, and you can drag it anywhere by its header.
 - **Themes.** Auto, Light, Dark and **Sharingan**, plus any accent color you like.
 - **Works everywhere.** On browser pages, the PDF viewer or the Web Store the

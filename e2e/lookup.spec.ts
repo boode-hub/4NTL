@@ -63,9 +63,9 @@ test.describe('in-page lookups', () => {
 
     // Styled (shadow-DOM styles are not blocked by the page's style-src 'none')...
     await expect(card).toHaveCSS('width', '320px');
-    // ...and placed ~5 cm to the right of the selection, so it doesn't cover it.
+    // ...and placed ~3 cm to the right of the selection, so it doesn't cover it.
     const [box, ip] = await Promise.all([card.boundingBox(), page.locator('#ip').boundingBox()]);
-    expect(Math.abs((box?.x ?? 0) - ((ip?.x ?? 0) + (ip?.width ?? 0) + 190))).toBeLessThan(4);
+    expect(Math.abs((box?.x ?? 0) - ((ip?.x ?? 0) + (ip?.width ?? 0) + 113))).toBeLessThan(4);
 
     const calls = await api.calls();
     expect(calls.map((call) => call.url).sort()).toEqual([
@@ -263,9 +263,9 @@ test.describe('links', () => {
     await expect(card.locator('[data-provider]')).toHaveCount(1);
     await expect(card.locator('[data-provider="virustotal"] .pill')).toHaveText('Suspicious');
     const [cardBox, linkBox] = await Promise.all([card.boundingBox(), link.boundingBox()]);
-    // ~5 cm to the right of the link, level with it.
+    // ~3 cm to the right of the link, level with it.
     expect(
-      Math.abs((cardBox?.x ?? 0) - ((linkBox?.x ?? 0) + (linkBox?.width ?? 0) + 190)),
+      Math.abs((cardBox?.x ?? 0) - ((linkBox?.x ?? 0) + (linkBox?.width ?? 0) + 113)),
     ).toBeLessThan(4);
     expect(Math.abs((cardBox?.y ?? 0) - ((linkBox?.y ?? 0) - 24))).toBeLessThan(4);
   });

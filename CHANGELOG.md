@@ -4,6 +4,13 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-10-28
+
+### Changed
+
+- The card opens closer to the pointer: about 3 cm beside it (was 5 cm), still
+  clear of the selection or the element you clicked.
+
 ## [0.3.0] - 2026-10-28
 
 ### Added

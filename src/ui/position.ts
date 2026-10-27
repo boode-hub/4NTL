@@ -17,8 +17,8 @@ export interface Point {
   readonly top: number;
 }
 
-/** How far the card opens from the pointer: ~5 cm (CSS pixels are 1/96 inch). */
-export const DISTANCE = 190;
+/** How far the card opens from the pointer: ~3 cm (CSS pixels are 1/96 inch). */
+export const DISTANCE = 113;
 /** Space between the anchor and the card when it has to go above/below instead. */
 export const GAP = 10;
 /** Minimum distance between the card and the viewport edge. */
@@ -43,7 +43,7 @@ export function clampToViewport(point: Point, card: Size, viewport: Size): Point
 }
 
 /**
- * Places the card about 5 cm to the side of the anchor (the pointer, the
+ * Places the card about 3 cm to the side of the anchor (the pointer, the
  * selection or the right-clicked element) so it never covers what you clicked:
  * to the right, else to the left. In windows too narrow for that it goes just
  * below (or above) the anchor. An anchor at or past the right edge means

@@ -5,7 +5,7 @@ const VIEWPORT = { width: 1400, height: 800 };
 const CARD = { width: 320, height: 300 };
 
 describe('placeCard', () => {
-  it('opens about 5 cm to the right of the pointer, header level with it', () => {
+  it('opens about 3 cm to the right of the pointer, header level with it', () => {
     expect(placeCard(pointRect(200, 300), CARD, VIEWPORT)).toEqual({
       left: 200 + DISTANCE,
       top: 300 - 24,

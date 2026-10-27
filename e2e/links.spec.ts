@@ -142,7 +142,7 @@ test.describe('toolbar icon and address bar', () => {
   });
 });
 
-test('the card opens ~5 cm from the pointer and can be dragged anywhere', async ({
+test('the card opens ~3 cm from the pointer and can be dragged anywhere', async ({
   page,
   worker,
 }) => {
@@ -158,11 +158,32 @@ test('the card opens ~5 cm from the pointer and can be dragged anywhere', async 
   if (!before || !grip) throw new Error('card not visible');
   await page.mouse.move(grip.x + 10, grip.y + 5);
   await page.mouse.down();
-  await page.mouse.move(grip.x + 10 - 300, grip.y + 5 + 120, { steps: 8 });
+  await page.mouse.move(grip.x + 10 - 150, grip.y + 5 + 120, { steps: 8 });
   await page.mouse.up();
 
   const after = await card(page).boundingBox();
-  expect(Math.round((after?.x ?? 0) - before.x)).toBe(-300);
+  expect(Math.round((after?.x ?? 0) - before.x)).toBe(-150);
   expect(Math.round((after?.y ?? 0) - before.y)).toBe(120);
   await expect(header).toBeVisible(); // still open: dragging isn't a click outside
+});
+
+test('opens ~3 cm beside the point you right-clicked', async ({ page, worker }) => {
+  await page.goto(PAGE_URL);
+  // The first lookup injects the page script; from then on it sees right-clicks.
+  await hook(worker, 'simulateMenuClick', PAGE_URL, '185.220.101.4', 'all');
+  await expect(card(page)).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  const ip = await page.locator('#ip').boundingBox();
+  if (!ip) throw new Error('no #ip');
+  const point = { x: ip.x + ip.width / 2, y: ip.y + ip.height / 2 };
+  await page.mouse.click(point.x, point.y, { button: 'right' });
+  await hook(worker, 'simulateMenuClick', PAGE_URL, '185.220.101.4', 'all');
+  await expect(card(page)).toBeVisible();
+  await page.waitForTimeout(200); // entrance animation
+
+  const box = await card(page).boundingBox();
+  expect(Math.abs((box?.x ?? 0) - (point.x + 113))).toBeLessThan(3);
+  // Header level with the pointer, but never above the top of the window.
+  expect(Math.abs((box?.y ?? 0) - Math.max(8, point.y - 24))).toBeLessThan(3);
 });
