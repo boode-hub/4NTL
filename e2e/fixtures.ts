@@ -30,6 +30,8 @@ const PAGE = `<!doctype html>
   <p>Internal host <span id="private">10.0.0.1</span></p>
   <p>Hash <span id="hash">275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f</span></p>
   <p id="prose">Nothing to see here</p>
+  <p>Payload: <a id="link" href="http://malware.wicar.org/data/eicar.com">download sample</a>
+     · Console: <a id="intranet" href="https://siem.corp/search?q=ws-0442">open SIEM</a></p>
 </body></html>`;
 
 /** The page forbids all styles and scripts: the card must still work. */

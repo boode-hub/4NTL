@@ -8,12 +8,22 @@ import { PROVIDER_IDS, type ProviderId } from './provider-ids';
 
 export const SETTINGS_KEY = 'settings.v1';
 
+export const THEMES = ['auto', 'light', 'dark', 'sharingan'] as const;
+export type Theme = (typeof THEMES)[number];
+
+export interface Appearance {
+  readonly theme: Theme;
+  /** `#rrggbb`, or '' for the theme's own accent color. */
+  readonly accent: string;
+}
+
 export interface Settings {
   readonly apiKeys: Readonly<Record<ProviderId, string>>;
   /** AbuseIPDB only counts reports newer than this many days (API limit: 1–365). */
   readonly abuseIpdbMaxAgeDays: number;
   /** Results are reused for this long; 0 disables caching. */
   readonly cacheTtlMinutes: number;
+  readonly appearance: Appearance;
 }
 
 export const SETTINGS_LIMITS = {
@@ -25,7 +35,19 @@ export const DEFAULT_SETTINGS: Settings = {
   apiKeys: { abuseipdb: '', virustotal: '' },
   abuseIpdbMaxAgeDays: 90,
   cacheTtlMinutes: 30,
+  appearance: { theme: 'auto', accent: '' },
 };
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+export function normalizeAppearance(raw: unknown): Appearance {
+  const input = asRecord(raw);
+  const theme = THEMES.find((name) => name === input.theme) ?? 'auto';
+  // Validated: the accent ends up in the card's CSS.
+  const accent =
+    typeof input.accent === 'string' && HEX_COLOR.test(input.accent) ? input.accent : '';
+  return { theme, accent: accent.toLowerCase() };
+}
 
 function clampInt(value: unknown, limits: { min: number; max: number }, fallback: number): number {
   const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
@@ -59,7 +81,16 @@ export function normalizeSettings(raw: unknown): Settings {
       SETTINGS_LIMITS.cacheTtlMinutes,
       DEFAULT_SETTINGS.cacheTtlMinutes,
     ),
+    appearance: normalizeAppearance(input.appearance),
   };
+}
+
+/** True when two settings can produce different lookup results (so cached ones are stale). */
+export function affectsResults(before: Settings, after: Settings): boolean {
+  return (
+    before.abuseIpdbMaxAgeDays !== after.abuseIpdbMaxAgeDays ||
+    PROVIDER_IDS.some((id) => before.apiKeys[id] !== after.apiKeys[id])
+  );
 }
 
 export function hasAnyApiKey(settings: Settings): boolean {

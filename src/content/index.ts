@@ -4,9 +4,10 @@
  * network access stay in the service worker.
  */
 import { isContentMessage, type CardView } from '../core/messages';
+import { normalizeAppearance, type Appearance } from '../core/settings';
 import { HOST_TAG, ResultCard } from '../ui/card';
 import { runtimeClient } from '../ui/runtime-client';
-import { chooseAnchor, selectionRect, type PointerMark } from './anchor';
+import { chooseAnchor, hoveredRect, selectionRect, type PointerMark } from './anchor';
 
 let card: ResultCard | undefined;
 let pointer: PointerMark | undefined;
@@ -22,7 +23,7 @@ document.addEventListener(
   { capture: true, passive: true },
 );
 
-function show(view: CardView): void {
+function show(view: CardView, appearance: Appearance): void {
   card?.close();
   // Remove cards left behind by a previous extension version (orphaned script).
   for (const stale of document.querySelectorAll(HOST_TAG)) stale.remove();
@@ -30,6 +31,7 @@ function show(view: CardView): void {
   const anchor = chooseAnchor(
     pointer,
     selectionRect(document),
+    hoveredRect(document),
     document.documentElement.clientWidth || window.innerWidth,
     Date.now(),
   );
@@ -38,6 +40,7 @@ function show(view: CardView): void {
   const current = new ResultCard({
     client: runtimeClient,
     placement: { mode: 'floating', anchor },
+    appearance,
     onClose: () => {
       if (card === current) card = undefined;
     },
@@ -51,7 +54,8 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
   if (message.type === '4ntl:ping') {
     sendResponse('pong');
   } else {
-    show(message.view);
+    // Re-validated even from our own worker: the accent ends up in CSS.
+    show(message.view, normalizeAppearance(message.appearance));
     sendResponse(true);
   }
   return false;

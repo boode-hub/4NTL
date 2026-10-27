@@ -19,7 +19,9 @@
   OS account and browser profile can read them.
 - **Lookups** send the selected indicator to the provider you chose. 4NTL
   never _submits_ anything for analysis (VirusTotal submissions are public).
-  Private and reserved IP addresses are never sent at all.
+  Private and reserved IP addresses, and internal host names (single-label
+  names, `.local`, `.internal`, `.corp`, `.lan`, …) including inside links you
+  right-click, are never sent at all.
 - **Results** are cached in `chrome.storage.session`: memory only, cleared
   when the browser closes or settings change.
 - No analytics, telemetry or third-party code.

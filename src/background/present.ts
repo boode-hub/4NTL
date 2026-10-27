@@ -3,6 +3,7 @@
  * possible, otherwise (browser pages, PDF viewer, Web Store…) in a small window.
  */
 import type { CardView, ContentMessage } from '../core/messages';
+import { loadSettings } from '../core/settings';
 
 export interface FrameTarget {
   readonly tabId: number;
@@ -30,7 +31,8 @@ async function ensureContentScript({ tabId, frameId }: FrameTarget): Promise<voi
 export async function presentInPage(target: FrameTarget, view: CardView): Promise<boolean> {
   try {
     await ensureContentScript(target);
-    const show: ContentMessage = { type: '4ntl:show', view };
+    const { appearance } = await loadSettings();
+    const show: ContentMessage = { type: '4ntl:show', view, appearance };
     await chrome.tabs.sendMessage(target.tabId, show, { frameId: target.frameId });
     return true;
   } catch {

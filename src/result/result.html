@@ -6,16 +6,21 @@
     <meta name="color-scheme" content="light dark" />
     <title>4NTL lookup</title>
     <style>
-      html,
+      html {
+        color-scheme: light dark;
+        background: light-dark(#ffffff, #111827);
+      }
+      html[data-theme='light'] {
+        color-scheme: light;
+      }
+      html[data-theme='dark'] {
+        color-scheme: dark;
+      }
+      html[data-theme='sharingan'] {
+        background: #0d0a0b;
+      }
       body {
         margin: 0;
-        background: #ffffff;
-      }
-      @media (prefers-color-scheme: dark) {
-        html,
-        body {
-          background: #111827;
-        }
       }
     </style>
   </head>

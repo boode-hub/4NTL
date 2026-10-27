@@ -1,15 +1,28 @@
 /** Settings page. Changes save automatically; provider key fields are generated from the registry. */
 import { REPORT_CACHE, TtlCache } from '../core/cache';
 import { toFailure } from '../core/errors';
+import type { CardView } from '../core/messages';
 import { PROVIDER_IDS, type ProviderId } from '../core/provider-ids';
-import { loadSettings, normalizeSettings, saveSettings, type Settings } from '../core/settings';
-import { PROVIDER_LIST } from '../providers/registry';
+import type { Report } from '../core/result';
+import {
+  loadSettings,
+  normalizeAppearance,
+  normalizeSettings,
+  saveSettings,
+  type Appearance,
+  type Settings,
+  type Theme,
+} from '../core/settings';
+import { PROVIDER_LIST, toInfo } from '../providers/registry';
 import type { Provider } from '../providers/types';
+import { ResultCard } from '../ui/card';
 import { h } from '../ui/dom';
+import { THEME_ACCENTS } from '../ui/styles';
 
 const SAVE_DELAY_MS = 400;
 const TOAST_MS = 1500;
 const CHECK_TIMEOUT_MS = 15_000;
+const PREVIEW_DELAY_MS = 900;
 
 type Tone = 'ok' | 'warn' | 'error' | '';
 
@@ -129,6 +142,82 @@ function renderKeyField(
   return { element, field };
 }
 
+/** Sample results for the live preview: nothing is looked up. */
+const PREVIEW_VIEW: CardView = {
+  kind: 'lookup',
+  indicator: { type: 'ipv4', value: '185.220.101.4' },
+  providers: PROVIDER_LIST.map(toInfo),
+};
+
+const PREVIEW_REPORTS: Record<ProviderId, Report> = {
+  abuseipdb: {
+    verdict: 'malicious',
+    headline: '100%',
+    caption: 'abuse confidence',
+    score: 1,
+    tags: ['Tor exit node'],
+    facts: [
+      { label: 'Reports (90 d)', value: '1,243 from 312 users' },
+      { label: 'ISP', value: 'Zwiebelfreunde e.V.' },
+      { label: 'Country', value: 'Germany (DE)' },
+    ],
+    reportUrl: 'https://www.abuseipdb.com/check/185.220.101.4',
+  },
+  virustotal: {
+    verdict: 'malicious',
+    headline: '14 / 94',
+    caption: 'security vendors flagged it as malicious',
+    tags: ['2 suspicious'],
+    facts: [{ label: 'Owner', value: 'Zwiebelfreunde e.V. · AS208294' }],
+    reportUrl: 'https://www.virustotal.com/gui/ip-address/185.220.101.4',
+  },
+};
+
+/** The theme's own accent, as the color picker should show it. */
+function themeAccent(theme: Theme): string {
+  if (theme !== 'auto') return THEME_ACCENTS[theme];
+  return matchMedia('(prefers-color-scheme: dark)').matches
+    ? THEME_ACCENTS.dark
+    : THEME_ACCENTS.light;
+}
+
+function applyToPage({ theme, accent }: Appearance): void {
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  if (accent) root.style.setProperty('--accent', accent);
+  else root.style.removeProperty('--accent');
+}
+
+/** Live preview: the real card with sample results (delayed to show the loading state). */
+function createPreview(container: HTMLElement): (appearance: Appearance, delayMs: number) => void {
+  let current: ResultCard | undefined;
+  const render = (appearance: Appearance, delayMs: number) => {
+    const previous = current;
+    current = undefined;
+    previous?.close();
+    const card: ResultCard = new ResultCard({
+      placement: { mode: 'inline', container, fill: false },
+      appearance,
+      client: {
+        lookup: (provider) =>
+          new Promise((resolve) =>
+            setTimeout(() => {
+              resolve({ ok: true, report: PREVIEW_REPORTS[provider], fetchedAt: 0, cached: false });
+            }, delayMs),
+          ),
+        openOptions: () => undefined,
+      },
+      // Closing the preview (× or Esc) just brings it back.
+      onClose: () => {
+        if (current === card) render(appearance, 0);
+      },
+    });
+    current = card;
+    card.show(PREVIEW_VIEW);
+  };
+  return render;
+}
+
 async function main(): Promise<void> {
   const maxAge = inputById('max-age');
   const cacheTtl = inputById('cache-ttl');
@@ -136,6 +225,9 @@ async function main(): Promise<void> {
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
+  const accentInput = inputById('accent');
+  const themeInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="theme"]')];
+  const renderPreview = createPreview(byId('preview'));
   const fields = {} as Record<ProviderId, KeyField>;
   const scheduleSave = () => {
     clearTimeout(saveTimer);
@@ -160,6 +252,7 @@ async function main(): Promise<void> {
         apiKeys: Object.fromEntries(PROVIDER_IDS.map((id) => [id, fields[id].input.value])),
         abuseIpdbMaxAgeDays: maxAge.value,
         cacheTtlMinutes: cacheTtl.value,
+        appearance,
       }),
     );
     toast.textContent = 'Saved';
@@ -178,6 +271,31 @@ async function main(): Promise<void> {
     setStatus(field.status, keyFormatWarning(provider, field.input.value), 'warn');
   }
   showNumbers(settings);
+
+  let appearance = settings.appearance;
+  const showAppearance = (delayMs: number) => {
+    for (const input of themeInputs) input.checked = input.value === appearance.theme;
+    accentInput.value = appearance.accent || themeAccent(appearance.theme);
+    applyToPage(appearance);
+    renderPreview(appearance, delayMs);
+  };
+  const setAppearance = (next: Partial<Appearance>, delayMs: number) => {
+    appearance = normalizeAppearance({ ...appearance, ...next });
+    showAppearance(delayMs);
+    scheduleSave();
+  };
+  showAppearance(PREVIEW_DELAY_MS);
+  for (const input of themeInputs) {
+    input.addEventListener('change', () => {
+      setAppearance({ theme: input.value as Theme }, PREVIEW_DELAY_MS);
+    });
+  }
+  accentInput.addEventListener('input', () => {
+    setAppearance({ accent: accentInput.value }, 0);
+  });
+  byId('accent-reset').addEventListener('click', () => {
+    setAppearance({ accent: '' }, 0);
+  });
 
   for (const input of [maxAge, cacheTtl]) {
     input.addEventListener('input', scheduleSave);

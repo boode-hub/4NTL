@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expandIPv6, isPublicAddress, isPublicIPv4, isPublicIPv6 } from './ip';
+import { expandIPv6, isPublicAddress, isPublicHost, isPublicIPv4, isPublicIPv6 } from './ip';
 
 describe('isPublicIPv4', () => {
   it.each([
@@ -98,5 +98,38 @@ describe('isPublicAddress', () => {
     expect(isPublicAddress({ type: 'ipv4', value: '8.8.8.8' })).toBe(true);
     expect(isPublicAddress({ type: 'domain', value: 'localhost.localdomain' })).toBe(true);
     expect(isPublicAddress({ type: 'md5', value: 'd41d8cd98f00b204e9800998ecf8427e' })).toBe(true);
+  });
+});
+
+describe('internal hosts and URLs', () => {
+  it.each([
+    'intranet',
+    'siem.corp',
+    'wiki.internal',
+    'printer.local',
+    'router.home.arpa',
+    'app.test',
+    'localhost',
+    'LOCALHOST.',
+    '10.1.2.3',
+    '[fd00::1]',
+  ])('%s is not public', (host) => {
+    expect(isPublicHost(host)).toBe(false);
+  });
+
+  it.each(['evil.com', 'corp.evil.com', 'internal.example.org', '8.8.8.8', '[2001:4860::8888]'])(
+    '%s is public',
+    (host) => {
+      expect(isPublicHost(host)).toBe(true);
+    },
+  );
+
+  it('applies to domains and to the host of URLs, including obfuscated IPs', () => {
+    expect(isPublicAddress({ type: 'domain', value: 'splunk.corp' })).toBe(false);
+    expect(isPublicAddress({ type: 'url', value: 'https://siem.internal/search?q=x' })).toBe(false);
+    expect(isPublicAddress({ type: 'url', value: 'http://192.168.1.10:8443/' })).toBe(false);
+    // The URL parser normalises 0x7f.1 to 127.0.0.1.
+    expect(isPublicAddress({ type: 'url', value: 'http://0x7f.1/admin' })).toBe(false);
+    expect(isPublicAddress({ type: 'url', value: 'https://evil.com/login' })).toBe(true);
   });
 });

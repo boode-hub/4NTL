@@ -115,7 +115,7 @@ export class LookupService {
       if (!isPublicAddress(indicator)) {
         throw new LookupError(
           'private_address',
-          'Private or reserved address — never sent to third-party services.',
+          'Private or internal address — never sent to third-party services.',
         );
       }
       const settings = await loadSettings();

@@ -60,3 +60,40 @@ test.describe('settings page', () => {
     await expect(page.locator('#version')).toHaveText(/^\d+\.\d+\.\d+$/);
   });
 });
+
+test('the Sharingan theme and a custom color apply to the preview and to page cards', async ({
+  context,
+  extensionId,
+  worker,
+  page,
+  api,
+  menuClick,
+}) => {
+  const options = await context.newPage();
+  await options.goto(optionsUrl(extensionId));
+
+  await options.getByLabel('Sharingan').check();
+  await expect(options.locator('html')).toHaveAttribute('data-theme', 'sharingan');
+  const preview = options.locator('#preview x-4ntl-card .card');
+  await expect(preview).toHaveAttribute('data-theme', 'sharingan');
+  await expect(preview.locator('.eye')).toBeVisible();
+  await expect(preview.locator('[data-provider="virustotal"] .headline-value')).toHaveText(
+    '14 / 94',
+  );
+
+  await options.getByLabel('Accent color').fill('#8b5cf6');
+  await expect(preview).toHaveCSS('--accent', '#8b5cf6');
+  await expect
+    .poll(() => worker.evaluate(() => chrome.storage.local.get('settings.v1')))
+    .toMatchObject({ 'settings.v1': { appearance: { theme: 'sharingan', accent: '#8b5cf6' } } });
+
+  await api.routes([]);
+  await menuClick('185.220.101.4', 'virustotal');
+  const card = page.locator('x-4ntl-card .card');
+  await expect(card).toHaveAttribute('data-theme', 'sharingan');
+  await expect(card).toHaveCSS('--accent', '#8b5cf6');
+  await expect(card.locator('.eye')).toBeVisible();
+
+  await options.getByRole('button', { name: 'Use theme color' }).click();
+  await expect(options.getByLabel('Accent color')).toHaveValue('#ff2d3d');
+});

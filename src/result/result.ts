@@ -3,6 +3,7 @@
  * the PDF viewer, the Web Store…). Renders the same card, inline.
  */
 import type { CardView } from '../core/messages';
+import { loadSettings } from '../core/settings';
 import { ResultCard } from '../ui/card';
 import { runtimeClient } from '../ui/runtime-client';
 
@@ -22,14 +23,17 @@ function viewFromHash(): CardView {
   };
 }
 
-const card = new ResultCard({
-  client: runtimeClient,
-  placement: { mode: 'inline', container: document.body },
-  onClose: () => {
-    window.close();
-  },
+void loadSettings().then(({ appearance }) => {
+  document.documentElement.dataset.theme = appearance.theme;
+  new ResultCard({
+    client: runtimeClient,
+    placement: { mode: 'inline', container: document.body },
+    appearance,
+    onClose: () => {
+      window.close();
+    },
+  }).show(viewFromHash());
 });
-card.show(viewFromHash());
 
 // Behave like a popup: go away once the user moves on.
 window.addEventListener('blur', () => {

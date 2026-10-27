@@ -38,7 +38,7 @@ const staticFiles = [
 /** @type {import('esbuild').BuildOptions} */
 const shared = {
   bundle: true,
-  target: 'chrome120',
+  target: 'chrome123',
   outdir,
   minify: production,
   sourcemap: production ? false : 'linked',

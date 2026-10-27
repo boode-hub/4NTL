@@ -26,6 +26,14 @@ function stubChrome(
     tabs: { sendMessage },
     scripting: { executeScript },
     runtime: { getURL: (path: string) => `chrome-extension://id/${path}` },
+    storage: {
+      local: {
+        get: () =>
+          Promise.resolve({
+            'settings.v1': { appearance: { theme: 'sharingan', accent: '#8B5CF6' } },
+          }),
+      },
+    },
     windows: {
       create,
       getLastFocused: () =>
@@ -45,7 +53,7 @@ describe('presentInPage', () => {
     });
     expect(sendMessage).toHaveBeenLastCalledWith(
       1,
-      { type: '4ntl:show', view: VIEW },
+      { type: '4ntl:show', view: VIEW, appearance: { theme: 'sharingan', accent: '#8b5cf6' } },
       { frameId: 2 },
     );
   });

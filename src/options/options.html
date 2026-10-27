@@ -26,6 +26,44 @@
         <div id="providers"></div>
       </section>
 
+      <section class="panel" aria-labelledby="look-title">
+        <h2 id="look-title">Appearance</h2>
+        <p class="hint">Applies to the result card and this page.</p>
+        <fieldset class="themes">
+          <legend class="legend">Theme</legend>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="auto" /><span class="swatch swatch-auto"></span
+            >Auto
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="light" /><span
+              class="swatch swatch-light"
+            ></span
+            >Light
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="dark" /><span class="swatch swatch-dark"></span
+            >Dark
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme" value="sharingan" /><span
+              class="swatch swatch-sharingan"
+            ></span
+            >Sharingan
+          </label>
+        </fieldset>
+        <div class="field">
+          <label for="accent">Accent color</label>
+          <div class="input-row">
+            <input id="accent" type="color" />
+            <button id="accent-reset" class="btn" type="button">Use theme color</button>
+          </div>
+          <small>Links, highlights and the Sharingan's iris.</small>
+        </div>
+        <span class="legend">Preview</span>
+        <div id="preview" class="preview"></div>
+      </section>
+
       <section class="panel" aria-labelledby="options-title">
         <h2 id="options-title">Lookup options</h2>
         <div class="field">

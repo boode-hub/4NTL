@@ -1,56 +1,110 @@
-# 4NTL — threat-intel lookups from the right-click menu
+<div align="center">
 
-Select an IP, domain, URL or file hash on any page, right-click, and see the
-**VirusTotal** and **AbuseIPDB** verdicts in a small card right where you are.
-No more copy → new tab → paste → enter → back.
+<img src="public/icons/icon-128.png" width="88" alt="4NTL logo" />
 
-- **One click:** right-click → **4NTL** → AbuseIPDB / VirusTotal / All providers,
-  or press **Alt+Shift+L** to check the selection everywhere.
-- **Understands analyst text:** defanged IOCs (`1.2.3[.]4`, `hxxps://evil[.]com`),
+# 4NTL
+
+**Threat-intel lookups from the right-click menu.**
+Select an IP, domain, URL or file hash, right-click, and see the **VirusTotal** and
+**AbuseIPDB** verdicts right where you are. No more copy → new tab → paste → back.
+
+[![CI](https://github.com/boode-hub/4ntl/actions/workflows/ci.yml/badge.svg)](https://github.com/boode-hub/4ntl/actions/workflows/ci.yml)
+![Chrome · Edge · Brave](https://img.shields.io/badge/Chrome%20·%20Edge%20·%20Brave-123%2B-4285F4)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-0f172a)
+![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-16a34a)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+<img src="docs/media/demo.gif" width="820" alt="Selecting an IP in an incident report, right-clicking 4NTL, and seeing AbuseIPDB and VirusTotal verdicts in a card; then picking a hash out of a firewall log line." />
+
+</div>
+
+## Why
+
+During an investigation you touch dozens of IPs and hashes. Each one used to
+mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
+4NTL turns that into one right-click, and keeps you on the page you were reading.
+
+## Features
+
+- **One click, or one key.** Right-click → **4NTL** → AbuseIPDB, VirusTotal or
+  **All providers**. Or select and press **Alt+Shift+L**.
+- **Links too.** Right-click any link → **4NTL: check this link** to see its
+  URL on VirusTotal without opening it.
+- **Reads analyst text.** Defanged IOCs (`1.2.3[.]4`, `hxxps://evil[.]com`),
   `ip:port`, `[IPv6]:port`, `src=1.2.3.4` log fields, quotes and brackets.
-  Select a whole log line with several IOCs and it lets you pick one.
-- **Supported indicators:** IPv4, IPv6, domains, URLs, MD5, SHA-1, SHA-256.
-  AbuseIPDB checks IP addresses only; VirusTotal checks everything.
-- **Saves quota:** results are cached (30 min by default, in memory only), and
-  identical requests are never sent twice.
-- **Private by default:** private and reserved addresses (10/8, 192.168/16,
-  fe80::/10, …) are never sent anywhere. API keys stay in this browser profile.
-- **Light on memory:** nothing runs on a page until you use 4NTL there. No
-  background polling, no runtime dependencies.
-- **Works on restricted pages too:** on browser pages, the PDF viewer or the
-  Web Store, results open in a small window instead.
+  Select a whole log line and it lets you pick the indicator.
+- **IPv4, IPv6, domains, URLs, MD5, SHA-1, SHA-256.** AbuseIPDB checks IPs;
+  VirusTotal checks everything.
+- **Saves your quota.** Results are reused for 30 minutes (configurable, memory only),
+  and identical requests are never sent twice.
+- **Private by default.** Private and reserved IPs (10/8, 192.168/16, fe80::/10, …)
+  and internal hosts (`intranet`, `*.corp`, `*.internal`, `*.local`, …) are never sent
+  anywhere, even when you right-click a link to them. API keys stay in your browser profile.
+- **Light.** Nothing runs on a page until you use 4NTL there. No background
+  polling, no runtime dependencies.
+- **Themes.** Auto, Light, Dark and **Sharingan**, plus any accent color you like.
+- **Works everywhere.** On browser pages, the PDF viewer or the Web Store the
+  result opens in a small window instead.
+
+## Themes
+
+|                                 Light                                 |                                Dark                                 |                                   Sharingan                                   |                                          Sharingan, custom color                                          |
+| :-------------------------------------------------------------------: | :-----------------------------------------------------------------: | :---------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: |
+| <img src="docs/media/card-light.png" width="200" alt="Light theme" /> | <img src="docs/media/card-dark.png" width="200" alt="Dark theme" /> | <img src="docs/media/card-sharingan.png" width="200" alt="Sharingan theme" /> | <img src="docs/media/card-sharingan-violet.png" width="200" alt="Sharingan theme with a violet accent" /> |
+
+Pick a theme and accent color in the settings and see it live before you use it.
+In the Sharingan theme the eye spins while results are loading.
+
+<img src="docs/media/settings-appearance.png" width="520" alt="Appearance settings with theme choices, accent color picker and a live preview card" />
 
 ## Install
 
-Chromium-based browsers (Chrome, Edge, Brave), version 120 or later.
+Works in Chrome, Edge, Brave and other Chromium browsers (version 123+).
 
-1. Download `4ntl-vX.Y.Z.zip` from the releases page and unzip it, or build it
-   yourself (see [Development](#development)) and use the `dist/` folder.
-2. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
-3. Click **Load unpacked** and pick the unzipped folder.
-4. The settings page opens. Paste your API keys. **Test** checks each one.
+1. Download the latest `4ntl-vX.Y.Z.zip` from
+   [Releases](https://github.com/boode-hub/4ntl/releases/latest) and unzip it into
+   a folder you'll keep.
+2. Open `chrome://extensions` (Edge: `edge://extensions`, Brave: `brave://extensions`).
+3. Turn on **Developer mode**, click **Load unpacked**, and pick that folder.
+4. The settings page opens: paste your API keys and press **Test** next to each.
 
-API keys are free:
+Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups/min,
+500/day) · [AbuseIPDB](https://www.abuseipdb.com/account/api) (1,000 checks/day).
 
-- VirusTotal: <https://www.virustotal.com/gui/my-apikey> (4 lookups/min, 500/day)
-- AbuseIPDB: <https://www.abuseipdb.com/account/api> (1,000 checks/day)
+## Using it
 
-## Reading the card
+1. Select an indicator on any page.
+2. Right-click → **4NTL** → pick a provider, or **All providers**.
+3. Or right-click a link → **4NTL: check this link**.
+4. Read the verdict. **Full report ↗** opens the provider's page; **Esc** or a click
+   elsewhere closes the card; the copy button copies the cleaned-up indicator.
 
-| Verdict        | VirusTotal                                    | AbuseIPDB                  |
-| -------------- | --------------------------------------------- | -------------------------- |
-| **Malicious**  | 3 or more vendors flag it malicious           | abuse confidence 75–100%   |
-| **Suspicious** | 1–2 malicious, or any suspicious              | abuse confidence 25–74%    |
-| **Clean**      | analysed, nothing flagged                     | abuse confidence below 25% |
-| **Unknown**    | VirusTotal has never seen it / never analysed | —                          |
+Several indicators in one selection? You get a list to pick from:
 
-The raw numbers are always shown next to the verdict, and **Full report ↗**
-opens the provider's page. **Esc** or a click elsewhere closes the card;
-the copy button copies the cleaned-up (refanged) indicator.
+<img src="docs/media/card-choose.png" width="320" alt="Picker listing an internal IP, an external IP and a SHA-256 hash from a log line" />
+
+| Verdict        | VirusTotal                               | AbuseIPDB                  |
+| -------------- | ---------------------------------------- | -------------------------- |
+| **Malicious**  | 3 or more vendors flag it malicious      | abuse confidence 75–100%   |
+| **Suspicious** | 1–2 malicious, or any suspicious         | abuse confidence 25–74%    |
+| **Clean**      | analysed, nothing flagged                | abuse confidence below 25% |
+| **Unknown**    | VirusTotal has never seen or analysed it | —                          |
+
+The raw numbers are always shown next to the verdict.
+
+## Privacy and security
+
+- Only `virustotal.com` and `abuseipdb.com` can be contacted, enforced by the
+  extension's permissions and its Content-Security-Policy.
+- 4NTL never submits anything for analysis; it only reads existing reports.
+- The page-side card never sees your API keys, and renders API data as plain text only.
+- No analytics, no telemetry, no third-party code.
+
+Details in [SECURITY.md](SECURITY.md).
 
 ## Development
 
-Requires Node.js 22+ (see `.nvmrc`).
+Requires Node.js 22+.
 
 ```bash
 npm install
@@ -60,43 +114,33 @@ npm install
 npm run dev
 ```
 
-`npm run dev` rebuilds `dist/` on every change: load `dist/` as an unpacked
-extension, then hit the reload icon on `chrome://extensions` after edits.
+`npm run dev` rebuilds `dist/` on every change; load `dist/` as an unpacked extension.
 
-| Command                 | What it does                                              |
-| ----------------------- | --------------------------------------------------------- |
-| `npm run build`         | Production build into `dist/` + release checks            |
-| `npm test`              | Unit tests (Vitest)                                       |
-| `npm run test:coverage` | Unit tests with coverage thresholds (90% lines/functions) |
-| `npm run e2e`           | End-to-end tests: real Chromium with the extension loaded |
-| `npm run lint`          | ESLint (strict, type-aware)                               |
-| `npm run typecheck`     | TypeScript, strict mode                                   |
-| `npm run check`         | Everything CI runs, except e2e                            |
-| `npm run package`       | Build and zip into `4ntl-vX.Y.Z.zip`                      |
-| `npm run icons`         | Regenerate the PNG icons from code                        |
+| Command                 | What it does                                                     |
+| ----------------------- | ---------------------------------------------------------------- |
+| `npm run build`         | Production build into `dist/`, plus release checks               |
+| `npm test`              | Unit tests (Vitest)                                              |
+| `npm run test:coverage` | Unit tests with coverage thresholds (90%)                        |
+| `npm run e2e`           | End-to-end tests in real Chromium with the extension loaded      |
+| `npm run check`         | Everything CI runs, except e2e                                   |
+| `npm run try`           | Opens a browser with 4NTL and a demo page, for trying it by hand |
+| `npm run demo`          | Regenerates the GIF and screenshots in `docs/media`              |
+| `npm run package`       | Builds and zips `4ntl-vX.Y.Z.zip` for release                    |
 
-First-time e2e setup: `npm run e2e:install` downloads Playwright's Chromium.
-If your machine blocks running programs from `%LOCALAPPDATA%` (common with
-corporate application control), put the browser somewhere allowed by setting
-`PLAYWRIGHT_BROWSERS_PATH` (for example to `.cache/ms-playwright` inside the
-repo, which git ignores) before both `e2e:install` and `e2e`.
+First-time e2e setup: `npm run e2e:install`. If your machine blocks programs in
+`%LOCALAPPDATA%`, set `PLAYWRIGHT_BROWSERS_PATH` to a folder that's allowed
+(for example `.cache/ms-playwright`, which git ignores) before installing and running.
+`npm run demo` also needs `ffmpeg` on your PATH for the GIF.
 
-### Project layout
-
-```
-src/
-  core/        pure logic: indicator parsing, IP ranges, settings, cache, message types
-  providers/   one module per threat-intel service + shared HTTP handling
-  background/  service worker: menus, shortcut, lookup service, message router
-  ui/          the result card (shared by the page overlay and the fallback window)
-  content/     on-demand page script that hosts the card
-  options/     settings page
-  result/      fallback window for pages that can't host the card
-scripts/       build, manifest, release guard, packaging, icon generator
-e2e/           Playwright tests
-tests/         shared test helpers and recorded API responses
-docs/          architecture, how to add a provider, roadmap
-```
+Every push runs lint, type-check, ~380 unit tests and the end-to-end suite in
+GitHub Actions; tagging `vX.Y.Z` publishes a release with the zip attached.
 
 More: [architecture](docs/ARCHITECTURE.md) · [adding a provider](docs/ADDING_A_PROVIDER.md) ·
-[security](SECURITY.md) · [roadmap](docs/NEXT.md) · [changelog](CHANGELOG.md)
+[roadmap](docs/NEXT.md) · [changelog](CHANGELOG.md)
+
+## License and credits
+
+[MIT](LICENSE) © 2026 Abdelrahman Khalid.
+
+The Sharingan theme is a fan tribute to _Naruto_ by Masashi Kishimoto. 4NTL is not
+affiliated with or endorsed by its rights holders, VirusTotal, or AbuseIPDB.

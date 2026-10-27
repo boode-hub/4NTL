@@ -4,6 +4,31 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-10-27
+
+### Added
+
+- Themes: Auto, Light, Dark and Sharingan (black and crimson, with a tomoe eye
+  that spins while results load), plus a custom accent color. The settings page
+  shows a live preview and follows the chosen theme too.
+- Right-click any link → **4NTL: check this link** looks up its URL on VirusTotal,
+  with the card opening next to the link.
+- A Sharingan eye logo for the extension icon.
+- `npm run try` opens a browser with the extension and a demo page for manual testing.
+- `npm run demo` regenerates the README walkthrough GIF and screenshots.
+
+### Changed
+
+- Requires Chrome/Edge/Brave 123 or later (CSS `light-dark()`).
+- Internal hosts (single-label names and `.local`, `.internal`, `.corp`, `.lan`, `.home.arpa`, …),
+  as domains or inside URLs, are never sent to providers, like private IPs.
+- Changing the theme or the cache lifetime no longer throws away cached results.
+- CI: artifact uploads can't fail the build; GitHub Actions updated to v7.
+
+### Fixed
+
+- Long indicators (hashes, URLs) no longer push their type label out of the picker.
+
 ## [0.1.0] - 2026-10-27
 
 ### Added

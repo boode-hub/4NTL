@@ -5,9 +5,11 @@ value. Update this file whenever work stops mid-way.
 
 ## Status (2026-10-27)
 
-v0.1.0 is feature-complete for Chromium browsers. Lint, type-check, unit
-tests (≥90% coverage) and e2e tests all pass locally. The CI and release
-workflows are written but have not run yet: the repository has no remote.
+v0.2.0 adds themes (including Sharingan) and the demo tooling. Lint,
+type-check, unit tests (≥90% coverage) and e2e tests pass locally and in
+GitHub Actions. Published to boode-hub/4ntl (public) and BOoDe007/4ntl (private).
+API mapping is verified against recorded responses; a live check against the
+real APIs hasn't been automated.
 
 ## Ideas
 

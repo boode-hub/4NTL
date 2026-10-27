@@ -7,6 +7,7 @@ import type { Indicator } from '../core/indicator';
 import type { CardView, ProviderInfo } from '../core/messages';
 import type { ProviderId } from '../core/provider-ids';
 import type { LookupOutcome } from '../core/result';
+import { DEFAULT_SETTINGS, type Appearance } from '../core/settings';
 import { h, icon, ICONS } from './dom';
 import { placeCard, type Rect } from './position';
 import {
@@ -28,11 +29,13 @@ export interface CardClient {
 
 export type CardPlacement =
   | { readonly mode: 'floating'; readonly anchor: Rect }
-  | { readonly mode: 'inline'; readonly container: HTMLElement };
+  /** `fill`: take the container's full width without card chrome (the result window). */
+  | { readonly mode: 'inline'; readonly container: HTMLElement; readonly fill?: boolean };
 
 export interface CardOptions {
   readonly client: CardClient;
   readonly placement: CardPlacement;
+  readonly appearance?: Appearance;
   readonly onClose?: () => void;
   readonly now?: () => number;
 }
@@ -71,14 +74,17 @@ export class ResultCard {
 
   constructor(options: CardOptions) {
     this.#options = options;
-    const floating = options.placement.mode === 'floating';
+    const { placement } = options;
+    const fill = placement.mode === 'inline' && placement.fill !== false;
+    const { theme, accent } = options.appearance ?? DEFAULT_SETTINGS.appearance;
     this.#host = document.createElement(HOST_TAG);
     // Closed: page scripts can't reach into the card. Open in e2e builds so tests can.
     const root = this.#host.attachShadow({ mode: __E2E__ ? 'open' : 'closed' });
     this.#card = h('div', {
-      class: floating ? 'card' : 'card inline',
-      attrs: { role: 'dialog', 'aria-label': '4NTL lookup' },
+      class: fill ? 'card inline' : 'card',
+      attrs: { role: 'dialog', 'aria-label': '4NTL lookup', 'data-theme': theme },
     });
+    if (accent) this.#card.style.setProperty('--accent', accent);
     root.append(h('style', {}, CARD_CSS), this.#card);
 
     this.#listen(window, 'keydown', (event) => {

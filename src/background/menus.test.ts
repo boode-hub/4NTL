@@ -41,8 +41,10 @@ describe('registerMenus', () => {
       ['4ntl:lookup:virustotal', 'VirusTotal', 'normal'],
       ['4ntl:separator', undefined, 'separator'],
       ['4ntl:lookup:all', 'All providers', 'normal'],
+      ['4ntl:link', '4NTL: check this link', 'normal'],
     ]);
-    expect(created.every((item) => item.contexts?.join() === 'selection')).toBe(true);
+    expect(created.slice(0, -1).every((item) => item.contexts?.join() === 'selection')).toBe(true);
+    expect(created.at(-1)?.contexts).toEqual(['link']);
   });
 
   it('surfaces creation errors', async () => {

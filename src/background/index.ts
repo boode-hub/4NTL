@@ -6,11 +6,17 @@
  */
 import { REPORT_CACHE, TtlCache } from '../core/cache';
 import type { Report } from '../core/result';
-import { loadSettings, SETTINGS_KEY, hasAnyApiKey } from '../core/settings';
+import {
+  affectsResults,
+  hasAnyApiKey,
+  loadSettings,
+  normalizeSettings,
+  SETTINGS_KEY,
+} from '../core/settings';
 import { refreshBadge } from './badge';
 import { handleLookupRequest, type ControllerDeps } from './controller';
 import { LookupService } from './lookup-service';
-import { registerMenus, scopeFromMenuItem } from './menus';
+import { LINK_ITEM_ID, menuItemId, registerMenus, scopeFromMenuItem } from './menus';
 import { presentInPage, presentInWindow } from './present';
 import { createMessageRouter } from './router';
 import { readSelection } from './selection';
@@ -47,14 +53,23 @@ chrome.runtime.onStartup.addListener(() => {
   void loadSettings().then(refreshBadge).catch(report);
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  const scope = scopeFromMenuItem(info.menuItemId);
+type MenuClick = Pick<
+  chrome.contextMenus.OnClickData,
+  'menuItemId' | 'selectionText' | 'linkUrl' | 'frameId'
+>;
+
+async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): Promise<void> {
+  const isLink = info.menuItemId === LINK_ITEM_ID;
+  const scope = isLink ? 'all' : scopeFromMenuItem(info.menuItemId);
   if (!scope) return;
+  const selection = (isLink ? info.linkUrl : info.selectionText) ?? '';
   const target =
     tab?.id === undefined || tab.id < 0 ? undefined : { tabId: tab.id, frameId: info.frameId ?? 0 };
-  void handleLookupRequest({ target, selection: info.selectionText ?? '', scope }, deps).catch(
-    report,
-  );
+  await handleLookupRequest({ target, selection, scope }, deps);
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  void onMenuClick(info, tab).catch(report);
 });
 
 async function lookupFromShortcut(tabId: number, scope: ProviderScope): Promise<void> {
@@ -89,29 +104,38 @@ chrome.runtime.onMessage.addListener(
 );
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || !(SETTINGS_KEY in changes)) return;
-  // New keys or options may change results: start fresh.
-  void cache.clear().catch(report);
-  void loadSettings().then(refreshBadge).catch(report);
+  const change = changes[SETTINGS_KEY];
+  if (area !== 'local' || !change) return;
+  const after = normalizeSettings(change.newValue);
+  // New keys or report window: cached results are stale. (A theme change isn't.)
+  if (affectsResults(normalizeSettings(change.oldValue), after)) void cache.clear().catch(report);
+  void refreshBadge(after).catch(report);
 });
 
 if (__E2E__) {
   // Test-only hooks (compiled out of release builds): browser UI such as the
   // context menu can't be clicked from automation, so tests enter here instead.
-  const tabIdFor = async (tab: string | number) => {
-    if (typeof tab === 'number') return tab;
-    const [match] = await chrome.tabs.query({ url: tab });
-    if (match?.id === undefined) throw new Error(`no tab matches ${tab}`);
-    return match.id;
+  const tabFor = async (tab: string | number): Promise<chrome.tabs.Tab> => {
+    const [match] =
+      typeof tab === 'number'
+        ? [await chrome.tabs.get(tab)]
+        : await chrome.tabs.query({ url: tab });
+    if (match?.id === undefined) throw new Error(`no tab matches ${String(tab)}`);
+    return match;
   };
   Object.assign(globalThis, {
     __4ntl: {
       async simulateMenuClick(tab: string | number, selection: string, scope: ProviderScope) {
-        const target = { tabId: await tabIdFor(tab), frameId: 0 };
-        return handleLookupRequest({ target, selection, scope }, deps);
+        await onMenuClick(
+          { menuItemId: menuItemId(scope), selectionText: selection },
+          await tabFor(tab),
+        );
+      },
+      async simulateLinkClick(tab: string | number, linkUrl: string) {
+        await onMenuClick({ menuItemId: LINK_ITEM_ID, linkUrl }, await tabFor(tab));
       },
       async simulateShortcut(tab: string | number) {
-        await lookupFromShortcut(await tabIdFor(tab), 'all');
+        await lookupFromShortcut(await tabFor(tab).then((t) => t.id ?? -1), 'all');
       },
     },
   });

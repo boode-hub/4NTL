@@ -4,6 +4,7 @@ import { flush, NOW } from '../../tests/helpers';
 import type { Indicator } from '../core/indicator';
 import type { CardView } from '../core/messages';
 import type { LookupOutcome, Report } from '../core/result';
+import type { Appearance } from '../core/settings';
 import { HOST_TAG, ResultCard, type CardClient } from './card';
 import { pointRect } from './position';
 
@@ -336,5 +337,47 @@ describe('ResultCard – lifecycle', () => {
     });
     expect(execCommand).toHaveBeenCalledWith('copy');
     expect(root?.querySelector('textarea')).toBeNull();
+  });
+});
+
+describe('ResultCard – appearance', () => {
+  const themed = (appearance?: Appearance, fill?: boolean) => {
+    const card = new ResultCard({
+      client: client(),
+      placement:
+        fill === undefined
+          ? { mode: 'floating', anchor: pointRect(0, 0) }
+          : { mode: 'inline', container: document.body, fill },
+      ...(appearance ? { appearance } : {}),
+    });
+    card.show(LOOKUP_VIEW);
+    return root?.querySelector<HTMLElement>('.card');
+  };
+
+  it('uses the automatic theme with its own accent by default', () => {
+    const card = themed();
+    expect(card?.dataset.theme).toBe('auto');
+    expect(card?.style.getPropertyValue('--accent')).toBe('');
+  });
+
+  it('applies the chosen theme and accent', () => {
+    const card = themed({ theme: 'sharingan', accent: '#8b5cf6' });
+    expect(card?.dataset.theme).toBe('sharingan');
+    expect(card?.style.getPropertyValue('--accent')).toBe('#8b5cf6');
+  });
+
+  it('draws the Sharingan in the header (CSS shows it only in that theme)', () => {
+    const card = themed({ theme: 'sharingan', accent: '' });
+    const eye = card?.querySelector('.header .eye');
+    expect(eye?.getAttribute('aria-hidden')).toBe('true');
+    expect(eye?.querySelectorAll('.tomoe')).toHaveLength(3);
+  });
+
+  it('can render inline without filling the container (settings preview)', () => {
+    expect(themed(undefined, false)?.classList.contains('inline')).toBe(false);
+    document.querySelectorAll(HOST_TAG).forEach((host) => {
+      host.remove();
+    });
+    expect(themed(undefined, true)?.classList.contains('inline')).toBe(true);
   });
 });

@@ -1,22 +1,43 @@
+import type { Theme } from '../core/settings';
+
+/** Each theme's own accent; a user-picked accent overrides it. */
+export const THEME_ACCENTS = {
+  light: '#0369a1',
+  dark: '#7dd3fc',
+  sharingan: '#ff2d3d',
+} as const satisfies Record<Exclude<Theme, 'auto'>, string>;
+
 /**
  * Card styles. They live inside the card's shadow root, so the page's CSS can't
  * leak in and ours can't leak out. Kept as a string so the content script stays
- * a single injectable file.
+ * a single injectable file. Colors use light-dark(), so a theme only has to set
+ * color-scheme (Sharingan brings its own palette).
  */
 export const CARD_CSS = /* css */ `
 :host { all: initial; }
 
 .card {
-  --bg: #ffffff;
-  --fg: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --subtle: #f1f5f9;
-  --accent: #0369a1;
-  --malicious: #dc2626; --malicious-bg: #fee2e2; --malicious-fg: #991b1b;
-  --suspicious: #d97706; --suspicious-bg: #fef3c7; --suspicious-fg: #92400e;
-  --clean: #16a34a; --clean-bg: #dcfce7; --clean-fg: #166534;
-  --unknown: #64748b; --unknown-bg: #f1f5f9; --unknown-fg: #334155;
+  color-scheme: light dark;
+  --bg: light-dark(#ffffff, #111827);
+  --fg: light-dark(#0f172a, #e5e7eb);
+  --muted: light-dark(#64748b, #9ca3af);
+  --border: light-dark(#e2e8f0, #273244);
+  --subtle: light-dark(#f1f5f9, #1f2937);
+  --accent: light-dark(${THEME_ACCENTS.light}, ${THEME_ACCENTS.dark});
+  --shadow: 0 12px 32px light-dark(rgba(15, 23, 42, 0.18), rgba(0, 0, 0, 0.5)),
+    0 2px 6px light-dark(rgba(15, 23, 42, 0.08), rgba(0, 0, 0, 0.3));
+  --malicious: light-dark(#dc2626, #f87171);
+  --malicious-bg: light-dark(#fee2e2, rgba(248, 113, 113, 0.16));
+  --malicious-fg: light-dark(#991b1b, #fca5a5);
+  --suspicious: light-dark(#d97706, #fbbf24);
+  --suspicious-bg: light-dark(#fef3c7, rgba(251, 191, 36, 0.16));
+  --suspicious-fg: light-dark(#92400e, #fcd34d);
+  --clean: light-dark(#16a34a, #4ade80);
+  --clean-bg: light-dark(#dcfce7, rgba(74, 222, 128, 0.14));
+  --clean-fg: light-dark(#166534, #86efac);
+  --unknown: light-dark(#64748b, #9ca3af);
+  --unknown-bg: light-dark(#f1f5f9, rgba(156, 163, 175, 0.16));
+  --unknown-fg: light-dark(#334155, #d1d5db);
 
   box-sizing: border-box;
   width: 320px;
@@ -27,7 +48,7 @@ export const CARD_CSS = /* css */ `
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow);
   font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   text-align: left;
   animation: enter 120ms ease-out;
@@ -35,24 +56,34 @@ export const CARD_CSS = /* css */ `
 .card *, .card *::before, .card *::after { box-sizing: border-box; }
 .card.inline { width: 100%; max-height: none; border: 0; border-radius: 0; box-shadow: none; animation: none; }
 
-@media (prefers-color-scheme: dark) {
-  .card {
-    --bg: #111827;
-    --fg: #e5e7eb;
-    --muted: #9ca3af;
-    --border: #273244;
-    --subtle: #1f2937;
-    --accent: #7dd3fc;
-    --malicious: #f87171; --malicious-bg: rgba(248, 113, 113, 0.16); --malicious-fg: #fca5a5;
-    --suspicious: #fbbf24; --suspicious-bg: rgba(251, 191, 36, 0.16); --suspicious-fg: #fcd34d;
-    --clean: #4ade80; --clean-bg: rgba(74, 222, 128, 0.14); --clean-fg: #86efac;
-    --unknown: #9ca3af; --unknown-bg: rgba(156, 163, 175, 0.16); --unknown-fg: #d1d5db;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
-  }
+.card[data-theme='light'] { color-scheme: light; }
+.card[data-theme='dark'] { color-scheme: dark; }
+.card[data-theme='sharingan'] {
+  color-scheme: dark;
+  --bg: #0d0a0b;
+  --fg: #f5eff0;
+  --muted: #a99ea0;
+  --border: #3b1a1f;
+  --subtle: #1d1214;
+  --accent: ${THEME_ACCENTS.sharingan};
+  --shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 12px 36px color-mix(in srgb, var(--accent) 22%, transparent);
+  background: radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%), var(--bg);
 }
+.card[data-theme='sharingan'] .header { border-bottom-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.card[data-theme='sharingan'] .provider-name { color: var(--fg); letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+
+/* The Sharingan: shown only in that theme; it spins while anything is loading. */
+.eye { display: none; flex: none; width: 20px; height: 20px; }
+.card[data-theme='sharingan'] .eye { display: block; }
+.eye .iris { fill: var(--accent); stroke: #000; stroke-width: 1; }
+.eye .ring { fill: none; stroke: rgba(0, 0, 0, 0.55); stroke-width: 0.8; }
+.eye .pupil, .eye .tomoe { fill: #0a0506; }
+.card:has([aria-busy='true']) .eye svg { animation: spin 0.9s linear infinite; }
 
 @keyframes enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .header {
   display: flex; align-items: center; gap: 8px;
@@ -145,7 +176,7 @@ export const CARD_CSS = /* css */ `
 
 .notice { padding: 12px; }
 .notice-text { margin: 0; color: var(--muted); }
-.choices { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.choices { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
 .choice {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
@@ -154,6 +185,6 @@ export const CARD_CSS = /* css */ `
 .choice:hover { background: var(--subtle); }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .skeleton span { animation: none; }
+  .card, .skeleton span, .card:has([aria-busy='true']) .eye svg { animation: none; }
 }
 `;

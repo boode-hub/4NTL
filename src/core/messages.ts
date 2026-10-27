@@ -6,6 +6,7 @@
 import { isIndicatorType, type Indicator } from './indicator';
 import { isProviderId, type ProviderId } from './provider-ids';
 import type { LookupOutcome } from './result';
+import type { Appearance } from './settings';
 
 export interface ProviderInfo {
   readonly id: ProviderId;
@@ -29,7 +30,8 @@ export type CardView =
 
 /** Service worker → content script. */
 export type ContentMessage =
-  { readonly type: '4ntl:ping' } | { readonly type: '4ntl:show'; readonly view: CardView };
+  | { readonly type: '4ntl:ping' }
+  | { readonly type: '4ntl:show'; readonly view: CardView; readonly appearance: Appearance };
 
 /** UI surface → service worker. */
 export type BackgroundMessage =

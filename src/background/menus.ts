@@ -1,10 +1,15 @@
-/** Right-click menu: "4NTL: look up “…”" ▸ one entry per provider, then "All providers". */
+/**
+ * Right-click menus: on a selection, "4NTL: look up “…”" ▸ one entry per provider
+ * plus "All providers"; on a link, "4NTL: check this link" (every provider that
+ * takes URLs).
+ */
 import { isProviderId } from '../core/provider-ids';
 import { PROVIDER_LIST } from '../providers/registry';
 import type { ProviderScope } from './view';
 
 const ROOT_ID = '4ntl';
 const ITEM_PREFIX = '4ntl:lookup:';
+export const LINK_ITEM_ID = '4ntl:link';
 
 export function menuItemId(scope: ProviderScope): string {
   return ITEM_PREFIX + scope;
@@ -41,4 +46,5 @@ export async function registerMenus(): Promise<void> {
   }
   await create({ id: `${ROOT_ID}:separator`, parentId: ROOT_ID, type: 'separator', contexts });
   await create({ id: menuItemId('all'), parentId: ROOT_ID, title: 'All providers', contexts });
+  await create({ id: LINK_ITEM_ID, title: '4NTL: check this link', contexts: ['link'] });
 }

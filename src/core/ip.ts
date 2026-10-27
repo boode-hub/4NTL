@@ -70,13 +70,44 @@ export function isPublicIPv6(ip: string): boolean {
   return true;
 }
 
-/** True unless the indicator is an IP address outside the public internet. */
+/**
+ * Names that only resolve inside a network: special-use TLDs (RFC 6761/6762,
+ * ICANN's .internal) and suffixes commonly used for intranets.
+ */
+const PRIVATE_SUFFIXES = [
+  'local',
+  'localhost',
+  'internal',
+  'intranet',
+  'lan',
+  'corp',
+  'home',
+  'home.arpa',
+  'test',
+  'invalid',
+];
+
+/** False for IP literals outside the internet, single-label names and private suffixes. */
+export function isPublicHost(host: string): boolean {
+  const name = host.toLowerCase().replace(/\.$/, '');
+  if (name.startsWith('[')) return isPublicIPv6(name.slice(1, -1));
+  if (/^[\d.]+$/.test(name)) return isPublicIPv4(name);
+  if (!name.includes('.')) return false;
+  return !PRIVATE_SUFFIXES.some((suffix) => name === suffix || name.endsWith(`.${suffix}`));
+}
+
+/** False when the indicator points inside a private network (internal IP, host or URL). */
 export function isPublicAddress(indicator: Indicator): boolean {
   switch (indicator.type) {
     case 'ipv4':
       return isPublicIPv4(indicator.value);
     case 'ipv6':
       return isPublicIPv6(indicator.value);
+    case 'domain':
+      return isPublicHost(indicator.value);
+    case 'url':
+      // Right-clicked links to SIEM consoles and intranet pages must never leave the network.
+      return isPublicHost(new URL(indicator.value).hostname);
     default:
       return true;
   }

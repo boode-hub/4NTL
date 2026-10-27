@@ -8,6 +8,7 @@ import {
   VT_KEY,
   type FakeRoute,
 } from './fixtures';
+import type { Worker } from '@playwright/test';
 
 const KEYS = { apiKeys: { virustotal: VT_KEY, abuseipdb: ABUSE_KEY } };
 
@@ -225,5 +226,60 @@ test.describe('failures', () => {
     await expect(popup.locator('x-4ntl-card [data-provider="abuseipdb"] .pill')).toHaveText(
       'Malicious',
     );
+  });
+});
+
+test.describe('links', () => {
+  const linkClick = (worker: Worker, linkUrl: string) =>
+    worker.evaluate(
+      ([url, link]) =>
+        (
+          globalThis as unknown as {
+            __4ntl: { simulateLinkClick(t: string, l: string): Promise<void> };
+          }
+        ).__4ntl.simulateLinkClick(url, link),
+      [PAGE_URL, linkUrl] as const,
+    );
+
+  test('right-clicking a link checks its URL on VirusTotal, next to the link', async ({
+    page,
+    worker,
+    api,
+    settings,
+  }) => {
+    await settings(KEYS);
+    await api.routes([
+      {
+        prefix: 'https://www.virustotal.com/api/v3/urls/',
+        responses: [{ status: 200, body: fixture('virustotal/url.json') }],
+      },
+    ]);
+    const link = page.locator('#link');
+    await link.hover();
+    await linkClick(worker, 'http://malware.wicar.org/data/eicar.com');
+
+    const card = page.locator('x-4ntl-card .card');
+    await expect(card.locator('.type')).toHaveText('URL');
+    await expect(card.locator('[data-provider]')).toHaveCount(1);
+    await expect(card.locator('[data-provider="virustotal"] .pill')).toHaveText('Suspicious');
+    const [cardBox, linkBox] = await Promise.all([card.boundingBox(), link.boundingBox()]);
+    expect(Math.abs((cardBox?.x ?? 0) - (linkBox?.x ?? 0))).toBeLessThan(40);
+    expect(cardBox?.y).toBeGreaterThan(linkBox?.y ?? Infinity);
+  });
+
+  test('links to internal hosts never leave the network', async ({
+    page,
+    worker,
+    api,
+    settings,
+  }) => {
+    await settings(KEYS);
+    await api.routes([]);
+    await page.locator('#intranet').hover();
+    await linkClick(worker, 'https://siem.corp/search?q=ws-0442');
+    await expect(page.locator('x-4ntl-card [data-error="private_address"] .pill')).toHaveText(
+      'Skipped',
+    );
+    expect(await api.calls()).toEqual([]);
   });
 });

@@ -10,7 +10,7 @@ import {
   type LookupFailure,
   type LookupOutcome,
 } from '../core/result';
-import { h, icon, ICONS } from './dom';
+import { h, icon, ICONS, sharinganEye } from './dom';
 
 export const ERROR_LABELS: Readonly<Record<LookupErrorCode, string>> = {
   no_api_key: 'No API key',
@@ -73,6 +73,7 @@ export function renderIndicatorHeader(
   return h(
     'div',
     { class: 'header' },
+    sharinganEye(),
     h('span', { class: 'ioc', attrs: { title: indicator.value } }, indicator.value),
     h('span', { class: 'type' }, INDICATOR_LABELS[indicator.type]),
     iconButton('Copy indicator', ICONS.copy, onCopy),
@@ -84,6 +85,7 @@ export function renderTitleHeader(title: string, onClose: () => void): HTMLEleme
   return h(
     'div',
     { class: 'header' },
+    sharinganEye(),
     h('span', { class: 'title' }, title),
     iconButton('Close', ICONS.close, onClose),
   );

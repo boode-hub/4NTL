@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { MemoryStore } from '../../tests/helpers';
 import {
+  affectsResults,
   DEFAULT_SETTINGS,
   hasAnyApiKey,
   loadSettings,
+  normalizeAppearance,
   normalizeSettings,
   saveSettings,
   SETTINGS_KEY,
@@ -62,5 +64,50 @@ describe('load/save', () => {
     expect(await loadSettings(store)).toEqual(saved);
     expect(saved.apiKeys.virustotal).toBe('vt');
     expect(saved.cacheTtlMinutes).toBe(5);
+  });
+});
+
+describe('appearance', () => {
+  it('defaults to the automatic theme with its own accent', () => {
+    expect(normalizeAppearance(undefined)).toEqual({ theme: 'auto', accent: '' });
+  });
+
+  it('keeps known themes and valid hex accents (lower-cased)', () => {
+    expect(normalizeAppearance({ theme: 'sharingan', accent: '#FF2D3D' })).toEqual({
+      theme: 'sharingan',
+      accent: '#ff2d3d',
+    });
+  });
+
+  it.each(['red', '#fff', '#12345g', 'red;} body{display:none', '#ff2d3d ', 42])(
+    'rejects accent %j (it ends up in CSS)',
+    (accent) => {
+      expect(normalizeAppearance({ theme: 'dark', accent }).accent).toBe('');
+    },
+  );
+
+  it('falls back to auto for unknown themes', () => {
+    expect(normalizeAppearance({ theme: 'mangekyo' }).theme).toBe('auto');
+  });
+});
+
+describe('affectsResults', () => {
+  const base = normalizeSettings({ apiKeys: { virustotal: 'k' } });
+
+  it('is true when keys or the AbuseIPDB window change', () => {
+    expect(affectsResults(base, normalizeSettings({ apiKeys: { virustotal: 'other' } }))).toBe(
+      true,
+    );
+    expect(affectsResults(base, { ...base, abuseIpdbMaxAgeDays: 30 })).toBe(true);
+  });
+
+  it('is false for appearance and cache-lifetime changes', () => {
+    expect(
+      affectsResults(base, {
+        ...base,
+        cacheTtlMinutes: 5,
+        appearance: { theme: 'sharingan', accent: '#123456' },
+      }),
+    ).toBe(false);
   });
 });

@@ -24,15 +24,30 @@ export function selectionRect(doc: Document): Rect | undefined {
   return last ?? range.getBoundingClientRect();
 }
 
+/**
+ * Rect of the element under the pointer, e.g. the link that was right-clicked.
+ * The page keeps its :hover state while the browser's context menu is open.
+ */
+export function hoveredRect(doc: Document): Rect | undefined {
+  const hovered = doc.querySelectorAll(':hover');
+  const deepest = hovered[hovered.length - 1];
+  if (!deepest || deepest === doc.documentElement || deepest === doc.body) return undefined;
+  return deepest.getBoundingClientRect();
+}
+
+const hasArea = (rect: Rect | undefined): rect is Rect =>
+  rect !== undefined && (rect.right > rect.left || rect.bottom > rect.top);
+
 export function chooseAnchor(
   pointer: PointerMark | undefined,
   selection: Rect | undefined,
+  hovered: Rect | undefined,
   viewportWidth: number,
   now: number,
 ): Rect {
   if (pointer && now - pointer.at <= POINTER_MAX_AGE_MS) return pointRect(pointer.x, pointer.y);
-  if (selection && (selection.right > selection.left || selection.bottom > selection.top))
-    return selection;
+  if (hasArea(selection)) return selection;
+  if (hasArea(hovered)) return hovered;
   // Nothing to anchor to (e.g. the selection was cleared): top-right corner.
   return pointRect(viewportWidth, 0);
 }

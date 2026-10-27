@@ -24,7 +24,7 @@ export function createManifest({ version, e2e = false }) {
     version,
     description:
       'Select an IP, hash, domain or URL, right-click, and see VirusTotal and AbuseIPDB verdicts right where you are.',
-    minimum_chrome_version: '120',
+    minimum_chrome_version: '123',
     icons: ICONS,
     action: { default_title: '4NTL – settings', default_icon: ICONS },
     background: { service_worker: 'background.js', type: 'module' },
