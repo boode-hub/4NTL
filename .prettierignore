@@ -1,0 +1,8 @@
+dist/
+dist-e2e/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+public/icons/
+.cache/

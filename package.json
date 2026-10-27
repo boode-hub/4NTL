@@ -1,0 +1,42 @@
+{
+  "name": "4ntl",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Right-click threat-intel lookups (VirusTotal, AbuseIPDB) with an inline result card.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs && node scripts/verify-dist.mjs",
+    "build:e2e": "node scripts/build.mjs --e2e",
+    "dev": "node scripts/build.mjs --watch",
+    "icons": "node scripts/make-icons.mjs",
+    "package": "npm run build && node scripts/package.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "node scripts/build.mjs --e2e && playwright test",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test:coverage && npm run build",
+    "e2e:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/chrome": "0.3.6",
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.0.5",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "happy-dom": "21.0.4",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.0.5"
+  }
+}

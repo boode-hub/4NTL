@@ -1,0 +1,62 @@
+import { expect, fixture, optionsUrl, test, VT_KEY } from './fixtures';
+
+test.describe('settings page', () => {
+  test('saves keys and options automatically and clears the setup badge', async ({
+    context,
+    extensionId,
+    worker,
+  }) => {
+    const page = await context.newPage();
+    await page.goto(optionsUrl(extensionId));
+
+    const badge = () => worker.evaluate(() => chrome.action.getBadgeText({}));
+    await expect.poll(badge).toBe('!');
+
+    await page.getByLabel('VirusTotal').fill(VT_KEY);
+    await page.getByLabel('Reuse results for').fill('5000');
+    await page.getByLabel('Reuse results for').blur();
+    await expect(page.locator('#toast')).toHaveText('Saved');
+    // Out-of-range numbers are clamped and shown as saved.
+    await expect(page.getByLabel('Reuse results for')).toHaveValue('1440');
+
+    const stored = await worker.evaluate(() => chrome.storage.local.get('settings.v1'));
+    expect(stored['settings.v1']).toMatchObject({
+      apiKeys: { virustotal: VT_KEY, abuseipdb: '' },
+      cacheTtlMinutes: 1440,
+      abuseIpdbMaxAgeDays: 90,
+    });
+    await expect.poll(badge).toBe('');
+
+    // Reloading shows what was saved.
+    await page.reload();
+    await expect(page.getByLabel('VirusTotal')).toHaveValue(VT_KEY);
+  });
+
+  test('warns about malformed keys and tests a key against the provider', async ({
+    context,
+    extensionId,
+  }) => {
+    const page = await context.newPage();
+    // Options-page requests go through the page's own fetch; fake the provider there.
+    await context.route('https://www.virustotal.com/api/v3/users/**', (route) =>
+      route.fulfill({ json: fixture('virustotal/overall-quotas.json') }),
+    );
+    await page.goto(optionsUrl(extensionId));
+
+    const status = page.locator('#key-virustotal-status');
+    await page.getByLabel('VirusTotal').fill('too-short');
+    await expect(status).toContainText("doesn't look like a VirusTotal key");
+
+    await page.getByLabel('VirusTotal').fill(VT_KEY);
+    await expect(status).toHaveText('');
+    await page.locator('[data-test="virustotal"]').click();
+    await expect(status).toHaveText('Key is valid · 37 of 500 daily lookups used.');
+  });
+
+  test('shows the keyboard shortcut and version', async ({ context, extensionId }) => {
+    const page = await context.newPage();
+    await page.goto(optionsUrl(extensionId));
+    await expect(page.locator('#shortcut')).toHaveText(/Alt\+Shift\+L|not set/);
+    await expect(page.locator('#version')).toHaveText(/^\d+\.\d+\.\d+$/);
+  });
+});

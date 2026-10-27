@@ -1,0 +1,25 @@
+{
+  "data": {
+    "id": "275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f",
+    "type": "file",
+    "attributes": {
+      "meaningful_name": "eicar.com",
+      "type_description": "Text",
+      "size": 68,
+      "first_submission_date": 1148301722,
+      "popular_threat_classification": { "suggested_threat_label": "virus.eicar/test" },
+      "reputation": 3517,
+      "last_analysis_date": 1792900000,
+      "last_analysis_stats": {
+        "harmless": 0,
+        "type-unsupported": 9,
+        "suspicious": 0,
+        "confirmed-timeout": 0,
+        "timeout": 1,
+        "failure": 0,
+        "malicious": 64,
+        "undetected": 3
+      }
+    }
+  }
+}

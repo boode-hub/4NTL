@@ -1,0 +1,23 @@
+{
+  "data": {
+    "id": "185.220.101.4",
+    "type": "ip_address",
+    "links": { "self": "https://www.virustotal.com/api/v3/ip_addresses/185.220.101.4" },
+    "attributes": {
+      "as_owner": "Zwiebelfreunde e.V.",
+      "asn": 208294,
+      "country": "DE",
+      "network": "185.220.101.0/24",
+      "reputation": -41,
+      "last_analysis_date": 1793037600,
+      "last_analysis_stats": {
+        "harmless": 52,
+        "malicious": 14,
+        "suspicious": 2,
+        "undetected": 26,
+        "timeout": 0
+      },
+      "tags": []
+    }
+  }
+}
