@@ -7,6 +7,8 @@ export interface RouterDeps {
   readonly extensionId: string;
   readonly service: Pick<LookupService, 'lookup'>;
   readonly openOptions: () => Promise<void>;
+  /** A content script caught where a JavaScript-only button was going. */
+  readonly onCaptured: (url: string, sender: chrome.runtime.MessageSender) => Promise<void>;
 }
 
 type Listener = (
@@ -40,6 +42,10 @@ export function createMessageRouter(deps: RouterDeps): Listener {
       }
       case '4ntl:open-options':
         void deps.openOptions();
+        return false;
+      case '4ntl:captured':
+        // Only content scripts in a tab can catch a click.
+        if (sender.tab?.id !== undefined) void deps.onCaptured(message.url, sender);
         return false;
     }
   };

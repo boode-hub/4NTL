@@ -381,3 +381,50 @@ describe('ResultCard – appearance', () => {
     expect(themed(undefined, true)?.classList.contains('inline')).toBe(true);
   });
 });
+
+describe('ResultCard – dragging', () => {
+  it('moves with the pointer when dragged by the header, and stays there', async () => {
+    const { card, $ } = mount();
+    card.show(LOOKUP_VIEW);
+    const host = document.querySelector<HTMLElement>(HOST_TAG);
+    const cardEl = $('.card');
+    const header = $('.header .ioc');
+    if (!host || !cardEl || !header) throw new Error('card not rendered');
+    cardEl.setPointerCapture = () => undefined;
+
+    header.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        composed: true,
+        clientX: 50,
+        clientY: 60,
+        button: 0,
+        pointerId: 1,
+      }),
+    );
+    expect(cardEl.classList.contains('dragging')).toBe(true);
+    cardEl.dispatchEvent(
+      new PointerEvent('pointermove', { bubbles: true, clientX: 150, clientY: 200, pointerId: 1 }),
+    );
+    cardEl.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
+    expect(cardEl.classList.contains('dragging')).toBe(false);
+    const dragged = [host.style.getPropertyValue('left'), host.style.getPropertyValue('top')];
+    expect(dragged).not.toEqual(['0px', '0px']);
+
+    // New results arriving don't snap it back to the pointer.
+    await flush();
+    expect([host.style.getPropertyValue('left'), host.style.getPropertyValue('top')]).toEqual(
+      dragged,
+    );
+  });
+
+  it('does not start a drag from header buttons', () => {
+    const { card, $ } = mount();
+    card.show(LOOKUP_VIEW);
+    const button = $('[aria-label="Copy indicator"]');
+    button?.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, composed: true, button: 0, pointerId: 2 }),
+    );
+    expect($('.card')?.classList.contains('dragging')).toBe(false);
+  });
+});

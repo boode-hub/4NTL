@@ -271,3 +271,15 @@ describe('helpers', () => {
     expect(indicatorKey(ip4('1.2.3.4'))).toBe('ipv4:1.2.3.4');
   });
 });
+
+describe('wrapped links', () => {
+  it('looks up the real destination of Safe Links / Proofpoint URLs', () => {
+    const wrapped = `https://nam02.safelinks.protection.outlook.com/?url=${encodeURIComponent('https://evil.com/login')}&data=x`;
+    expect(parseIndicator(wrapped)).toEqual(url('https://evil.com/login'));
+    expect(
+      parseIndicator(
+        `hxxps://nam02.safelinks.protection.outlook[.]com/?url=${encodeURIComponent('https://evil.com/')}`,
+      ),
+    ).toEqual(url('https://evil.com/'));
+  });
+});

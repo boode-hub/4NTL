@@ -3,13 +3,13 @@
 Where the project stands and what is worth doing next, roughly in order of
 value. Update this file whenever work stops mid-way.
 
-## Status (2026-10-27)
+## Status (2026-10-28)
 
-v0.2.0 adds themes (including Sharingan) and the demo tooling. Lint,
-type-check, unit tests (≥90% coverage) and e2e tests pass locally and in
-GitHub Actions. Published to boode-hub/4ntl (public) and BOoDe007/4ntl (private).
-API mapping is verified against recorded responses; a live check against the
-real APIs hasn't been automated.
+v0.3.0 adds link/button destinations (incl. JavaScript-only buttons via click
+capture), redirect unwrapping, toolbar and address-bar lookups, and a draggable
+card. Lint, type-check, ~480 unit tests and 25 e2e tests pass. Published to
+boode-hub/4ntl (public) and BOoDe007/4ntl (private). API mapping is verified
+against recorded responses; there is no automated live check against the real APIs.
 
 ## Ideas
 

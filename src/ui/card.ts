@@ -9,7 +9,7 @@ import type { ProviderId } from '../core/provider-ids';
 import type { LookupOutcome } from '../core/result';
 import { DEFAULT_SETTINGS, type Appearance } from '../core/settings';
 import { h, icon, ICONS } from './dom';
-import { placeCard, type Rect } from './position';
+import { clampToViewport, placeCard, type Point, type Rect } from './position';
 import {
   renderChoices,
   renderIndicatorHeader,
@@ -71,6 +71,8 @@ export class ResultCard {
   /** Bumped on every show(); responses for an older view are dropped. */
   #viewId = 0;
   #closed = false;
+  /** Where the user dragged the card; from then on it stays there. */
+  #dragged: Point | undefined;
 
   constructor(options: CardOptions) {
     this.#options = options;
@@ -111,6 +113,7 @@ export class ResultCard {
       this.#listen(document, 'pointerdown', (event) => {
         if (!event.composedPath().includes(this.#host)) this.close();
       });
+      this.#enableDragging();
       this.#listen(window, 'resize', () => {
         this.#place();
       });
@@ -223,14 +226,63 @@ export class ResultCard {
     const { placement } = this.#options;
     if (placement.mode !== 'floating' || this.#closed) return;
     const { width, height } = this.#card.getBoundingClientRect();
+    const size = { width, height };
     const viewport = {
       width: document.documentElement.clientWidth || window.innerWidth,
       height: window.innerHeight,
     };
-    const { left, top } = placeCard(placement.anchor, { width, height }, viewport);
+    // Once dragged, the card stays put (only kept inside the window as it grows).
+    this.#moveTo(
+      this.#dragged
+        ? clampToViewport(this.#dragged, size, viewport)
+        : placeCard(placement.anchor, size, viewport),
+    );
+  }
+
+  #moveTo({ left, top }: Point): void {
     this.#host.style.setProperty('left', `${Math.round(left)}px`, 'important');
     this.#host.style.setProperty('top', `${Math.round(top)}px`, 'important');
     this.#host.style.setProperty('visibility', 'visible', 'important');
+  }
+
+  /** Drag the card by its header (not by its buttons) anywhere in the window. */
+  #enableDragging(): void {
+    let grab: { dx: number; dy: number; pointerId: number } | undefined;
+    const viewport = () => ({
+      width: document.documentElement.clientWidth || window.innerWidth,
+      height: window.innerHeight,
+    });
+
+    this.#card.addEventListener('pointerdown', (event) => {
+      const target = event.target as Element | null;
+      if (event.button !== 0 || !target?.closest('.header') || target.closest('button, a')) return;
+      event.preventDefault(); // no text selection while dragging
+      const box = this.#host.getBoundingClientRect();
+      grab = {
+        dx: event.clientX - box.left,
+        dy: event.clientY - box.top,
+        pointerId: event.pointerId,
+      };
+      this.#card.setPointerCapture(event.pointerId);
+      this.#card.classList.add('dragging');
+    });
+    this.#card.addEventListener('pointermove', (event) => {
+      if (grab?.pointerId !== event.pointerId) return;
+      const { width, height } = this.#card.getBoundingClientRect();
+      this.#dragged = clampToViewport(
+        { left: event.clientX - grab.dx, top: event.clientY - grab.dy },
+        { width, height },
+        viewport(),
+      );
+      this.#moveTo(this.#dragged);
+    });
+    const release = (event: PointerEvent) => {
+      if (grab?.pointerId !== event.pointerId) return;
+      grab = undefined;
+      this.#card.classList.remove('dragging');
+    };
+    this.#card.addEventListener('pointerup', release);
+    this.#card.addEventListener('pointercancel', release);
   }
 
   #listen(target: EventTarget, type: string, listener: (event: Event) => void): void {

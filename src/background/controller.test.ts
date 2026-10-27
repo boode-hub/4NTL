@@ -25,7 +25,7 @@ describe('handleLookupRequest', () => {
     expect(d.lookup.mock.invocationCallOrder[0]).toBeLessThan(
       d.presentInPage.mock.invocationCallOrder[0] ?? 0,
     );
-    expect(d.presentInPage).toHaveBeenCalledWith(target, view);
+    expect(d.presentInPage).toHaveBeenCalledWith(target, view, false);
     expect(d.presentInWindow).not.toHaveBeenCalled();
   });
 

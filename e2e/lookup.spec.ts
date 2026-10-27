@@ -63,9 +63,9 @@ test.describe('in-page lookups', () => {
 
     // Styled (shadow-DOM styles are not blocked by the page's style-src 'none')...
     await expect(card).toHaveCSS('width', '320px');
-    // ...and placed below the selection, inside the viewport.
+    // ...and placed ~5 cm to the right of the selection, so it doesn't cover it.
     const [box, ip] = await Promise.all([card.boundingBox(), page.locator('#ip').boundingBox()]);
-    expect(box?.y).toBeGreaterThan(ip?.y ?? Infinity);
+    expect(Math.abs((box?.x ?? 0) - ((ip?.x ?? 0) + (ip?.width ?? 0) + 190))).toBeLessThan(4);
 
     const calls = await api.calls();
     expect(calls.map((call) => call.url).sort()).toEqual([
@@ -263,8 +263,11 @@ test.describe('links', () => {
     await expect(card.locator('[data-provider]')).toHaveCount(1);
     await expect(card.locator('[data-provider="virustotal"] .pill')).toHaveText('Suspicious');
     const [cardBox, linkBox] = await Promise.all([card.boundingBox(), link.boundingBox()]);
-    expect(Math.abs((cardBox?.x ?? 0) - (linkBox?.x ?? 0))).toBeLessThan(40);
-    expect(cardBox?.y).toBeGreaterThan(linkBox?.y ?? Infinity);
+    // ~5 cm to the right of the link, level with it.
+    expect(
+      Math.abs((cardBox?.x ?? 0) - ((linkBox?.x ?? 0) + (linkBox?.width ?? 0) + 190)),
+    ).toBeLessThan(4);
+    expect(Math.abs((cardBox?.y ?? 0) - ((linkBox?.y ?? 0) - 24))).toBeLessThan(4);
   });
 
   test('links to internal hosts never leave the network', async ({

@@ -1,5 +1,6 @@
 /** Where the card should appear: at the right-click point, or next to the selection. */
 import { pointRect, type Rect } from '../ui/position';
+import { deepestHovered } from './link-target';
 
 /** A right-click older than this is not the one that opened the menu. */
 export const POINTER_MAX_AGE_MS = 30_000;
@@ -29,8 +30,7 @@ export function selectionRect(doc: Document): Rect | undefined {
  * The page keeps its :hover state while the browser's context menu is open.
  */
 export function hoveredRect(doc: Document): Rect | undefined {
-  const hovered = doc.querySelectorAll(':hover');
-  const deepest = hovered[hovered.length - 1];
+  const deepest = deepestHovered(doc);
   if (!deepest || deepest === doc.documentElement || deepest === doc.body) return undefined;
   return deepest.getBoundingClientRect();
 }

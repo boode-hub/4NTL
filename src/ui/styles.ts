@@ -90,6 +90,8 @@ export const CARD_CSS = /* css */ `
   padding: 8px 8px 8px 12px;
   border-bottom: 1px solid var(--border);
 }
+.card:not(.inline) .header { cursor: grab; touch-action: none; }
+.card.dragging, .card.dragging .header { cursor: grabbing; user-select: none; }
 .title { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ioc {
   flex: 1; min-width: 0;

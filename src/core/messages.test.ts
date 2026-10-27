@@ -85,3 +85,13 @@ describe('toFailure', () => {
     }
   });
 });
+
+describe('link messages', () => {
+  it('validates captured URLs and the new content messages', () => {
+    expect(isBackgroundMessage({ type: '4ntl:captured', url: 'https://x/' })).toBe(true);
+    expect(isBackgroundMessage({ type: '4ntl:captured', url: 42 })).toBe(false);
+    expect(isBackgroundMessage({ type: '4ntl:captured', url: 'x'.repeat(5000) })).toBe(false);
+    expect(isContentMessage({ type: '4ntl:inspect' })).toBe(true);
+    expect(isContentMessage({ type: '4ntl:capture' })).toBe(true);
+  });
+});

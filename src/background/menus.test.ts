@@ -42,9 +42,11 @@ describe('registerMenus', () => {
       ['4ntl:separator', undefined, 'separator'],
       ['4ntl:lookup:all', 'All providers', 'normal'],
       ['4ntl:link', '4NTL: check this link', 'normal'],
+      ['4ntl:element', '4NTL: check what this opens', 'normal'],
     ]);
-    expect(created.slice(0, -1).every((item) => item.contexts?.join() === 'selection')).toBe(true);
-    expect(created.at(-1)?.contexts).toEqual(['link']);
+    expect(created.slice(0, -2).every((item) => item.contexts?.join() === 'selection')).toBe(true);
+    expect(created.at(-2)?.contexts).toEqual(['link']);
+    expect(created.at(-1)?.contexts).toEqual(['page', 'image', 'frame']);
   });
 
   it('surfaces creation errors', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildView, NO_INDICATOR_NOTICE } from './view';
+import { buildView, NO_INDICATOR_NOTICE, viewForIndicators } from './view';
 
 const VT = { id: 'virustotal', name: 'VirusTotal' };
 const ABUSE = { id: 'abuseipdb', name: 'AbuseIPDB' };
@@ -38,5 +38,21 @@ describe('buildView', () => {
 
   it('explains when nothing usable was selected', () => {
     expect(buildView('hello', 'all')).toBe(NO_INDICATOR_NOTICE);
+  });
+});
+
+describe('viewForIndicators', () => {
+  it('caps long lists and marks them truncated', () => {
+    const many = Array.from({ length: 20 }, (_, i) => ({
+      type: 'url' as const,
+      value: `https://e${i}.com/`,
+    }));
+    const view = viewForIndicators(many, 'all');
+    expect(view).toMatchObject({ kind: 'choose', truncated: true });
+    expect(view.kind === 'choose' && view.choices).toHaveLength(12);
+  });
+
+  it('explains when nobody supports a forced provider/type pair', () => {
+    expect(viewForIndicators([], 'all')).toBe(NO_INDICATOR_NOTICE);
   });
 });

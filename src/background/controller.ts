@@ -13,8 +13,30 @@ export interface LookupRequest {
 
 export interface ControllerDeps {
   readonly service: Pick<LookupService, 'lookup'>;
-  readonly presentInPage: (target: FrameTarget, view: CardView) => Promise<boolean>;
+  readonly presentInPage: (
+    target: FrameTarget,
+    view: CardView,
+    corner: boolean,
+  ) => Promise<boolean>;
   readonly presentInWindow: (view: CardView) => Promise<void>;
+}
+
+/**
+ * Shows a view in the page (or the fallback window). Lookups start *now*, in
+ * parallel with injecting the UI; when the card asks for them a moment later
+ * it joins these in-flight requests.
+ */
+export async function presentView(
+  view: CardView,
+  target: FrameTarget | undefined,
+  deps: ControllerDeps,
+  corner = false,
+): Promise<void> {
+  if (view.kind === 'lookup') {
+    for (const provider of view.providers) void deps.service.lookup(provider.id, view.indicator);
+  }
+  const shown = target !== undefined && (await deps.presentInPage(target, view, corner));
+  if (!shown) await deps.presentInWindow(view);
 }
 
 export async function handleLookupRequest(
@@ -22,14 +44,6 @@ export async function handleLookupRequest(
   deps: ControllerDeps,
 ): Promise<CardView> {
   const view = buildView(request.selection, request.scope);
-
-  // Fire the API calls *now*, in parallel with injecting the UI. When the card
-  // asks for the same lookups a moment later it joins these in-flight requests.
-  if (view.kind === 'lookup') {
-    for (const provider of view.providers) void deps.service.lookup(provider.id, view.indicator);
-  }
-
-  const shown = request.target !== undefined && (await deps.presentInPage(request.target, view));
-  if (!shown) await deps.presentInWindow(view);
+  await presentView(view, request.target, deps);
   return view;
 }

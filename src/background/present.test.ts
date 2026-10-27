@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { CardView } from '../core/messages';
-import { presentInPage, presentInWindow, resultPageUrl } from './present';
+import {
+  captureInPage,
+  inspectInPage,
+  presentInPage,
+  presentInWindow,
+  resultPageUrl,
+} from './present';
 
 const VIEW: CardView = { kind: 'notice', title: 'Hi', text: 'there' };
 const TARGET = { tabId: 1, frameId: 2 };
@@ -53,7 +59,12 @@ describe('presentInPage', () => {
     });
     expect(sendMessage).toHaveBeenLastCalledWith(
       1,
-      { type: '4ntl:show', view: VIEW, appearance: { theme: 'sharingan', accent: '#8b5cf6' } },
+      {
+        type: '4ntl:show',
+        view: VIEW,
+        appearance: { theme: 'sharingan', accent: '#8b5cf6' },
+        corner: false,
+      },
       { frameId: 2 },
     );
   });
@@ -108,5 +119,33 @@ describe('presentInWindow bounds', () => {
     expect(create).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ left: expect.anything() as unknown }),
     );
+  });
+});
+
+describe('inspectInPage / captureInPage', () => {
+  it('returns the URLs the page found (ignoring junk)', async () => {
+    const { sendMessage } = stubChrome({ pong: true });
+    sendMessage.mockImplementation(
+      (_tab: number, message: { type: string }) =>
+        Promise.resolve(
+          message.type === '4ntl:inspect' ? { urls: ['https://evil.com/', 42] } : 'pong',
+        ) as Promise<string>,
+    );
+    expect(await inspectInPage(TARGET)).toEqual(['https://evil.com/']);
+  });
+
+  it('returns nothing when the page cannot be scripted', async () => {
+    stubChrome({ injectFails: true });
+    expect(await inspectInPage(TARGET)).toEqual([]);
+    expect(await captureInPage(TARGET)).toBe(false);
+  });
+
+  it('hooks window.open in the page world and arms the content script', async () => {
+    const { sendMessage, executeScript } = stubChrome({ pong: true });
+    expect(await captureInPage(TARGET)).toBe(true);
+    expect(executeScript).toHaveBeenCalledWith(
+      expect.objectContaining({ world: 'MAIN', target: { tabId: 1, frameIds: [2] } }),
+    );
+    expect(sendMessage).toHaveBeenLastCalledWith(1, { type: '4ntl:capture' }, { frameId: 2 });
   });
 });

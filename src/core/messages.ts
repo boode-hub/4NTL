@@ -28,10 +28,30 @@ export type CardView =
   | { readonly kind: 'choose'; readonly choices: readonly Choice[]; readonly truncated: boolean }
   | { readonly kind: 'notice'; readonly title: string; readonly text: string };
 
+/** Catching where a JavaScript-only button goes: how long to wait for the click. */
+export const CAPTURE_MS = 20_000;
+/** Event the page-world window.open hook dispatches with the URL it caught. */
+export const CAPTURED_OPEN_EVENT = '4ntl:captured-open';
+const MAX_URL_LENGTH = 4096;
+
 /** Service worker → content script. */
 export type ContentMessage =
   | { readonly type: '4ntl:ping' }
-  | { readonly type: '4ntl:show'; readonly view: CardView; readonly appearance: Appearance };
+  | {
+      readonly type: '4ntl:show';
+      readonly view: CardView;
+      readonly appearance: Appearance;
+      /** Top-right corner instead of next to the pointer (toolbar / address-bar lookups). */
+      readonly corner: boolean;
+    }
+  /** Where does the right-clicked element lead? Answered with an InspectResponse. */
+  | { readonly type: '4ntl:inspect' }
+  /** Catch the next navigation (the user is about to click a JavaScript-only button). */
+  | { readonly type: '4ntl:capture' };
+
+export interface InspectResponse {
+  readonly urls: readonly string[];
+}
 
 /** UI surface → service worker. */
 export type BackgroundMessage =
@@ -42,7 +62,9 @@ export type BackgroundMessage =
       /** Bypass the cache (the "Retry" button). */
       readonly force: boolean;
     }
-  | { readonly type: '4ntl:open-options' };
+  | { readonly type: '4ntl:open-options' }
+  /** The content script caught (and stopped) a navigation during capture. */
+  | { readonly type: '4ntl:captured'; readonly url: string };
 
 export type LookupResponse = LookupOutcome;
 
@@ -65,6 +87,8 @@ export function isBackgroundMessage(value: unknown): value is BackgroundMessage 
       );
     case '4ntl:open-options':
       return true;
+    case '4ntl:captured':
+      return typeof value.url === 'string' && value.url.length <= MAX_URL_LENGTH;
     default:
       return false;
   }
@@ -75,6 +99,8 @@ export function isContentMessage(value: unknown): value is ContentMessage {
   // `view` is produced by our own service worker; checking its discriminant is enough.
   return (
     value.type === '4ntl:ping' ||
+    value.type === '4ntl:inspect' ||
+    value.type === '4ntl:capture' ||
     (value.type === '4ntl:show' &&
       isObject(value.view) &&
       ['lookup', 'choose', 'notice'].includes(String(value.view.kind)))

@@ -4,6 +4,26 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-10-28
+
+### Added
+
+- **4NTL: check what this opens** on any button, card or image. The destination is
+  read from `#`/`javascript:` links' handlers, data attributes (`data-href`, `data-url`,
+  router links…), forms, SVG links and web components.
+- JavaScript-only buttons: 4NTL asks you to click once, catches the navigation
+  (or `window.open`), stops it, and looks the destination up instead.
+- Protected and tracking links are unwrapped to the real destination: Outlook Safe
+  Links, Proofpoint URL Defense v1–v3, Barracuda, Google, Facebook, Instagram,
+  YouTube, Slack, LinkedIn and Steam.
+- Clicking the toolbar icon checks the current page (settings: right-click the icon →
+  Options); type `4ntl` + space in the address bar to look anything up.
+- The card can be dragged anywhere by its header.
+
+### Changed
+
+- The card opens about 5 cm beside the pointer instead of right under it.
+
 ## [0.2.0] - 2026-10-27
 
 ### Added

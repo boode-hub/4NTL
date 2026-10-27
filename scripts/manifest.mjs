@@ -38,6 +38,8 @@ export function createManifest({ version, e2e = false }) {
       // is never granted there. Release builds must never contain this.
       ...(e2e ? ['<all_urls>'] : []),
     ],
+    // Type "4ntl" + space in the address bar, then an IP, hash, domain or link.
+    omnibox: { keyword: '4ntl' },
     commands: {
       'lookup-selection': {
         suggested_key: { default: 'Alt+Shift+L' },

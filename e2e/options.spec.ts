@@ -1,4 +1,4 @@
-import { expect, fixture, optionsUrl, test, VT_KEY } from './fixtures';
+import { expect, fixture, openSettings, test, VT_KEY } from './fixtures';
 
 test.describe('settings page', () => {
   test('saves keys and options automatically and clears the setup badge', async ({
@@ -6,8 +6,7 @@ test.describe('settings page', () => {
     extensionId,
     worker,
   }) => {
-    const page = await context.newPage();
-    await page.goto(optionsUrl(extensionId));
+    const page = await openSettings(context, extensionId);
 
     const badge = () => worker.evaluate(() => chrome.action.getBadgeText({}));
     await expect.poll(badge).toBe('!');
@@ -36,12 +35,11 @@ test.describe('settings page', () => {
     context,
     extensionId,
   }) => {
-    const page = await context.newPage();
+    const page = await openSettings(context, extensionId);
     // Options-page requests go through the page's own fetch; fake the provider there.
     await context.route('https://www.virustotal.com/api/v3/users/**', (route) =>
       route.fulfill({ json: fixture('virustotal/overall-quotas.json') }),
     );
-    await page.goto(optionsUrl(extensionId));
 
     const status = page.locator('#key-virustotal-status');
     await page.getByLabel('VirusTotal').fill('too-short');
@@ -54,8 +52,7 @@ test.describe('settings page', () => {
   });
 
   test('shows the keyboard shortcut and version', async ({ context, extensionId }) => {
-    const page = await context.newPage();
-    await page.goto(optionsUrl(extensionId));
+    const page = await openSettings(context, extensionId);
     await expect(page.locator('#shortcut')).toHaveText(/Alt\+Shift\+L|not set/);
     await expect(page.locator('#version')).toHaveText(/^\d+\.\d+\.\d+$/);
   });
@@ -69,8 +66,7 @@ test('the Sharingan theme and a custom color apply to the preview and to page ca
   api,
   menuClick,
 }) => {
-  const options = await context.newPage();
-  await options.goto(optionsUrl(extensionId));
+  const options = await openSettings(context, extensionId);
 
   await options.getByLabel('Sharingan').check();
   await expect(options.locator('html')).toHaveAttribute('data-theme', 'sharingan');

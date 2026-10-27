@@ -28,8 +28,16 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
 
 - **One click, or one key.** Right-click → **4NTL** → AbuseIPDB, VirusTotal or
   **All providers**. Or select and press **Alt+Shift+L**.
-- **Links too.** Right-click any link → **4NTL: check this link** to see its
-  URL on VirusTotal without opening it.
+- **Any link, button or card.** Right-click a link → **4NTL: check this link**, or
+  a button, card or image → **4NTL: check what this opens**. 4NTL finds the
+  destination even when the page hides it in JavaScript. If a button only gets an
+  address when clicked, click it once: 4NTL catches where it was going and **stops
+  it from opening**.
+- **Unwraps protected links.** Outlook Safe Links, Proofpoint URL Defense, Barracuda,
+  Google, Facebook, YouTube, Slack and LinkedIn redirects are looked up as the real
+  destination.
+- **Toolbar and address bar.** Click the 4NTL icon to check the page you're on, or
+  type `4ntl` + space in the address bar followed by any link or indicator.
 - **Reads analyst text.** Defanged IOCs (`1.2.3[.]4`, `hxxps://evil[.]com`),
   `ip:port`, `[IPv6]:port`, `src=1.2.3.4` log fields, quotes and brackets.
   Select a whole log line and it lets you pick the indicator.
@@ -42,6 +50,8 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
   anywhere, even when you right-click a link to them. API keys stay in your browser profile.
 - **Light.** Nothing runs on a page until you use 4NTL there. No background
   polling, no runtime dependencies.
+- **Out of your way.** The card opens about 5 cm beside the pointer, so it never
+  covers what you clicked, and you can drag it anywhere by its header.
 - **Themes.** Auto, Light, Dark and **Sharingan**, plus any accent color you like.
 - **Works everywhere.** On browser pages, the PDF viewer or the Web Store the
   result opens in a small window instead.
@@ -67,17 +77,24 @@ Works in Chrome, Edge, Brave and other Chromium browsers (version 123+).
 2. Open `chrome://extensions` (Edge: `edge://extensions`, Brave: `brave://extensions`).
 3. Turn on **Developer mode**, click **Load unpacked**, and pick that folder.
 4. The settings page opens: paste your API keys and press **Test** next to each.
+   Later, open it again by right-clicking the 4NTL icon → **Options**.
 
 Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups/min,
 500/day) · [AbuseIPDB](https://www.abuseipdb.com/account/api) (1,000 checks/day).
 
 ## Using it
 
-1. Select an indicator on any page.
-2. Right-click → **4NTL** → pick a provider, or **All providers**.
-3. Or right-click a link → **4NTL: check this link**.
-4. Read the verdict. **Full report ↗** opens the provider's page; **Esc** or a click
-   elsewhere closes the card; the copy button copies the cleaned-up indicator.
+| To check…                      | Do this                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| An IP, hash, domain or URL     | Select it → right-click → **4NTL** → a provider or **All providers**      |
+| The same, faster               | Select it → **Alt+Shift+L**                                               |
+| A link                         | Right-click it → **4NTL: check this link**                                |
+| A button, card or image        | Right-click it → **4NTL: check what this opens** (then click it if asked) |
+| The page you're on             | Click the **4NTL** toolbar icon                                           |
+| Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**              |
+
+Read the verdict. **Full report ↗** opens the provider's page; **Esc** or a click
+elsewhere closes the card; the copy button copies the cleaned-up indicator.
 
 Several indicators in one selection? You get a list to pick from:
 

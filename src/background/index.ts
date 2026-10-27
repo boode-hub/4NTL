@@ -5,6 +5,8 @@
  * does) shut it down whenever it's idle.
  */
 import { REPORT_CACHE, TtlCache } from '../core/cache';
+import { INDICATOR_LABELS, parseIndicator, resolveSelection } from '../core/indicator';
+import type { CardView } from '../core/messages';
 import type { Report } from '../core/result';
 import {
   affectsResults,
@@ -14,13 +16,32 @@ import {
   SETTINGS_KEY,
 } from '../core/settings';
 import { refreshBadge } from './badge';
-import { handleLookupRequest, type ControllerDeps } from './controller';
+import { handleLookupRequest, presentView, type ControllerDeps } from './controller';
+import { checkCaptured, checkLink, type LinkDeps } from './links';
 import { LookupService } from './lookup-service';
-import { LINK_ITEM_ID, menuItemId, registerMenus, scopeFromMenuItem } from './menus';
-import { presentInPage, presentInWindow } from './present';
+import {
+  ELEMENT_ITEM_ID,
+  LINK_ITEM_ID,
+  menuItemId,
+  registerMenus,
+  scopeFromMenuItem,
+} from './menus';
+import {
+  captureInPage,
+  inspectInPage,
+  presentInPage,
+  presentInWindow,
+  type FrameTarget,
+} from './present';
 import { createMessageRouter } from './router';
 import { readSelection } from './selection';
-import { NO_INDICATOR_NOTICE, type ProviderScope } from './view';
+import {
+  buildView,
+  NO_INDICATOR_NOTICE,
+  NOT_A_WEB_PAGE_NOTICE,
+  viewForIndicators,
+  type ProviderScope,
+} from './view';
 
 const cache = new TtlCache<Report>(chrome.storage.session, REPORT_CACHE);
 
@@ -32,10 +53,19 @@ const service = new LookupService({
 });
 
 const deps: ControllerDeps = { service, presentInPage, presentInWindow };
+const linkDeps: LinkDeps = {
+  inspect: inspectInPage,
+  capture: captureInPage,
+  present: (view, target) => presentView(view, target, deps),
+};
 const openOptions = () => chrome.runtime.openOptionsPage();
 
 function report(error: unknown) {
   console.error('[4NTL]', error);
+}
+
+function frameOf(tab: chrome.tabs.Tab | undefined, frameId = 0): FrameTarget | undefined {
+  return tab?.id === undefined || tab.id < 0 ? undefined : { tabId: tab.id, frameId };
 }
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -55,17 +85,18 @@ chrome.runtime.onStartup.addListener(() => {
 
 type MenuClick = Pick<
   chrome.contextMenus.OnClickData,
-  'menuItemId' | 'selectionText' | 'linkUrl' | 'frameId'
+  'menuItemId' | 'selectionText' | 'linkUrl' | 'pageUrl' | 'frameId'
 >;
 
 async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): Promise<void> {
-  const isLink = info.menuItemId === LINK_ITEM_ID;
-  const scope = isLink ? 'all' : scopeFromMenuItem(info.menuItemId);
-  if (!scope) return;
-  const selection = (isLink ? info.linkUrl : info.selectionText) ?? '';
-  const target =
-    tab?.id === undefined || tab.id < 0 ? undefined : { tabId: tab.id, frameId: info.frameId ?? 0 };
-  await handleLookupRequest({ target, selection, scope }, deps);
+  const target = frameOf(tab, info.frameId);
+  if (info.menuItemId === LINK_ITEM_ID || info.menuItemId === ELEMENT_ITEM_ID) {
+    await checkLink({ target, linkUrl: info.linkUrl, pageUrl: info.pageUrl }, linkDeps);
+    return;
+  }
+  const scope = scopeFromMenuItem(info.menuItemId);
+  if (scope)
+    await handleLookupRequest({ target, selection: info.selectionText ?? '', scope }, deps);
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -95,12 +126,64 @@ chrome.commands.onCommand.addListener((command, tab) => {
   void lookupFromShortcut(tab.id, 'all').catch(report);
 });
 
-chrome.action.onClicked.addListener(() => {
-  void openOptions().catch(report);
+/** Toolbar icon: check the page you're on (or open settings until a key is set). */
+async function onActionClick(tab: chrome.tabs.Tab): Promise<void> {
+  if (!hasAnyApiKey(await loadSettings())) {
+    await openOptions();
+    return;
+  }
+  const indicator = tab.url ? parseIndicator(tab.url) : null;
+  const view =
+    indicator?.type === 'url' ? viewForIndicators([indicator], 'all') : NOT_A_WEB_PAGE_NOTICE;
+  await presentView(view, frameOf(tab), deps, true);
+}
+
+chrome.action.onClicked.addListener((tab) => {
+  void onActionClick(tab).catch(report);
+});
+
+/** Omnibox descriptions are XML: user text must be escaped. */
+function xml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function describeOmnibox(text: string): string {
+  const resolution = resolveSelection(text);
+  switch (resolution.kind) {
+    case 'single':
+      return `Look up <match>${xml(resolution.indicator.value)}</match> <dim>(${INDICATOR_LABELS[resolution.indicator.type]}) with 4NTL</dim>`;
+    case 'multiple':
+      return `Pick one of <match>${resolution.indicators.length}</match> indicators <dim>with 4NTL</dim>`;
+    case 'none':
+      return 'Paste an IP, hash, domain or link to look it up with 4NTL';
+  }
+}
+
+/** Address bar: "4ntl <anything>" → card in the current tab (or a small window). */
+async function lookupFromOmnibox(text: string): Promise<CardView> {
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  const view = buildView(text, 'all');
+  await presentView(view, frameOf(tab), deps, true);
+  return view;
+}
+
+void chrome.omnibox.setDefaultSuggestion({ description: describeOmnibox('') });
+chrome.omnibox.onInputChanged.addListener((text) => {
+  void chrome.omnibox.setDefaultSuggestion({ description: describeOmnibox(text) });
+});
+chrome.omnibox.onInputEntered.addListener((text) => {
+  void lookupFromOmnibox(text).catch(report);
 });
 
 chrome.runtime.onMessage.addListener(
-  createMessageRouter({ extensionId: chrome.runtime.id, service, openOptions }),
+  createMessageRouter({
+    extensionId: chrome.runtime.id,
+    service,
+    openOptions,
+    onCaptured: async (url, sender) => {
+      await checkCaptured(url, frameOf(sender.tab, sender.frameId), linkDeps.present);
+    },
+  }),
 );
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -132,11 +215,21 @@ if (__E2E__) {
         );
       },
       async simulateLinkClick(tab: string | number, linkUrl: string) {
-        await onMenuClick({ menuItemId: LINK_ITEM_ID, linkUrl }, await tabFor(tab));
+        const found = await tabFor(tab);
+        await onMenuClick({ menuItemId: LINK_ITEM_ID, linkUrl, pageUrl: found.url ?? '' }, found);
+      },
+      async simulateElementClick(tab: string | number) {
+        const found = await tabFor(tab);
+        await onMenuClick({ menuItemId: ELEMENT_ITEM_ID, pageUrl: found.url ?? '' }, found);
       },
       async simulateShortcut(tab: string | number) {
-        await lookupFromShortcut(await tabFor(tab).then((t) => t.id ?? -1), 'all');
+        await lookupFromShortcut((await tabFor(tab)).id ?? -1, 'all');
       },
+      async simulateActionClick(tab: string | number) {
+        await onActionClick(await tabFor(tab));
+      },
+      simulateOmnibox: lookupFromOmnibox,
+      describeOmnibox,
     },
   });
 }

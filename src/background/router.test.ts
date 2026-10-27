@@ -20,10 +20,16 @@ const OK: LookupOutcome = {
 function setup() {
   const lookup = vi.fn(() => Promise.resolve(OK));
   const openOptions = vi.fn(() => Promise.resolve());
-  const route = createMessageRouter({ extensionId: 'ext', service: { lookup }, openOptions });
+  const onCaptured = vi.fn(() => Promise.resolve());
+  const route = createMessageRouter({
+    extensionId: 'ext',
+    service: { lookup },
+    openOptions,
+    onCaptured,
+  });
   const sendResponse = vi.fn();
   const fromUs = { id: 'ext' } as chrome.runtime.MessageSender;
-  return { route, lookup, openOptions, sendResponse, fromUs };
+  return { route, lookup, openOptions, onCaptured, sendResponse, fromUs };
 }
 
 const lookupMessage = (value: string, type = 'ipv4', force = false) => ({
@@ -74,5 +80,21 @@ describe('message router', () => {
     expect(route({ type: 'nope' }, { id: 'ext' }, sendResponse)).toBe(false);
     expect(lookup).not.toHaveBeenCalled();
     expect(sendResponse).not.toHaveBeenCalled();
+  });
+});
+
+describe('captured navigations', () => {
+  it('hands URLs caught in a tab to the link checker', async () => {
+    const { route, onCaptured, sendResponse } = setup();
+    const fromTab = { id: 'ext', tab: { id: 4 }, frameId: 1 } as chrome.runtime.MessageSender;
+    route({ type: '4ntl:captured', url: 'https://evil.com/' }, fromTab, sendResponse);
+    await flush();
+    expect(onCaptured).toHaveBeenCalledWith('https://evil.com/', fromTab);
+  });
+
+  it('ignores captures that did not come from a tab', () => {
+    const { route, onCaptured, sendResponse, fromUs } = setup();
+    route({ type: '4ntl:captured', url: 'https://evil.com/' }, fromUs, sendResponse);
+    expect(onCaptured).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@
  * canonical, typed indicator. Pure and dependency-free so it can run in any
  * extension context and is exhaustively unit-tested.
  */
+import { unwrapRedirect } from './redirects';
 
 export const INDICATOR_TYPES = ['ipv4', 'ipv6', 'md5', 'sha1', 'sha256', 'domain', 'url'] as const;
 export type IndicatorType = (typeof INDICATOR_TYPES)[number];
@@ -173,7 +174,9 @@ function parseUrl(token: string): Indicator | null {
   }
   try {
     const url = new URL(candidate);
-    return url.hostname ? { type: 'url', value: candidate } : null;
+    if (!url.hostname) return null;
+    // Safe Links, Proofpoint, Google… wrappers: look up where the link really goes.
+    return { type: 'url', value: unwrapRedirect(candidate) };
   } catch {
     return null;
   }
