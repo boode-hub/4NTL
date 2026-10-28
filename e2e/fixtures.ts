@@ -99,6 +99,57 @@ export interface RecordedCall {
   readonly headers: Record<string, string>;
 }
 
+/** Replaces the provider APIs inside the service worker with scripted responses. */
+export function installFakeApi(worker: Worker, routes: readonly FakeRoute[]): Promise<void> {
+  return worker.evaluate((table) => {
+    const state = globalThis as unknown as {
+      __routes: { prefix: string; responses: FakeResponse[] }[];
+      __calls: RecordedCall[];
+    };
+    state.__routes = table.map((route) => ({ ...route, responses: [...route.responses] }));
+    state.__calls = [];
+    globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : String(input);
+      state.__calls.push({ url, headers: { ...(init?.headers as Record<string, string>) } });
+      const route = state.__routes.find((candidate) => url.startsWith(candidate.prefix));
+      const next =
+        route && (route.responses.length > 1 ? route.responses.shift() : route.responses[0]);
+      if (!next) return Promise.reject(new TypeError('Failed to fetch'));
+      return Promise.resolve(
+        new Response(next.body === undefined ? null : JSON.stringify(next.body), {
+          status: next.status,
+          headers: { 'content-type': 'application/json', ...next.headers },
+        }),
+      );
+    };
+  }, routes);
+}
+
+/** A page built to break extensions: hostile CSS, an overlay wall, sabotaged built-ins. */
+export const HOSTILE_URL = 'http://4ntl.test/hostile';
+const HOSTILE = `<!doctype html>
+<html><head><meta charset="utf-8"><title>hostile</title><style>
+  * { all: unset !important; display: block !important; opacity: 0.4 !important;
+      transform: rotate(4deg) !important; filter: blur(1px) !important;
+      pointer-events: none !important; font-size: 30px !important; }
+  html { transform: translateZ(0) !important; overflow: hidden !important; }
+  #wall { position: fixed !important; inset: 0 !important; z-index: 2147483647 !important;
+          background: rgba(0, 0, 0, 0.4) !important; pointer-events: auto !important; }
+</style></head>
+<body><p id="ip">185.220.101.4</p><div id="wall"></div>
+<script>
+  // Content scripts run in an isolated world: none of this may affect 4NTL.
+  Array.prototype.map = () => { throw new Error('sabotaged'); };
+  JSON.parse = () => { throw new Error('sabotaged'); };
+  Element.prototype.attachShadow = () => { throw new Error('sabotaged'); };
+  document.createElement = () => { throw new Error('sabotaged'); };
+  window.addEventListener('contextmenu', (e) => e.stopImmediatePropagation(), true);
+  window.addEventListener('keydown', (e) => e.stopImmediatePropagation(), true);
+  setInterval(() => {
+    for (const el of document.body.querySelectorAll('*')) if (el.id !== 'ip' && el.id !== 'wall') el.remove();
+  }, 50);
+</script></body></html>`;
+
 export const VT_KEY = 'a'.repeat(64);
 export const ABUSE_KEY = 'b'.repeat(80);
 
@@ -125,11 +176,13 @@ export const test = base.extend<Fixtures>({
     await context.route(`${PAGE_URL}**`, (route) =>
       route.request().url() === APP_URL
         ? route.fulfill({ contentType: 'text/html', body: APP })
-        : route.fulfill({
-            contentType: 'text/html',
-            body: PAGE,
-            headers: { 'content-security-policy': STRICT_CSP },
-          }),
+        : route.request().url() === HOSTILE_URL
+          ? route.fulfill({ contentType: 'text/html', body: HOSTILE })
+          : route.fulfill({
+              contentType: 'text/html',
+              body: PAGE,
+              headers: { 'content-security-policy': STRICT_CSP },
+            }),
     );
     await context.route(`${PHISH_URL}**`, (route) =>
       route.fulfill({ contentType: 'text/html', body: '<h1>Sign in to your account</h1>' }),
@@ -164,29 +217,7 @@ export const test = base.extend<Fixtures>({
 
   api: async ({ worker }, use) => {
     await use({
-      routes: (routes) =>
-        worker.evaluate((table) => {
-          const state = globalThis as unknown as {
-            __routes: { prefix: string; responses: FakeResponse[] }[];
-            __calls: RecordedCall[];
-          };
-          state.__routes = table.map((route) => ({ ...route, responses: [...route.responses] }));
-          state.__calls = [];
-          globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : String(input);
-            state.__calls.push({ url, headers: { ...(init?.headers as Record<string, string>) } });
-            const route = state.__routes.find((candidate) => url.startsWith(candidate.prefix));
-            const next =
-              route && (route.responses.length > 1 ? route.responses.shift() : route.responses[0]);
-            if (!next) return Promise.reject(new TypeError('Failed to fetch'));
-            return Promise.resolve(
-              new Response(next.body === undefined ? null : JSON.stringify(next.body), {
-                status: next.status,
-                headers: { 'content-type': 'application/json', ...next.headers },
-              }),
-            );
-          };
-        }, routes),
+      routes: (routes) => installFakeApi(worker, routes),
       calls: () =>
         worker.evaluate(
           () => (globalThis as unknown as { __calls?: RecordedCall[] }).__calls ?? [],

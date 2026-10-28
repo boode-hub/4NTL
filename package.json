@@ -1,6 +1,6 @@
 {
   "name": "4ntl",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "description": "Right-click threat-intel lookups (VirusTotal, AbuseIPDB) with an inline result card.",
   "license": "MIT",

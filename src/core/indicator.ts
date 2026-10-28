@@ -73,7 +73,14 @@ function cleanToken(raw: string): string {
     token = token.replace(TRAILING_JUNK, (junk) =>
       junk.includes(']') ? keepBalanced(token, junk) : '',
     );
-    if (token.endsWith(')') && count(token, '(') < count(token, ')')) token = token.slice(0, -1);
+    // Drop all unbalanced closing parens in one go (one-by-one is quadratic).
+    if (token.endsWith(')')) {
+      let excess = count(token, ')') - count(token, '(');
+      while (excess > 0 && token.endsWith(')')) {
+        token = token.slice(0, -1);
+        excess--;
+      }
+    }
     if (token === before) return token;
   }
 }
@@ -182,7 +189,12 @@ function parseUrl(token: string): Indicator | null {
   }
 }
 
+/** Cleaning only trims a little punctuation; anything far longer can never become valid. */
+const MAX_RAW_TOKEN_LENGTH = MAX_TOKEN_LENGTH + 64;
+
 function parseToken(raw: string): Indicator | null {
+  // Reject before cleaning: keeps worst-case inputs (10k chars of junk) cheap.
+  if (raw.length > MAX_RAW_TOKEN_LENGTH) return null;
   const token = cleanToken(raw);
   if (!token || token.length > MAX_TOKEN_LENGTH || /\s/.test(token)) return null;
   // Order matters: an IPv4 or hash must never fall through to the domain/URL rules.

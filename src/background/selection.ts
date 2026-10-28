@@ -42,14 +42,20 @@ export function pickSelection(
 export async function readSelection(
   tabId: number,
 ): Promise<(FrameTarget & { text: string }) | undefined> {
-  try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId, allFrames: true },
-      func: readSelectionInPage,
-    });
-    const picked = pickSelection(results);
-    return { tabId, frameId: picked?.frameId ?? 0, text: picked?.text ?? '' };
-  } catch {
-    return undefined;
+  // All frames first (the selection may be in an iframe); frames 4NTL may not
+  // read (cross-origin ads/embeds under activeTab) can make that fail, so fall
+  // back to the top frame alone.
+  for (const target of [
+    { tabId, allFrames: true },
+    { tabId, frameIds: [0] },
+  ]) {
+    try {
+      const results = await chrome.scripting.executeScript({ target, func: readSelectionInPage });
+      const picked = pickSelection(results);
+      return { tabId, frameId: picked?.frameId ?? 0, text: picked?.text ?? '' };
+    } catch {
+      // try the next, narrower target
+    }
   }
+  return undefined;
 }

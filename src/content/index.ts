@@ -26,8 +26,12 @@ import { deepestHovered, findLinkTargets } from './link-target';
 
 let card: ResultCard | undefined;
 let pointer: PointerMark | undefined;
-/** The element of the last right-click (exact, unlike :hover). */
-let rightClicked: { element: Element; at: number } | undefined;
+/**
+ * The element of the last right-click (exact, unlike :hover). Held weakly: a
+ * single-page app may throw that part of the page away, and we must not keep
+ * it alive.
+ */
+let rightClicked: { element: WeakRef<Element>; at: number } | undefined;
 let cancelCapture: (() => void) | undefined;
 
 // Remember what and where the user right-clicks. (The first right-click in a
@@ -37,7 +41,7 @@ document.addEventListener(
   (event) => {
     pointer = { x: event.clientX, y: event.clientY, at: Date.now() };
     const [target] = event.composedPath();
-    if (target instanceof Element) rightClicked = { element: target, at: Date.now() };
+    if (target instanceof Element) rightClicked = { element: new WeakRef(target), at: Date.now() };
   },
   { capture: true, passive: true },
 );
@@ -74,7 +78,7 @@ function show(view: CardView, appearance: Appearance, corner: boolean): void {
 
 function inspect(): InspectResponse {
   const recent = rightClicked && Date.now() - rightClicked.at <= POINTER_MAX_AGE_MS;
-  const element = recent ? rightClicked?.element : deepestHovered(document);
+  const element = (recent ? rightClicked?.element.deref() : undefined) ?? deepestHovered(document);
   rightClicked = undefined;
   return { urls: element ? findLinkTargets(element, document.baseURI) : [] };
 }

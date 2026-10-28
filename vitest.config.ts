@@ -6,7 +6,7 @@ export default defineConfig({
     __VERSION__: JSON.stringify('0.0.0-test'),
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     environment: 'node',
     restoreMocks: true,
     unstubGlobals: true,

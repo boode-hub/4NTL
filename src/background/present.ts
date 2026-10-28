@@ -5,6 +5,7 @@
 import {
   CAPTURE_MS,
   CAPTURED_OPEN_EVENT,
+  GESTURE_WINDOW_MS,
   type CardView,
   type ContentMessage,
   type InspectResponse,
@@ -77,7 +78,7 @@ export async function captureInPage(target: FrameTarget): Promise<boolean> {
       target: { tabId: target.tabId, frameIds: [target.frameId] },
       world: 'MAIN',
       func: hookWindowOpen,
-      args: [CAPTURED_OPEN_EVENT, CAPTURE_MS],
+      args: [CAPTURED_OPEN_EVENT, CAPTURE_MS, GESTURE_WINDOW_MS],
     });
     const capture: ContentMessage = { type: '4ntl:capture' };
     await chrome.tabs.sendMessage(target.tabId, capture, { frameId: target.frameId });

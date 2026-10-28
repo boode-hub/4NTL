@@ -98,18 +98,33 @@ export class ResultCard {
     if (options.placement.mode === 'floating') {
       const style = this.#host.style;
       for (const [name, value] of Object.entries({
+        // First reset everything the page's stylesheets could do to us
+        // (`* { opacity: 0 !important }`, transforms, pointer-events…)…
+        all: 'initial',
+        // …then set just what we need.
         position: 'fixed',
         'z-index': '2147483647',
+        inset: 'auto',
         left: '0',
         top: '0',
         margin: '0',
         display: 'block',
         visibility: 'hidden',
       })) {
-        // !important via CSSOM: immune to the page's stylesheets and to its style-src CSP.
+        // !important inline via CSSOM: beats page stylesheets, and isn't subject to page CSP.
         style.setProperty(name, value, 'important');
       }
       document.documentElement.append(this.#host);
+      // The top layer sits above everything (even max z-index overlays) and is
+      // positioned against the viewport even when the page transforms <html>.
+      if (typeof this.#host.showPopover === 'function') {
+        this.#host.popover = 'manual';
+        try {
+          this.#host.showPopover();
+        } catch {
+          // Already shown or not supported: plain fixed positioning still works.
+        }
+      }
       this.#listen(document, 'pointerdown', (event) => {
         if (!event.composedPath().includes(this.#host)) this.close();
       });

@@ -4,6 +4,34 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] - 2026-10-28
+
+Reliability, memory and performance review.
+
+### Fixed
+
+- "Click it to check where it goes" only catches navigations that follow your
+  own click (or Enter/Space). Page navigations made by the site itself (auto
+  refresh, URL updates while scrolling, automatic pop-ups) are no longer caught.
+- The window.open hook never overwrites a replacement the page installs later.
+- The keyboard shortcut falls back to the main frame when a page's cross-origin
+  iframes can't be read.
+- A pathological selection (thousands of `)` or punctuation characters) could
+  stall the background worker; token cleaning is now linear-time.
+- The last right-clicked element is held weakly, so single-page apps can free it.
+
+### Changed
+
+- The card is shown in the browser's top layer, with page styles reset on its
+  container: sites' overlays, z-index wars, transforms on `<html>` or global
+  CSS (`* { opacity/pointer-events/... }`) can no longer hide or break it.
+
+### Tests
+
+- Load and worst-case-input suite (bursts of 1,000 lookups, cache bounds,
+  regex-blow-up probes) and browser performance, memory-leak and hostile-page
+  tests.
+
 ## [0.3.1] - 2026-10-28
 
 ### Changed

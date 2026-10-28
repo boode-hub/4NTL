@@ -32,6 +32,8 @@ export type CardView =
 export const CAPTURE_MS = 20_000;
 /** Event the page-world window.open hook dispatches with the URL it caught. */
 export const CAPTURED_OPEN_EVENT = '4ntl:captured-open';
+/** A navigation only counts as "the click" if it follows a user click or key press this soon. */
+export const GESTURE_WINDOW_MS = 3_000;
 const MAX_URL_LENGTH = 4096;
 
 /** Service worker → content script. */

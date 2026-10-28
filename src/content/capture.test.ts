@@ -1,37 +1,82 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest';
-import { CAPTURED_OPEN_EVENT } from '../core/messages';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CAPTURED_OPEN_EVENT, GESTURE_WINDOW_MS } from '../core/messages';
 import { armCapture } from './capture';
 
 /** A window with a minimal Navigation API (happy-dom has none). */
 function fakeWindow() {
   const navigation = new EventTarget();
   const win = Object.assign(new EventTarget(), { navigation }) as unknown as Window;
-  const navigate = (url: string, cancelable = true) => {
-    const event = Object.assign(new Event('navigate', { cancelable }), { destination: { url } });
+  const navigate = (
+    url: string,
+    options: { cancelable?: boolean; userInitiated?: boolean } = {},
+  ) => {
+    const event = Object.assign(new Event('navigate', { cancelable: options.cancelable ?? true }), {
+      destination: { url },
+      userInitiated: options.userInitiated ?? false,
+    });
     navigation.dispatchEvent(event);
     return event;
   };
-  return { win, navigate };
+  const click = () => win.dispatchEvent(new Event('pointerdown'));
+  return { win, navigate, click };
 }
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('armCapture', () => {
-  it('cancels the next navigation and reports where it was going', () => {
-    const { win, navigate } = fakeWindow();
+  it('cancels the navigation that follows the click and reports where it was going', () => {
+    const { win, navigate, click } = fakeWindow();
     const done = vi.fn();
     armCapture(done, win, 1000);
+    click();
     const event = navigate('https://evil.com/next');
     expect(event.defaultPrevented).toBe(true);
     expect(done).toHaveBeenCalledWith('https://evil.com/next');
+    click();
     navigate('https://evil.com/later');
     expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it('reports navigations it cannot cancel', () => {
+  it('leaves navigations the page makes by itself alone', () => {
+    vi.useFakeTimers();
+    const { win, navigate, click } = fakeWindow();
+    const done = vi.fn();
+    armCapture(done, win, 60_000);
+
+    // No click yet: an auto-refresh or replaceState is not cancelled.
+    expect(navigate('https://site.com/?page=2').defaultPrevented).toBe(false);
+    // A click long ago doesn't count either.
+    click();
+    vi.advanceTimersByTime(GESTURE_WINDOW_MS + 1);
+    expect(navigate('https://site.com/?page=3').defaultPrevented).toBe(false);
+    expect(done).not.toHaveBeenCalled();
+
+    // Browser-reported user navigations (link clicks, form submits) always count.
+    expect(navigate('https://evil.com/link', { userInitiated: true }).defaultPrevented).toBe(true);
+    expect(done).toHaveBeenCalledWith('https://evil.com/link');
+  });
+
+  it('counts Enter and Space as activation, but not other keys', () => {
     const { win, navigate } = fakeWindow();
     const done = vi.fn();
     armCapture(done, win, 1000);
-    navigate('https://evil.com/browser-ui', false);
+    win.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+    navigate('https://site.com/x');
+    expect(done).not.toHaveBeenCalled();
+    win.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+    navigate('https://evil.com/space');
+    expect(done).toHaveBeenCalledWith('https://evil.com/space');
+  });
+
+  it('reports navigations it cannot cancel', () => {
+    const { win, navigate, click } = fakeWindow();
+    const done = vi.fn();
+    armCapture(done, win, 1000);
+    click();
+    navigate('https://evil.com/browser-ui', { cancelable: false });
     expect(done).toHaveBeenCalledWith('https://evil.com/browser-ui');
   });
 
@@ -43,23 +88,20 @@ describe('armCapture', () => {
     expect(done).toHaveBeenCalledWith('https://evil.com/popup');
   });
 
-  it('gives up after the timeout, and can be cancelled', () => {
+  it('gives up after the timeout, removes its listeners, and can be cancelled', () => {
     vi.useFakeTimers();
-    try {
-      const { win, navigate } = fakeWindow();
-      const done = vi.fn();
-      armCapture(done, win, 1000);
-      vi.advanceTimersByTime(1000);
-      expect(done).toHaveBeenCalledWith(undefined);
-      expect(navigate('https://evil.com/too-late').defaultPrevented).toBe(false);
+    const { win, navigate, click } = fakeWindow();
+    const done = vi.fn();
+    armCapture(done, win, 1000);
+    vi.advanceTimersByTime(1000);
+    expect(done).toHaveBeenCalledWith(undefined);
+    click();
+    expect(navigate('https://evil.com/too-late').defaultPrevented).toBe(false);
 
-      const cancelled = vi.fn();
-      const cancel = armCapture(cancelled, win, 1000);
-      cancel();
-      expect(cancelled).toHaveBeenCalledWith(undefined);
-    } finally {
-      vi.useRealTimers();
-    }
+    const cancelled = vi.fn();
+    const cancel = armCapture(cancelled, win, 1000);
+    cancel();
+    expect(cancelled).toHaveBeenCalledWith(undefined);
   });
 
   it('works without the Navigation API (window.open only)', () => {

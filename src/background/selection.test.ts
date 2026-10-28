@@ -73,3 +73,16 @@ describe('readSelection', () => {
     expect(await readSelection(9)).toBeUndefined();
   });
 });
+
+describe('readSelection with cross-origin frames', () => {
+  it('falls back to the top frame when reading all frames is refused', async () => {
+    const executeScript = vi.fn((options: { target: { allFrames?: boolean } }) =>
+      options.target.allFrames
+        ? Promise.reject(new Error('Cannot access contents of url "https://ads.example/"'))
+        : Promise.resolve([{ frameId: 0, result: { text: '8.8.8.8', focused: true } }]),
+    );
+    vi.stubGlobal('chrome', { scripting: { executeScript } });
+    expect(await readSelection(9)).toEqual({ tabId: 9, frameId: 0, text: '8.8.8.8' });
+    expect(executeScript).toHaveBeenCalledTimes(2);
+  });
+});
