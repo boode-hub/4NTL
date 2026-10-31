@@ -71,6 +71,16 @@ test('the GitHub edition never mentions payment: Support instead of a license', 
   await expect(page.locator('main')).not.toContainText('$2', { useInnerText: true }); // shown text only
 });
 
+test('the free edition records the install date, so early users stay free in the paid update', async ({
+  worker,
+}) => {
+  await expect
+    .poll(() =>
+      worker.evaluate(async () => (await chrome.storage.sync.get('firstSeen.v1'))['firstSeen.v1']),
+    )
+    .toEqual(expect.any(Number));
+});
+
 test('the Sharingan theme and a custom color apply to the preview and to page cards', async ({
   context,
   extensionId,

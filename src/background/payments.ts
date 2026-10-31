@@ -117,6 +117,11 @@ export class Payments {
     return access;
   }
 
+  /** Records the install date if it isn't known yet (both editions, on install and update). */
+  async remember(): Promise<void> {
+    await this.#load();
+  }
+
   /** ExtensionPay's onPaid: the user just paid, or restored a purchase. */
   async markPaid(): Promise<void> {
     await this.#save({ ...(await this.#load()), paid: true, checkedAt: this.#deps.now() });

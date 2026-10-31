@@ -4,6 +4,15 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.2] - 2026-10-31
+
+### Changed
+
+- Every edition now records when it was first installed (on this computer and
+  in browser sync; nothing is sent anywhere). People who install the free store
+  version before 15 November 2026 keep it free for life when the paid store
+  version arrives as an update.
+
 ## [0.5.1] - 2026-10-31
 
 Same as 0.5.0 (which was tagged but never released): a browser test now has

@@ -77,6 +77,20 @@ function startPayments(): Payments {
   return payments;
 }
 const payments = __STORE__ ? startPayments() : undefined;
+/**
+ * Every edition records when it was first installed, so people who install the
+ * free store version before the paid one exists keep their "early" (free for
+ * life) status when the paid update arrives. No network involved.
+ */
+const installDate =
+  payments ??
+  new Payments({
+    extpay: { getUser: () => Promise.resolve({ paid: false }) },
+    area: chrome.storage.local,
+    sync: chrome.storage.sync,
+    now,
+    builtAt: __BUILT_AT__,
+  });
 const OPEN: Access = { status: 'open' };
 const license = {
   access: (refresh: boolean): Promise<Access> =>
@@ -117,6 +131,7 @@ function frameOf(tab: chrome.tabs.Tab | undefined, frameId = 0): FrameTarget | u
 
 chrome.runtime.onInstalled.addListener((details) => {
   void (async () => {
+    await installDate.remember();
     await registerMenus();
     const settings = await loadSettings();
     await refreshBadge(settings);

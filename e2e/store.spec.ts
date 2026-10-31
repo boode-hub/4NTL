@@ -118,6 +118,24 @@ test('Unlock on the card opens the ExtensionPay checkout via the settings page',
   expect((await checkout).url()).toBe(`${EXTPAY_URL}/choose-plan?api_key=${EXTPAY_TEST_KEY}`);
 });
 
+test('people who installed the free store version early stay free after the paid update', async ({
+  page,
+  worker,
+  menuClick,
+}) => {
+  // What the free edition leaves behind when installed before 15 November.
+  await worker.evaluate(
+    (date) => chrome.storage.sync.set({ 'firstSeen.v1': date }),
+    PAID_FROM - 5 * DAY,
+  );
+  await worker.evaluate(() => chrome.storage.local.remove('license.v1'));
+  await setClock(worker, PAID_FROM + 60 * DAY);
+  await menuClick('185.220.101.4', 'all');
+  const card = page.locator('x-4ntl-card .card');
+  await expect(card.locator('[data-verdict]')).toHaveCount(2);
+  await expect(card.locator('.banner')).toHaveCount(0);
+});
+
 test('a purchase is recognised: settings say so and lookups work again', async ({
   page,
   context,

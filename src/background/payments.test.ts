@@ -122,6 +122,17 @@ describe('Payments', () => {
     expect(await t.payments.access()).toEqual({ status: 'early' });
   });
 
+  it('remember() records the install date once, here and in synced storage, without the server', async () => {
+    const t = setup(PAID_FROM - 20 * DAY);
+    await t.payments.remember();
+    t.at(PAID_FROM + 50 * DAY);
+    await t.payments.remember();
+    expect(t.sync.data.get(FIRST_SEEN_KEY)).toBe(PAID_FROM - 20 * DAY);
+    expect(t.store.data.get(LICENSE_KEY)).toMatchObject({ firstSeen: PAID_FROM - 20 * DAY });
+    expect(t.extpay.getUser).not.toHaveBeenCalled();
+    expect(await t.payments.access()).toEqual({ status: 'early' });
+  });
+
   it('onPaid unlocks immediately, without a server round trip', async () => {
     const t = setup(NEW_USER);
     await t.payments.markPaid();

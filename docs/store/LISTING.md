@@ -4,13 +4,21 @@ Everything to paste into the
 [Developer Dashboard](https://chrome.google.com/webstore/devconsole), section by
 section. Images are in this folder; the upload zip comes from `npm run store`.
 
-## Package
+## Package: two phases
 
-- Upload: `4ntl-store-vX.Y.Z.zip` from the repo root (made by `npm run package:store`,
-  which refuses to run until the ExtensionPay ID is set in `src/core/license.ts`).
-  Never upload `4ntl-vX.Y.Z.zip`: that is the free GitHub edition.
-- Account: Trader (the store edition takes payments).
-- When asked, tick **"Contains in-app purchases"**.
+**Phase 1, now (account: non-trader, while trader verification is pending).**
+Upload the free build `4ntl-vX.Y.Z.zip` (from `npm run package`, or the GitHub
+release). It has no payment code, so: do **not** tick "Contains in-app purchases",
+and skip the extensionpay.com row in the permission table. It records each
+user's install date, so everyone who installs before 15 November 2026 keeps 4NTL
+free for life after phase 2.
+
+**Phase 2, after trader verification and ExtensionPay are ready.** Switch the
+account to Trader, then on the same item upload `4ntl-store-vX.Y.Z.zip` as an
+update (from `npm run package:store`, which refuses to run until the
+ExtensionPay ID is set in `src/core/license.ts`). Tick **"Contains in-app
+purchases"**, add the extensionpay.com permission justification, and use the
+phase 2 line in the description.
 
 ## Store listing
 
@@ -25,7 +33,7 @@ section. Images are in this folder; the upload zip comes from `npm run store`.
 ```
 Stop copy-pasting indicators into VirusTotal and AbuseIPDB.
 
-★ Install before 15 November 2026 and 4NTL is free for you, for life. After that: a 3-day free trial, then $2 once (no subscription). Prefer free? The open-source edition is on GitHub.
+★ Install now and 4NTL stays free for you, for life.
 
 Select an IP address, domain, URL or file hash on any page, right-click, and 4NTL shows the verdict in a small card right next to your cursor. No new tabs, no copy-paste, no losing your place.
 
@@ -56,6 +64,12 @@ Open source: https://github.com/boode-hub/4NTL (free edition there). Like it? Sp
 4NTL is not affiliated with or endorsed by VirusTotal, AbuseIPDB or Google. The Sharingan theme is a fan tribute to Naruto by Masashi Kishimoto.
 ```
 
+Phase 2: replace the ★ line with:
+
+```
+★ Install before 15 November 2026 and 4NTL is free for you, for life. After that: a 3-day free trial, then $2 once (no subscription). Prefer free? The open-source edition is on GitHub.
+```
+
 **Category:** Developer Tools
 **Language:** English
 
@@ -82,15 +96,15 @@ Open source: https://github.com/boode-hub/4NTL (free edition there). Like it? Sp
 
 **Permission justifications:**
 
-| Permission                                                            | Justification                                                                                                                                                                                           |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contextMenus`                                                        | Adds the 4NTL entries to the right-click menu (look up a selection, check a link, check what a button opens). This is the main way the extension is used.                                               |
-| `activeTab`                                                           | Gives temporary access only to the tab where the user just invoked 4NTL, to show the result card there and read the selection. The extension never has standing access to any website.                  |
-| `scripting`                                                           | Injects the result card, and reads the selection or the right-clicked element, in the tab the user invoked 4NTL on (via activeTab). Injected only on demand; no content scripts run on pages otherwise. |
-| `storage`                                                             | Stores the user's own API keys, settings and saved list locally, and keeps recent results in memory so repeat lookups don't use API quota.                                                              |
-| Host permission `https://www.virustotal.com/*`                        | Sends the user's lookups to the VirusTotal API with the user's own API key.                                                                                                                             |
-| Host permission `https://api.abuseipdb.com/*`                         | Sends the user's IP lookups to the AbuseIPDB API with the user's own API key.                                                                                                                           |
-| Host permission `https://extensionpay.com/*` (and its content script) | The optional one-time purchase: ExtensionPay (with Stripe) runs the checkout and tells the extension when the user has paid or restored a purchase. Its script runs only on extensionpay.com.           |
+| Permission                                                                          | Justification                                                                                                                                                                                           |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contextMenus`                                                                      | Adds the 4NTL entries to the right-click menu (look up a selection, check a link, check what a button opens). This is the main way the extension is used.                                               |
+| `activeTab`                                                                         | Gives temporary access only to the tab where the user just invoked 4NTL, to show the result card there and read the selection. The extension never has standing access to any website.                  |
+| `scripting`                                                                         | Injects the result card, and reads the selection or the right-clicked element, in the tab the user invoked 4NTL on (via activeTab). Injected only on demand; no content scripts run on pages otherwise. |
+| `storage`                                                                           | Stores the user's own API keys, settings and saved list locally, and keeps recent results in memory so repeat lookups don't use API quota.                                                              |
+| Host permission `https://www.virustotal.com/*`                                      | Sends the user's lookups to the VirusTotal API with the user's own API key.                                                                                                                             |
+| Host permission `https://api.abuseipdb.com/*`                                       | Sends the user's IP lookups to the AbuseIPDB API with the user's own API key.                                                                                                                           |
+| Phase 2 only: host permission `https://extensionpay.com/*` (and its content script) | The optional one-time purchase: ExtensionPay (with Stripe) runs the checkout and tells the extension when the user has paid or restored a purchase. Its script runs only on extensionpay.com.           |
 
 **Remote code:** No, I am not using remote code. (All code ships in the package; the extension's Content-Security-Policy is `script-src 'self'`.)
 
