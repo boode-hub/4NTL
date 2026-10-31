@@ -146,6 +146,8 @@ test('the card opens ~3 cm from the pointer and can be dragged anywhere', async 
   page,
   worker,
 }) => {
+  // Room for the whole card 120 px lower (it's kept inside the window), whatever the OS fonts.
+  await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto(PAGE_URL);
   await page.locator('#ip').selectText();
   await hook(worker, 'simulateMenuClick', PAGE_URL, '185.220.101.4', 'all');

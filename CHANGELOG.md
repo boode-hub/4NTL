@@ -4,6 +4,11 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] - 2026-10-31
+
+Same as 0.5.0 (which was tagged but never released): a browser test now has
+room for the card on every operating system.
+
 ## [0.5.0] - 2026-10-31
 
 ### Added
