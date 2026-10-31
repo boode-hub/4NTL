@@ -28,38 +28,36 @@ phase 2 line in the description.
 
 > Select an IP, hash, domain or URL, right-click, and see VirusTotal and AbuseIPDB verdicts right where you are.
 
-**Description:**
+**Description** (no lists of brand names or long keyword runs: the first upload was rejected as "Yellow Argon", excessive keywords, for listing redirect services by name):
 
 ```
-Stop copy-pasting indicators into VirusTotal and AbuseIPDB.
+Stop copy-pasting indicators into threat-intel sites.
 
 ★ Install now and 4NTL stays free for you, for life.
 
-Select an IP address, domain, URL or file hash on any page, right-click, and 4NTL shows the verdict in a small card right next to your cursor. No new tabs, no copy-paste, no losing your place.
+Select an IP address, domain, URL or file hash on any page, right-click, and 4NTL shows the VirusTotal and AbuseIPDB verdicts in a small card right next to your cursor. No new tabs, no copy-paste, no losing your place.
 
 BUILT FOR ANALYSTS
-• One click: right-click → 4NTL → AbuseIPDB, VirusTotal or All providers. Or select and press Alt+Shift+L.
-• Reads analyst text: defanged indicators (1.2.3[.]4, hxxps://evil[.]com), ip:port, [IPv6]:port, log fields like src=1.2.3.4. Select a whole log line and pick the indicator you want.
-• Links and buttons: right-click any link, button or card to check where it really goes, even when the site hides the address in JavaScript. For buttons that only get an address when clicked, click once: 4NTL catches the destination and stops the page from going there.
-• Unwraps protected links: Outlook Safe Links, Proofpoint, Barracuda, Google, Facebook, YouTube, Slack and LinkedIn redirects are checked as the real destination.
-• Toolbar and address bar: click the 4NTL icon to check the page you're on, or type "4ntl" + space in the address bar and paste anything.
-• Copy the indicator or the whole report as text, ready for a ticket.
-• Saved list: bookmark indicators from the card as you investigate, then copy them all (one per line, ready for a block list) or download a CSV.
-• Country flags next to each country.
-• IPv4, IPv6, domains, URLs, MD5, SHA-1 and SHA-256.
+• One click from the right-click menu, or select and press Alt+Shift+L.
+• Understands analyst text: defanged indicators such as 1.2.3[.]4 or hxxps://evil[.]com, addresses with ports, and log fields. Select a whole log line and pick the indicator you want.
+• Checks where links and buttons really go, even when a site hides the address in JavaScript. For buttons that only get an address when clicked, click once: 4NTL catches the destination and stops the page from going there.
+• Sees through the protected and redirect links that email security tools and social sites add, and checks the real destination.
+• Check the page you're on from the toolbar icon, or type "4ntl" and a space in the address bar and paste anything.
+• Copy just the indicator, or the whole report as text for a ticket.
+• Saved list: keep the indicators you find during an investigation, then copy them all at once or download a CSV.
+• Country flags at a glance.
 
 PRIVATE AND LIGHT
-• Uses your own free VirusTotal and AbuseIPDB API keys, stored only in your browser and never synced.
-• Private and internal addresses (10.x, 192.168.x, .local, .corp, …) are never sent anywhere.
-• Never submits anything for analysis: it only reads existing reports.
-• Repeat lookups come from a short in-memory cache and don't use your API quota.
-• Nothing runs on a page until you use 4NTL there. No analytics, no tracking, no third-party code.
+• Uses your own free API keys, stored only in your browser.
+• Private and internal addresses are never sent anywhere.
+• Only reads existing reports; never submits anything for analysis.
+• Repeat lookups come from a short in-memory cache and don't use your quota.
+• Nothing runs on a page until you use 4NTL there. No analytics or tracking.
 
 MAKE IT YOURS
-• Light, Dark, Auto and Sharingan themes, any accent and card background color, and a card you can drag anywhere.
+Light, dark and Sharingan themes, your own colors, and a card you can drag anywhere.
 
-Free API keys: virustotal.com (4 lookups/min, 500/day) and abuseipdb.com (1,000 checks/day).
-Open source: https://github.com/boode-hub/4NTL (free edition there). Like it? Sponsor it on GitHub.
+Open source: https://github.com/boode-hub/4NTL
 
 4NTL is not affiliated with or endorsed by VirusTotal, AbuseIPDB or Google. The Sharingan theme is a fan tribute to Naruto by Masashi Kishimoto.
 ```
