@@ -41,6 +41,20 @@ describe('manifest', () => {
     expect(strip(firefox)).toEqual(strip(chromium));
   });
 
+  it('the store edition adds only ExtensionPay: its host, its script on its own site, its API', () => {
+    for (const browser of ['chromium', 'firefox'] as const) {
+      const store = createManifest({ version: '1.2.3', browser, store: true });
+      expect(store.host_permissions).toEqual([...API_HOSTS, 'https://extensionpay.com/*']);
+      expect(store.content_scripts).toEqual([
+        { matches: ['https://extensionpay.com/*'], js: ['ExtPay.js'], run_at: 'document_start' },
+      ]);
+      expect(store.content_security_policy?.extension_pages).toContain(
+        'connect-src https://www.virustotal.com https://api.abuseipdb.com https://extensionpay.com;',
+      );
+      expect(store.permissions).toEqual(createManifest({ version: '1.2.3', browser }).permissions);
+    }
+  });
+
   it('only the test build gets broad host access', () => {
     expect(createManifest({ version: '1.2.3', e2e: true }).host_permissions).toEqual([
       ...API_HOSTS,

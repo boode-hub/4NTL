@@ -4,6 +4,28 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-10-31
+
+### Added
+
+- **Store edition** (Chrome Web Store / Firefox Add-ons): free for life for
+  anyone who installs it before 15 November 2026; later installs get a 3-day
+  trial, then a one-time $2 unlock through ExtensionPay (Stripe). Purchases and
+  early installs are recognised on other computers (browser sync) or with
+  **Restore purchase**. Build it with `node scripts/build.mjs --store`;
+  `npm run package:store` makes the store zips.
+- The **GitHub edition stays free** and contains no payment code (the release
+  guard checks this).
+- A small **♥ Support 4NTL** link on every card, and a Support section in the
+  settings, in both editions.
+
+## [0.4.1] - 2026-10-31
+
+### Added
+
+- "Support 4NTL" in the settings page and README: star the project or sponsor it
+  on GitHub. 4NTL stays free and open source.
+
 ## [0.4.0] - 2026-10-31
 
 ### Added

@@ -1,6 +1,7 @@
 /** Stateless DOM rendering for the card's pieces. All event wiring comes in as callbacks. */
 import { formatAgo } from '../core/format';
 import { INDICATOR_LABELS, type Indicator } from '../core/indicator';
+import { FREE_EDITION_URL, PRICE, SUPPORT_URL } from '../core/license';
 import type { Choice, ProviderInfo } from '../core/messages';
 import {
   RETRYABLE_ERRORS,
@@ -25,6 +26,7 @@ export const ERROR_LABELS: Readonly<Record<LookupErrorCode, string>> = {
   server: 'Service error',
   bad_response: 'Bad response',
   internal: 'Error',
+  payment_required: 'Locked',
 };
 
 export type SectionState =
@@ -255,6 +257,51 @@ export function renderChoices(
           ),
         ),
       ),
+    ),
+  );
+}
+
+/** A small "support the project" link at the foot of every lookup card. */
+export function renderSupport(): HTMLElement {
+  return h(
+    'a',
+    {
+      class: 'support',
+      attrs: { href: SUPPORT_URL, target: '_blank', rel: 'noopener noreferrer' },
+    },
+    '♥ Support 4NTL',
+  );
+}
+
+/** Store edition: the trial notice under the results, with a way to buy now. */
+export function renderBanner(text: string, onUnlock: () => void): HTMLElement {
+  return h(
+    'div',
+    { class: 'banner', attrs: { role: 'note' } },
+    h('span', {}, text),
+    button('Unlock', onUnlock),
+  );
+}
+
+export interface LockedActions {
+  readonly unlock: () => void;
+  readonly restore: () => void;
+}
+
+/** Store edition after the free days: buy, restore a purchase, or get the free edition. */
+export function renderLocked(text: string, actions: LockedActions): HTMLElement {
+  const unlock = button(`Unlock for ${PRICE}`, actions.unlock);
+  unlock.classList.add('primary');
+  return h(
+    'div',
+    { class: 'notice locked' },
+    h('p', { class: 'notice-text' }, text),
+    h(
+      'div',
+      { class: 'locked-actions' },
+      unlock,
+      button('Restore purchase', actions.restore),
+      link(FREE_EDITION_URL, 'Free version on GitHub'),
     ),
   );
 }

@@ -1,6 +1,7 @@
 /** Handles messages from the extension's own UI surfaces. Everything else is ignored. */
 import { parseIndicator } from '../core/indicator';
-import { isBackgroundMessage, type LookupResponse } from '../core/messages';
+import type { Access } from '../core/license';
+import { isBackgroundMessage, type LicenseResponse, type LookupResponse } from '../core/messages';
 import type { LookupService } from './lookup-service';
 
 export interface RouterDeps {
@@ -8,6 +9,12 @@ export interface RouterDeps {
   readonly service: Pick<LookupService, 'lookup'>;
   readonly openOptions: () => Promise<void>;
   readonly openList: () => Promise<void>;
+  /** Store edition; the GitHub edition answers 'open' and never opens a checkout. */
+  readonly license: {
+    readonly access: (refresh: boolean) => Promise<Access>;
+    readonly unlock: () => Promise<void>;
+    readonly restore: () => Promise<void>;
+  };
   /** A content script caught where a JavaScript-only button was going. */
   readonly onCaptured: (url: string, sender: chrome.runtime.MessageSender) => Promise<void>;
 }
@@ -15,7 +22,7 @@ export interface RouterDeps {
 type Listener = (
   message: unknown,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response: LookupResponse) => void,
+  sendResponse: (response: LookupResponse | LicenseResponse) => void,
 ) => boolean;
 
 export function createMessageRouter(deps: RouterDeps): Listener {
@@ -36,8 +43,19 @@ export function createMessageRouter(deps: RouterDeps): Listener {
           });
           return false;
         }
-        void deps.service
-          .lookup(message.provider, indicator, { force: message.force })
+        void deps.license
+          .access(false)
+          .then((access) =>
+            access.status === 'locked'
+              ? {
+                  ok: false as const,
+                  error: {
+                    code: 'payment_required' as const,
+                    message: 'Unlock 4NTL in its settings to keep looking things up.',
+                  },
+                }
+              : deps.service.lookup(message.provider, indicator, { force: message.force }),
+          )
           .then(sendResponse);
         return true; // keep the channel open for the async response
       }
@@ -47,6 +65,17 @@ export function createMessageRouter(deps: RouterDeps): Listener {
       case '4ntl:open-list':
         void deps.openList();
         return false;
+      case '4ntl:unlock':
+        void deps.license.unlock();
+        return false;
+      case '4ntl:restore':
+        void deps.license.restore();
+        return false;
+      case '4ntl:license':
+        void deps.license.access(message.refresh).then((access) => {
+          sendResponse({ access });
+        });
+        return true;
       case '4ntl:captured':
         // Only content scripts in a tab can catch a click.
         if (sender.tab?.id !== undefined) void deps.onCaptured(message.url, sender);

@@ -2,7 +2,7 @@
  * Fallback window for pages that can't host the in-page card (browser pages,
  * the PDF viewer, the Web Store…). Renders the same card, inline.
  */
-import type { CardView } from '../core/messages';
+import { VIEW_KINDS, type CardView } from '../core/messages';
 import { loadSettings } from '../core/settings';
 import { ResultCard } from '../ui/card';
 import { runtimeClient } from '../ui/runtime-client';
@@ -10,7 +10,7 @@ import { runtimeClient } from '../ui/runtime-client';
 function viewFromHash(): CardView {
   try {
     const parsed = JSON.parse(decodeURIComponent(location.hash.slice(1))) as Partial<CardView>;
-    if (parsed.kind === 'lookup' || parsed.kind === 'choose' || parsed.kind === 'notice') {
+    if ((VIEW_KINDS as readonly unknown[]).includes(parsed.kind)) {
       return parsed as CardView;
     }
   } catch {

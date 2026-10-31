@@ -14,7 +14,11 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const EXTENSION = path.join(ROOT, 'dist-e2e');
+const EXTENSIONS = { free: path.join(ROOT, 'dist-e2e'), store: path.join(ROOT, 'dist-e2e-store') };
+
+/** ExtensionPay, faked for the store edition: its pages and the key it hands out. */
+export const EXTPAY_URL = 'https://extensionpay.com/extension/EXTPAY-ID-PLACEHOLDER';
+export const EXTPAY_TEST_KEY = 'test-api-key';
 
 export const PAGE_URL = 'http://4ntl.test/';
 
@@ -153,6 +157,11 @@ const HOSTILE = `<!doctype html>
 export const VT_KEY = 'a'.repeat(64);
 export const ABUSE_KEY = 'b'.repeat(80);
 
+interface Options {
+  /** 'free': the GitHub edition (default). 'store': the paid store edition. */
+  edition: 'free' | 'store';
+}
+
 interface Fixtures {
   context: BrowserContext;
   worker: Worker;
@@ -166,13 +175,21 @@ interface Fixtures {
   menuClick: (selection: string, scope: 'all' | 'virustotal' | 'abuseipdb') => Promise<void>;
 }
 
-export const test = base.extend<Fixtures>({
-  // eslint-disable-next-line no-empty-pattern -- Playwright requires the destructuring
-  context: async ({}, use) => {
+export const test = base.extend<Fixtures & Options>({
+  edition: ['free', { option: true }],
+
+  context: async ({ edition }, use) => {
+    const extension = EXTENSIONS[edition];
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
-      args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`],
+      args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
     });
+    // Never reach the real ExtensionPay: hand out a test key, serve blank pages.
+    await context.route('https://extensionpay.com/**', (route) =>
+      route.request().url().endsWith('/api/new-key')
+        ? route.fulfill({ contentType: 'application/json', body: JSON.stringify(EXTPAY_TEST_KEY) })
+        : route.fulfill({ contentType: 'text/html', body: '<h1>ExtensionPay (test)</h1>' }),
+    );
     await context.route(`${PAGE_URL}**`, (route) =>
       route.request().url() === APP_URL
         ? route.fulfill({ contentType: 'text/html', body: APP })

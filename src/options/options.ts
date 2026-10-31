@@ -1,7 +1,9 @@
 /** Settings page. Changes save automatically; provider key fields are generated from the registry. */
 import { REPORT_CACHE, TtlCache } from '../core/cache';
 import { toFailure } from '../core/errors';
-import type { CardView } from '../core/messages';
+import ExtPay from 'extpay';
+import { describeAccess, EXTPAY_ID, PAID_FROM_LABEL, type Access } from '../core/license';
+import type { BackgroundMessage, CardView, LicenseResponse } from '../core/messages';
 import { PROVIDER_IDS, type ProviderId } from '../core/provider-ids';
 import type { Report } from '../core/result';
 import {
@@ -216,6 +218,8 @@ function createPreview(container: HTMLElement): (appearance: Appearance, delayMs
         openOptions: () => undefined,
         save: () => Promise.resolve(),
         openList: () => undefined,
+        unlock: () => undefined,
+        restore: () => undefined,
       },
       // Closing the preview (× or Esc) just brings it back.
       onClose: () => {
@@ -228,7 +232,59 @@ function createPreview(container: HTMLElement): (appearance: Appearance, delayMs
   return render;
 }
 
+/** Store edition: the license panel (status, unlock, restore). */
+function startLicensePanel(): void {
+  byId('license-panel').hidden = false;
+  const status = byId('license-status');
+  const unlock = byId('unlock');
+  const extpay = ExtPay(EXTPAY_ID);
+  const send = (message: BackgroundMessage) => chrome.runtime.sendMessage(message);
+  const open = (page: 'unlock' | 'restore') => {
+    const opening = page === 'unlock' ? extpay.openPaymentPage() : extpay.openLoginPage();
+    opening.catch(() => {
+      status.textContent = 'Couldn’t reach the payment page. Check your connection and try again.';
+    });
+  };
+  const show = (access: Access) => {
+    const paid = access.status === 'paid';
+    const early = access.status === 'early';
+    status.textContent = paid
+      ? 'Unlocked for life. Thank you for supporting 4NTL!'
+      : early
+        ? `You installed 4NTL before ${PAID_FROM_LABEL}, so it's free for you, for life. Thank you for being early!`
+        : describeAccess(access, Date.now());
+    // Paid and early users have nothing to unlock; the Support panel below is for everyone.
+    unlock.hidden = paid || early;
+    byId('restore').hidden = paid || early;
+  };
+  const check = async (refresh: boolean) => {
+    const response = (await send({ type: '4ntl:license', refresh })) as LicenseResponse | undefined;
+    if (response) show(response.access);
+  };
+  unlock.addEventListener('click', () => {
+    open('unlock');
+  });
+  byId('restore').addEventListener('click', () => {
+    open('restore');
+  });
+  byId('refresh-license').addEventListener('click', () => void check(true));
+  // Back from the checkout tab: see whether the purchase went through.
+  window.addEventListener('focus', () => void check(true));
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && 'license.v1' in changes) void check(false);
+  });
+  void check(false);
+  // Sent here by the card's Unlock / Restore purchase buttons.
+  const action = location.hash.slice(1);
+  if (action === 'unlock' || action === 'restore') {
+    history.replaceState(null, '', location.pathname);
+    byId('license-panel').scrollIntoView({ block: 'center' });
+    open(action);
+  }
+}
+
 async function main(): Promise<void> {
+  if (__STORE__) startLicensePanel();
   const maxAge = inputById('max-age');
   const cacheTtl = inputById('cache-ttl');
   const toast = byId('toast');

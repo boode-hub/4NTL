@@ -12,7 +12,7 @@ Select an IP, domain, URL or file hash, right-click, and see the **VirusTotal** 
 ![Chrome · Edge · Brave · Opera · Vivaldi](https://img.shields.io/badge/Chrome%20·%20Edge%20·%20Brave%20·%20Opera%20·%20Vivaldi-123%2B-4285F4)
 ![Firefox](https://img.shields.io/badge/Firefox-140%2B-FF7139)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-0f172a)
-![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-16a34a)
+![Runtime dependencies (GitHub edition)](https://img.shields.io/badge/runtime%20dependencies-0-16a34a)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <img src="docs/media/demo.gif" width="700" alt="Selecting an IP in an incident report and seeing AbuseIPDB and VirusTotal verdicts in a card; picking a hash out of a log line; checking a link; catching where a JavaScript-only button goes." />
@@ -191,6 +191,21 @@ Firefox zips attached. `npm run build` builds both (`dist/`, `dist-firefox/`).
 
 More: [architecture](docs/ARCHITECTURE.md) · [adding a provider](docs/ADDING_A_PROVIDER.md) ·
 [roadmap](docs/NEXT.md) · [changelog](CHANGELOG.md)
+
+## Editions and support
+
+| Edition                                | Price                                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **GitHub** (this repo, Releases)       | Free, always                                                                                                 |
+| **Chrome Web Store / Firefox Add-ons** | Free for life if installed before **15 November 2026**; after that a 3-day trial, then **$2 once**, for life |
+
+Same features in both. The store edition is reviewed by Google/Mozilla and
+updates itself; paying for it supports the project. Paid on another computer?
+**Settings → Restore purchase** with the email you paid with.
+
+Want to support it either way? ⭐ Star the repo or
+[sponsor the project](https://github.com/sponsors/boode-hub), the little
+**♥ Support 4NTL** link on every card goes there too.
 
 ## License and credits
 

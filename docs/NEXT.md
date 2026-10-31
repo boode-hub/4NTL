@@ -15,6 +15,25 @@ first card ~100-170 ms, median lookup ~15-25 ms, no DOM/listener growth over
 API mapping is verified against recorded responses; there is no automated live
 check against the real APIs.
 
+## Store edition: before the first store upload
+
+The paid store edition is built (v0.5.0, decided 2026-10-31): installs before
+**15 November 2026** are free for life; later installs get a **3-day trial**,
+then **$2 once** via ExtensionPay. The GitHub edition stays free.
+
+Still to do, in order:
+
+1. Owner: developer dashboard → Account → Trader status → **Trader**.
+2. Owner: create the extension at <https://extensionpay.com> (connect Stripe;
+   one-time payment, $2) and send the ExtensionPay ID.
+3. Put the ID in `EXTPAY_ID` (`src/core/license.ts`), run `npm run package:store`
+   (it refuses to package the placeholder), and test a real purchase with Stripe's
+   test card in ExtensionPay's test mode, plus **Restore purchase** in a second
+   browser profile.
+4. Upload `4ntl-store-v0.5.0.zip` before 15 November so early installs count.
+5. After 15 November, publish one small update so new installs carry a build
+   date after the switch (a clock set back can't fake an early install).
+
 ## Ideas
 
 - **Toolbar popup with a search box**: paste an indicator and see the same card

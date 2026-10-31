@@ -33,6 +33,27 @@ Those services handle the requests under their own privacy policies:
 [VirusTotal](https://support.virustotal.com/hc/en-us/articles/115002168385-Privacy-Policy)
 and [AbuseIPDB](https://www.abuseipdb.com/privacy-policy).
 
+## Paying for the store edition (Chrome Web Store / Firefox Add-ons only)
+
+The free edition on GitHub never contacts any payment service. The store edition
+is free for everyone who installed it before 15 November 2026; later installs get
+a 3-day trial and then a one-time $2 unlock. Payments are handled by
+**ExtensionPay** (`extensionpay.com`) and **Stripe**:
+
+- When you click **Unlock** or **Restore purchase**, the extension asks
+  ExtensionPay for an anonymous key and opens its page. You pay, or enter the
+  email you paid with, on ExtensionPay's and Stripe's pages, not inside 4NTL.
+  4NTL never sees your card details or your email.
+- To know whether you've paid, the extension sends that anonymous key to
+  ExtensionPay (at most hourly during and after the trial; never once you've
+  paid or if you installed early). The answer is remembered on your computer.
+- The key and the date you first installed are kept in your browser's synced
+  extension storage, so a purchase or early install is recognised on your other
+  computers when you're signed in to the browser.
+
+ExtensionPay's privacy policy: <https://extensionpay.com/privacy>. Stripe's:
+<https://stripe.com/privacy>.
+
 ## What 4NTL stores, and where
 
 - **Your API keys and settings** (theme, colors, cache lifetime,
@@ -50,13 +71,15 @@ and [AbuseIPDB](https://www.abuseipdb.com/privacy-policy).
 
 ## What 4NTL does not do
 
-- No analytics, telemetry, tracking, advertising or third-party code.
+- No analytics, telemetry, tracking or advertising. The only third-party code is
+  ExtensionPay's payment library, in the store edition only.
 - No accounts, no sign-in, no personal information collected.
 - It does not read or change pages you don't use it on. It only runs on a page
   after you invoke it there, and then only to show the result card, to read the
   selection, or to find where a right-clicked link or button leads.
 - No data is sold, shared or transferred to anyone, other than the lookups you
-  request going to the service you chose.
+  request going to the service you chose and, in the store edition, the
+  anonymous payment key going to ExtensionPay.
 
 ## Removing your data
 

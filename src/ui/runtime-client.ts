@@ -53,4 +53,12 @@ export const runtimeClient: CardClient = {
     const message: BackgroundMessage = { type: '4ntl:open-list' };
     chrome.runtime.sendMessage(message).catch(() => undefined);
   },
+  unlock() {
+    const message: BackgroundMessage = { type: '4ntl:unlock' };
+    chrome.runtime.sendMessage(message).catch(() => undefined);
+  },
+  restore() {
+    const message: BackgroundMessage = { type: '4ntl:restore' };
+    chrome.runtime.sendMessage(message).catch(() => undefined);
+  },
 };

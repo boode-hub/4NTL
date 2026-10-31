@@ -48,6 +48,7 @@ export const ERROR_CODES = [
   'server',
   'bad_response',
   'internal',
+  'payment_required',
 ] as const;
 export type LookupErrorCode = (typeof ERROR_CODES)[number];
 
@@ -62,7 +63,11 @@ export const RETRYABLE_ERRORS: ReadonlySet<LookupErrorCode> = new Set([
 ]);
 
 /** Errors the user fixes in the settings page. */
-export const SETTINGS_ERRORS: ReadonlySet<LookupErrorCode> = new Set(['no_api_key', 'auth']);
+export const SETTINGS_ERRORS: ReadonlySet<LookupErrorCode> = new Set([
+  'no_api_key',
+  'auth',
+  'payment_required',
+]);
 
 export interface LookupFailure {
   readonly code: LookupErrorCode;

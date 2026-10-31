@@ -4,8 +4,10 @@
  * The worker holds no timers or long-lived state, so the browser can (and
  * does) shut it down whenever it's idle.
  */
+import ExtPay from 'extpay';
 import { REPORT_CACHE, TtlCache } from '../core/cache';
 import { INDICATOR_LABELS, parseIndicator, resolveSelection } from '../core/indicator';
+import { EXTPAY_ID, type Access } from '../core/license';
 import type { CardView } from '../core/messages';
 import type { Report } from '../core/result';
 import {
@@ -19,6 +21,7 @@ import { refreshBadge } from './badge';
 import { handleLookupRequest, presentView, type ControllerDeps } from './controller';
 import { checkCaptured, checkLink, type LinkDeps } from './links';
 import { LookupService } from './lookup-service';
+import { Payments } from './payments';
 import {
   ELEMENT_ITEM_ID,
   LINK_ITEM_ID,
@@ -53,7 +56,47 @@ const service = new LookupService({
   fetch: (input, init) => fetch(input, init),
 });
 
-const deps: ControllerDeps = { service, presentInPage, presentInWindow };
+/** e2e builds can move the clock (to test the paid period); otherwise always 0. */
+let clockOffset = 0;
+const now = () => Date.now() + clockOffset;
+
+/** Store edition only. In the GitHub edition the build swaps 'extpay' for a stub that is never called. */
+function startPayments(): Payments {
+  const extpay = ExtPay(EXTPAY_ID);
+  extpay.startBackground(); // must run once, at top level
+  const payments = new Payments({
+    extpay,
+    area: chrome.storage.local,
+    sync: chrome.storage.sync,
+    now,
+    builtAt: __BUILT_AT__,
+  });
+  extpay.onPaid.addListener(() => {
+    void payments.markPaid().catch(report);
+  });
+  return payments;
+}
+const payments = __STORE__ ? startPayments() : undefined;
+const OPEN: Access = { status: 'open' };
+const license = {
+  access: (refresh: boolean): Promise<Access> =>
+    payments ? (refresh ? payments.refresh() : payments.access()) : Promise.resolve(OPEN),
+  // The settings page opens the checkout (see payments.ts for why not the worker).
+  unlock: () => openSettingsFor('unlock'),
+  restore: () => openSettingsFor('restore'),
+};
+
+async function openSettingsFor(action: 'unlock' | 'restore'): Promise<void> {
+  await chrome.tabs.create({ url: chrome.runtime.getURL(`options.html#${action}`) });
+}
+
+const deps: ControllerDeps = {
+  service,
+  presentInPage,
+  presentInWindow,
+  access: () => license.access(false),
+  now,
+};
 const linkDeps: LinkDeps = {
   inspect: inspectInPage,
   capture: captureInPage,
@@ -189,6 +232,7 @@ chrome.runtime.onMessage.addListener(
     service,
     openOptions,
     openList,
+    license,
     onCaptured: async (url, sender) => {
       await checkCaptured(url, frameOf(sender.tab, sender.frameId), linkDeps.present);
     },
@@ -238,6 +282,10 @@ if (__E2E__) {
         await onActionClick(await tabFor(tab));
       },
       simulateOmnibox: lookupFromOmnibox,
+      setClock(ms: number) {
+        clockOffset = ms - Date.now();
+      },
+      licenseAccess: () => license.access(false),
       describeOmnibox,
     },
   });

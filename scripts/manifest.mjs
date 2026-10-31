@@ -4,6 +4,8 @@
  */
 
 const API_HOSTS = ['https://www.virustotal.com', 'https://api.abuseipdb.com'];
+/** Store edition: ExtensionPay (Stripe) handles the paid unlock. */
+const PAYMENT_HOST = 'https://extensionpay.com';
 
 const ICONS = {
   16: 'icons/icon-16.png',
@@ -16,11 +18,12 @@ const ICONS = {
 export const GECKO_ID = '4ntl@boode-hub';
 
 /**
- * @param {{ version: string, e2e?: boolean, browser?: 'chromium' | 'firefox' }} options
+ * @param {{ version: string, e2e?: boolean, browser?: 'chromium' | 'firefox', store?: boolean }} options
  * @returns {chrome.runtime.ManifestV3}
  */
-export function createManifest({ version, e2e = false, browser = 'chromium' }) {
+export function createManifest({ version, e2e = false, browser = 'chromium', store = false }) {
   const firefox = browser === 'firefox';
+  const hosts = store ? [...API_HOSTS, PAYMENT_HOST] : API_HOSTS;
   return {
     manifest_version: 3,
     name: e2e ? '4NTL (e2e)' : '4NTL – Threat Intel Lookup',
@@ -52,11 +55,19 @@ export function createManifest({ version, e2e = false, browser = 'chromium' }) {
     // so the extension never needs "read and change all your data on all websites".
     permissions: ['contextMenus', 'storage', 'activeTab', 'scripting'],
     host_permissions: [
-      ...API_HOSTS.map((origin) => `${origin}/*`),
+      ...hosts.map((origin) => `${origin}/*`),
       // The e2e harness drives the extension without real user gestures, so activeTab
       // is never granted there. Release builds must never contain this.
       ...(e2e ? ['<all_urls>'] : []),
     ],
+    // Store edition: ExtensionPay's script on its own site tells 4NTL about a purchase.
+    ...(store
+      ? {
+          content_scripts: [
+            { matches: [`${PAYMENT_HOST}/*`], js: ['ExtPay.js'], run_at: 'document_start' },
+          ],
+        }
+      : {}),
     // Type "4ntl" + space in the address bar, then an IP, hash, domain or link.
     omnibox: { keyword: '4ntl' },
     commands: {
@@ -71,7 +82,7 @@ export function createManifest({ version, e2e = false, browser = 'chromium' }) {
         "script-src 'self'",
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self'",
-        `connect-src ${API_HOSTS.join(' ')}`,
+        `connect-src ${hosts.join(' ')}`,
         "base-uri 'none'",
         "form-action 'none'",
       ].join('; '),

@@ -6,7 +6,11 @@ section. Images are in this folder; the upload zip comes from `npm run store`.
 
 ## Package
 
-- Upload: `4ntl-vX.Y.Z.zip` from the repo root (made by `npm run store`).
+- Upload: `4ntl-store-vX.Y.Z.zip` from the repo root (made by `npm run package:store`,
+  which refuses to run until the ExtensionPay ID is set in `src/core/license.ts`).
+  Never upload `4ntl-vX.Y.Z.zip`: that is the free GitHub edition.
+- Account: Trader (the store edition takes payments).
+- When asked, tick **"Contains in-app purchases"**.
 
 ## Store listing
 
@@ -20,6 +24,8 @@ section. Images are in this folder; the upload zip comes from `npm run store`.
 
 ```
 Stop copy-pasting indicators into VirusTotal and AbuseIPDB.
+
+★ Install before 15 November 2026 and 4NTL is free for you, for life. After that: a 3-day free trial, then $2 once (no subscription). Prefer free? The open-source edition is on GitHub.
 
 Select an IP address, domain, URL or file hash on any page, right-click, and 4NTL shows the verdict in a small card right next to your cursor. No new tabs, no copy-paste, no losing your place.
 
@@ -45,7 +51,7 @@ MAKE IT YOURS
 • Light, Dark, Auto and Sharingan themes, any accent and card background color, and a card you can drag anywhere.
 
 Free API keys: virustotal.com (4 lookups/min, 500/day) and abuseipdb.com (1,000 checks/day).
-Open source: https://github.com/boode-hub/4NTL
+Open source: https://github.com/boode-hub/4NTL (free edition there). Like it? Sponsor it on GitHub.
 
 4NTL is not affiliated with or endorsed by VirusTotal, AbuseIPDB or Google. The Sharingan theme is a fan tribute to Naruto by Masashi Kishimoto.
 ```
@@ -76,14 +82,15 @@ Open source: https://github.com/boode-hub/4NTL
 
 **Permission justifications:**
 
-| Permission                                     | Justification                                                                                                                                                                                           |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contextMenus`                                 | Adds the 4NTL entries to the right-click menu (look up a selection, check a link, check what a button opens). This is the main way the extension is used.                                               |
-| `activeTab`                                    | Gives temporary access only to the tab where the user just invoked 4NTL, to show the result card there and read the selection. The extension never has standing access to any website.                  |
-| `scripting`                                    | Injects the result card, and reads the selection or the right-clicked element, in the tab the user invoked 4NTL on (via activeTab). Injected only on demand; no content scripts run on pages otherwise. |
-| `storage`                                      | Stores the user's own API keys, settings and saved list locally, and keeps recent results in memory so repeat lookups don't use API quota.                                                              |
-| Host permission `https://www.virustotal.com/*` | Sends the user's lookups to the VirusTotal API with the user's own API key.                                                                                                                             |
-| Host permission `https://api.abuseipdb.com/*`  | Sends the user's IP lookups to the AbuseIPDB API with the user's own API key.                                                                                                                           |
+| Permission                                                            | Justification                                                                                                                                                                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contextMenus`                                                        | Adds the 4NTL entries to the right-click menu (look up a selection, check a link, check what a button opens). This is the main way the extension is used.                                               |
+| `activeTab`                                                           | Gives temporary access only to the tab where the user just invoked 4NTL, to show the result card there and read the selection. The extension never has standing access to any website.                  |
+| `scripting`                                                           | Injects the result card, and reads the selection or the right-clicked element, in the tab the user invoked 4NTL on (via activeTab). Injected only on demand; no content scripts run on pages otherwise. |
+| `storage`                                                             | Stores the user's own API keys, settings and saved list locally, and keeps recent results in memory so repeat lookups don't use API quota.                                                              |
+| Host permission `https://www.virustotal.com/*`                        | Sends the user's lookups to the VirusTotal API with the user's own API key.                                                                                                                             |
+| Host permission `https://api.abuseipdb.com/*`                         | Sends the user's IP lookups to the AbuseIPDB API with the user's own API key.                                                                                                                           |
+| Host permission `https://extensionpay.com/*` (and its content script) | The optional one-time purchase: ExtensionPay (with Stripe) runs the checkout and tells the extension when the user has paid or restored a purchase. Its script runs only on extensionpay.com.           |
 
 **Remote code:** No, I am not using remote code. (All code ships in the package; the extension's Content-Security-Policy is `script-src 'self'`.)
 
@@ -102,7 +109,7 @@ Leave every other category unticked. Then certify all three statements:
 
 ## Firefox Add-ons (AMO)
 
-Submit `4ntl-firefox-vX.Y.Z.zip` at <https://addons.mozilla.org/developers/addon/submit/>
+Submit `4ntl-store-firefox-vX.Y.Z.zip` at <https://addons.mozilla.org/developers/addon/submit/>
 ("On this site"). The same name, summary, description, screenshots and privacy
 policy apply. AMO asks for the source code because the bundle is built: upload a
 zip of the repository (without `node_modules`) and give these build steps:

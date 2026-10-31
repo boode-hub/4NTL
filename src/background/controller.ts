@@ -1,4 +1,5 @@
 /** Orchestrates a user-initiated lookup: build the view, start the requests, show the card. */
+import { describeAccess, type Access } from '../core/license';
 import type { CardView } from '../core/messages';
 import type { LookupService } from './lookup-service';
 import type { FrameTarget } from './present';
@@ -19,6 +20,17 @@ export interface ControllerDeps {
     corner: boolean,
   ) => Promise<boolean>;
   readonly presentInWindow: (view: CardView) => Promise<void>;
+  /** Store edition: may this browser use 4NTL right now? (GitHub edition: always 'open'.) */
+  readonly access: () => Promise<Access>;
+  readonly now?: () => number;
+}
+
+/** Locked: the unlock offer instead of results. Free or trial: a banner on the card. */
+export function applyAccess(view: CardView, access: Access, now: number): CardView {
+  if (view.kind === 'notice' || view.kind === 'locked') return view;
+  const text = describeAccess(access, now);
+  if (access.status === 'locked') return { kind: 'locked', text };
+  return text ? { ...view, banner: text } : view;
 }
 
 /**
@@ -27,11 +39,12 @@ export interface ControllerDeps {
  * it joins these in-flight requests.
  */
 export async function presentView(
-  view: CardView,
+  requested: CardView,
   target: FrameTarget | undefined,
   deps: ControllerDeps,
   corner = false,
 ): Promise<void> {
+  const view = applyAccess(requested, await deps.access(), (deps.now ?? Date.now)());
   if (view.kind === 'lookup') {
     for (const provider of view.providers) void deps.service.lookup(provider.id, view.indicator);
   }

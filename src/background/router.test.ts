@@ -1,3 +1,4 @@
+import type { Access } from '../core/license';
 import { describe, expect, it, vi } from 'vitest';
 import { flush } from '../../tests/helpers';
 import type { LookupOutcome } from '../core/result';
@@ -21,17 +22,26 @@ function setup() {
   const lookup = vi.fn(() => Promise.resolve(OK));
   const openOptions = vi.fn(() => Promise.resolve());
   const openList = vi.fn(() => Promise.resolve());
+  const access = vi.fn<(refresh: boolean) => Promise<Access>>(() =>
+    Promise.resolve({ status: 'open' }),
+  );
+  const license = {
+    access,
+    unlock: vi.fn(() => Promise.resolve()),
+    restore: vi.fn(() => Promise.resolve()),
+  };
   const onCaptured = vi.fn(() => Promise.resolve());
   const route = createMessageRouter({
     extensionId: 'ext',
     service: { lookup },
     openOptions,
     openList,
+    license,
     onCaptured,
   });
   const sendResponse = vi.fn();
   const fromUs = { id: 'ext' } as chrome.runtime.MessageSender;
-  return { route, lookup, openOptions, openList, onCaptured, sendResponse, fromUs };
+  return { route, lookup, openOptions, openList, license, onCaptured, sendResponse, fromUs };
 }
 
 const lookupMessage = (value: string, type = 'ipv4', force = false) => ({
@@ -74,6 +84,37 @@ describe('message router', () => {
     const { route, openOptions, sendResponse, fromUs } = setup();
     expect(route({ type: '4ntl:open-options' }, fromUs, sendResponse)).toBe(false);
     expect(openOptions).toHaveBeenCalled();
+  });
+
+  it('refuses card lookups while locked, without touching the providers', async () => {
+    const { route, lookup, license, sendResponse, fromUs } = setup();
+    license.access.mockResolvedValue({ status: 'locked' });
+    const message = {
+      type: '4ntl:lookup',
+      provider: 'virustotal',
+      indicator: { type: 'ipv4', value: '8.8.8.8' },
+      force: false,
+    };
+    expect(route(message, fromUs, sendResponse)).toBe(true);
+    await flush();
+    expect(lookup).not.toHaveBeenCalled();
+    const [response] = sendResponse.mock.calls[0] as [{ ok: boolean; error?: { code: string } }];
+    expect(response.ok).toBe(false);
+    expect(response.error?.code).toBe('payment_required');
+  });
+
+  it('answers license questions and opens the checkout / restore pages', async () => {
+    const { route, license, sendResponse, fromUs } = setup();
+    license.access.mockResolvedValue({ status: 'paid' });
+    expect(route({ type: '4ntl:license', refresh: true }, fromUs, sendResponse)).toBe(true);
+    await flush();
+    expect(license.access).toHaveBeenCalledWith(true);
+    expect(sendResponse).toHaveBeenCalledWith({ access: { status: 'paid' } });
+    route({ type: '4ntl:unlock' }, fromUs, sendResponse);
+    route({ type: '4ntl:restore' }, fromUs, sendResponse);
+    expect(license.unlock).toHaveBeenCalled();
+    expect(license.restore).toHaveBeenCalled();
+    expect(route({ type: '4ntl:license' }, fromUs, sendResponse)).toBe(false);
   });
 
   it('opens the saved list', () => {

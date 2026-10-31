@@ -6,6 +6,7 @@
 import { isIndicatorType, type Indicator } from './indicator';
 import { isProviderId, type ProviderId } from './provider-ids';
 import type { LookupOutcome } from './result';
+import type { Access } from './license';
 import type { Appearance } from './settings';
 
 export interface ProviderInfo {
@@ -24,9 +25,20 @@ export type CardView =
       readonly kind: 'lookup';
       readonly indicator: Indicator;
       readonly providers: readonly ProviderInfo[];
+      /** Store edition: "Free until …" / "3 days left …", with an Unlock button. */
+      readonly banner?: string;
     }
-  | { readonly kind: 'choose'; readonly choices: readonly Choice[]; readonly truncated: boolean }
-  | { readonly kind: 'notice'; readonly title: string; readonly text: string };
+  | {
+      readonly kind: 'choose';
+      readonly choices: readonly Choice[];
+      readonly truncated: boolean;
+      readonly banner?: string;
+    }
+  | { readonly kind: 'notice'; readonly title: string; readonly text: string }
+  /** Store edition after the free days: the unlock offer instead of results. */
+  | { readonly kind: 'locked'; readonly text: string };
+
+export const VIEW_KINDS: readonly CardView['kind'][] = ['lookup', 'choose', 'notice', 'locked'];
 
 /** Catching where a JavaScript-only button goes: how long to wait for the click. */
 export const CAPTURE_MS = 20_000;
@@ -66,10 +78,19 @@ export type BackgroundMessage =
     }
   | { readonly type: '4ntl:open-options' }
   | { readonly type: '4ntl:open-list' }
+  /** Store edition: open the checkout / the "restore purchase" page. */
+  | { readonly type: '4ntl:unlock' }
+  | { readonly type: '4ntl:restore' }
+  /** Store edition: the current Access (answered with a LicenseResponse). */
+  | { readonly type: '4ntl:license'; readonly refresh: boolean }
   /** The content script caught (and stopped) a navigation during capture. */
   | { readonly type: '4ntl:captured'; readonly url: string };
 
 export type LookupResponse = LookupOutcome;
+
+export interface LicenseResponse {
+  readonly access: Access;
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -90,7 +111,11 @@ export function isBackgroundMessage(value: unknown): value is BackgroundMessage 
       );
     case '4ntl:open-options':
     case '4ntl:open-list':
+    case '4ntl:unlock':
+    case '4ntl:restore':
       return true;
+    case '4ntl:license':
+      return typeof value.refresh === 'boolean';
     case '4ntl:captured':
       return typeof value.url === 'string' && value.url.length <= MAX_URL_LENGTH;
     default:
@@ -107,6 +132,6 @@ export function isContentMessage(value: unknown): value is ContentMessage {
     value.type === '4ntl:capture' ||
     (value.type === '4ntl:show' &&
       isObject(value.view) &&
-      ['lookup', 'choose', 'notice'].includes(String(value.view.kind)))
+      (VIEW_KINDS as readonly unknown[]).includes(value.view.kind))
   );
 }

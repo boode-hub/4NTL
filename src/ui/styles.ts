@@ -203,6 +203,21 @@ export const CARD_CSS = /* css */ `
   background: var(--bg); color: var(--fg); cursor: pointer;
 }
 .btn:hover { background: var(--subtle); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.1); }
+
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; border-top: 1px solid var(--border);
+  background: var(--subtle); color: var(--muted); font-size: 12px;
+}
+.support {
+  display: block; width: fit-content; margin: 0 12px 8px auto;
+  color: var(--muted); font-size: 11px; text-decoration: none; border-radius: 3px;
+}
+.support:hover { color: var(--accent); }
+.support:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.locked-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 10px; }
 
 .skeleton { display: grid; gap: 6px; margin-top: 8px; }
 .skeleton span {

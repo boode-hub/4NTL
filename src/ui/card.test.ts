@@ -63,6 +63,8 @@ function client(
     openOptions: vi.fn(),
     save: vi.fn<(entry: SavedEntry) => Promise<void>>(() => Promise.resolve()),
     openList: vi.fn(),
+    unlock: vi.fn(),
+    restore: vi.fn(),
   };
 }
 
@@ -135,7 +137,7 @@ describe('ResultCard – lookup view', () => {
     await flush();
     expect($$('img, script, b, i')).toHaveLength(0);
     expect($('dd')?.textContent).toBe('<img src=x onerror=alert(1)>');
-    expect($$('a')).toHaveLength(0); // non-https links are dropped
+    expect($$('a:not(.support)')).toHaveLength(0); // non-https links are dropped
   });
 
   it('offers Retry for transient errors and re-runs the lookup bypassing the cache', async () => {
@@ -389,6 +391,59 @@ describe('ResultCard – lifecycle', () => {
 
     save?.click();
     expect(c.openList).toHaveBeenCalled();
+  });
+
+  it('every lookup card has a small support link, in both editions', () => {
+    const { card, $ } = mount();
+    card.show(LOOKUP_VIEW);
+    const support = $('a.support');
+    expect(support?.textContent).toBe('♥ Support 4NTL');
+    expect(support?.getAttribute('href')).toBe('https://github.com/sponsors/boode-hub');
+    expect(support?.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('shows the store banner under the results, with Unlock', () => {
+    const c = client();
+    const { card, $ } = mount(c);
+    card.show({ ...LOOKUP_VIEW, banner: 'Trial: 3 days left, then $2 once for life.' });
+    const banner = $('.banner');
+    expect(banner?.textContent).toContain('3 days left');
+    banner?.querySelector('button')?.click();
+    expect(c.unlock).toHaveBeenCalled();
+  });
+
+  it('keeps the banner when picking from several indicators', () => {
+    const { card, $, $$ } = mount();
+    card.show({
+      kind: 'choose',
+      truncated: false,
+      banner: 'Trial: 2 days left, then $2 once for life.',
+      choices: [{ indicator: IP, providers: PROVIDERS }],
+    });
+    expect($('.banner')).not.toBeNull();
+    $$('.choice')[0]?.click();
+    expect($('.ioc')?.textContent).toBe(IP.value);
+    expect($('.banner')).not.toBeNull();
+  });
+
+  it('shows the unlock offer instead of results once locked', () => {
+    const c = client();
+    const { card, $, $$ } = mount(c);
+    card.show({ kind: 'locked', text: 'Unlock 4NTL for life for $2.' });
+    expect($('.title')?.textContent).toBe('Unlock 4NTL');
+    expect($$('[data-provider]')).toHaveLength(0);
+    expect(c.lookup).not.toHaveBeenCalled();
+    $$('button')
+      .find((b) => b.textContent === 'Unlock for $2')
+      ?.click();
+    $$('button')
+      .find((b) => b.textContent === 'Restore purchase')
+      ?.click();
+    expect(c.unlock).toHaveBeenCalled();
+    expect(c.restore).toHaveBeenCalled();
+    expect($('a.link')?.getAttribute('href')).toBe(
+      'https://github.com/boode-hub/4NTL/releases/latest',
+    );
   });
 
   it('stays unsaved when saving fails, and can try again', async () => {

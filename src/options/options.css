@@ -321,6 +321,24 @@ footer {
   display: none;
 }
 
+a.btn {
+  text-decoration: none;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--panel);
+  font-weight: 600;
+}
+.btn.primary[hidden] {
+  display: none;
+}
+.license-help {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+}
+
 .masthead-link {
   margin-left: auto;
   text-decoration: none;

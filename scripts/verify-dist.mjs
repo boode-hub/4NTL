@@ -37,7 +37,17 @@ if (manifest.version !== pkg.version) {
 if (manifest.host_permissions.some((host) => host === '<all_urls>' || host.startsWith('*://'))) {
   problems.push('manifest grants broad host access (e2e build?)');
 }
-if (manifest.content_scripts) {
+// The store edition is the only one with payment code (and so a dist-*store* folder name).
+const store = path.basename(dist).includes('store');
+const PAYMENT_SCRIPT = [
+  { matches: ['https://extensionpay.com/*'], js: ['ExtPay.js'], run_at: 'document_start' },
+];
+if (store) {
+  // Only ExtensionPay's own script, only on its own site: the 4NTL UI stays on-demand.
+  if (JSON.stringify(manifest.content_scripts) !== JSON.stringify(PAYMENT_SCRIPT)) {
+    problems.push('store manifest content_scripts must be exactly the ExtensionPay script');
+  }
+} else if (manifest.content_scripts) {
   problems.push('manifest declares content_scripts; the UI must stay on-demand');
 }
 
@@ -47,6 +57,7 @@ const referenced = [
   'content.js',
   'result.html',
   ...Object.values(manifest.icons),
+  ...(store ? ['ExtPay.js'] : []),
 ];
 for (const file of referenced) {
   if (!(await exists(file))) problems.push(`missing ${file}`);
@@ -58,6 +69,11 @@ for (const file of await listFiles(dist)) {
     const code = await readFile(path.join(dist, file), 'utf8');
     if (code.includes('__4ntl')) problems.push(`test hook present in ${file}`);
     if (/\beval\(|new Function\(/.test(code)) problems.push(`dynamic code evaluation in ${file}`);
+    if (!store && code.includes('extensionpay'))
+      problems.push(`payment code in the free edition: ${file}`);
+    if (store && process.argv.includes('--release') && code.includes('EXTPAY-ID-PLACEHOLDER')) {
+      problems.push(`ExtensionPay ID not set (EXTPAY_ID in src/core/license.ts) in ${file}`);
+    }
   }
 }
 

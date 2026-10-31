@@ -1,6 +1,6 @@
 {
   "name": "4ntl",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Right-click threat-intel lookups (VirusTotal, AbuseIPDB) with an inline result card.",
   "license": "MIT",
@@ -9,14 +9,14 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "node scripts/build.mjs && node scripts/verify-dist.mjs && node scripts/build.mjs --firefox && node scripts/verify-dist.mjs dist-firefox",
+    "build": "node scripts/build.mjs && node scripts/verify-dist.mjs && node scripts/build.mjs --firefox && node scripts/verify-dist.mjs dist-firefox && node scripts/build.mjs --store && node scripts/verify-dist.mjs dist-store && node scripts/build.mjs --store --firefox && node scripts/verify-dist.mjs dist-store-firefox",
     "build:e2e": "node scripts/build.mjs --e2e",
     "dev": "node scripts/build.mjs --watch",
     "try": "npm run build && node scripts/try.mjs",
     "icons": "node scripts/make-icons.mjs",
     "demo": "node scripts/build.mjs --e2e && node scripts/build.mjs && node scripts/demo.mjs",
     "package": "npm run build && node scripts/package.mjs && node scripts/package.mjs dist-firefox",
-    "store": "node scripts/build.mjs --e2e && node scripts/store-assets.mjs && npm run package",
+    "store": "node scripts/build.mjs --e2e && node scripts/store-assets.mjs && npm run package:store",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -24,9 +24,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "e2e": "node scripts/build.mjs --e2e && playwright test",
+    "e2e": "node scripts/build.mjs --e2e && node scripts/build.mjs --e2e --store && playwright test",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run test:coverage && npm run build",
-    "e2e:install": "playwright install chromium"
+    "e2e:install": "playwright install chromium",
+    "package:store": "npm run build && node scripts/verify-dist.mjs dist-store --release && node scripts/verify-dist.mjs dist-store-firefox --release && node scripts/package.mjs dist-store && node scripts/package.mjs dist-store-firefox"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -42,5 +43,8 @@
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "extpay": "3.1.2"
   }
 }

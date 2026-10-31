@@ -3,6 +3,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   define: {
     __E2E__: 'false',
+    __STORE__: 'false',
+    __BUILT_AT__: '0',
     __VERSION__: JSON.stringify('0.0.0-test'),
   },
   test: {
@@ -18,6 +20,7 @@ export default defineConfig({
         'src/globals.d.ts',
         // Thin wiring around browser APIs; exercised by the e2e suite instead.
         'src/background/index.ts',
+        'src/background/extpay-free.ts',
         'src/background/badge.ts',
         'src/content/index.ts',
         'src/options/options.ts',

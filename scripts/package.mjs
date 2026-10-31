@@ -1,9 +1,10 @@
 /**
- * Zips dist/ into 4ntl-v<version>.zip (Chrome Web Store, Edge Add-ons, Opera
- * add-ons) or dist-firefox/ into 4ntl-firefox-v<version>.zip (Firefox Add-ons).
- * Dependency-free (deflate via node:zlib).
+ * Zips a build folder: dist/ → 4ntl-v<version>.zip, dist-firefox/ →
+ * 4ntl-firefox-v<version>.zip (the free GitHub edition), dist-store/ →
+ * 4ntl-store-v<version>.zip and dist-store-firefox/ → 4ntl-store-firefox-v<version>.zip
+ * (the paid store edition). Dependency-free (deflate via node:zlib).
  *
- *   node scripts/package.mjs [dist-firefox]
+ *   node scripts/package.mjs [dist-firefox | dist-store | dist-store-firefox]
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -11,10 +12,11 @@ import { fileURLToPath } from 'node:url';
 import { deflateRawSync } from 'node:zlib';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const firefox = process.argv[2] === 'dist-firefox';
-const dist = path.join(root, firefox ? 'dist-firefox' : 'dist');
+const folder = process.argv[2] ?? 'dist';
+if (!/^dist(-store)?(-firefox)?$/.test(folder)) throw new Error(`not a release folder: ${folder}`);
+const dist = path.join(root, folder);
 const { version } = JSON.parse(await readFile(path.join(dist, 'manifest.json'), 'utf8'));
-const output = path.join(root, `4ntl-${firefox ? 'firefox-' : ''}v${version}.zip`);
+const output = path.join(root, `${folder.replace(/^dist/, '4ntl')}-v${version}.zip`);
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;

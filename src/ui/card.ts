@@ -21,10 +21,13 @@ import { ensureFlagFont } from './flags';
 import { clampToViewport, placeCard, type Point, type Rect } from './position';
 import {
   renderChoices,
+  renderBanner,
   renderIndicatorHeader,
+  renderLocked,
   renderMenu,
   renderNotice,
   renderSection,
+  renderSupport,
   renderTitleHeader,
   type MenuItem,
   type SectionActions,
@@ -39,6 +42,9 @@ export interface CardClient {
   /** Adds (or refreshes) an entry in the saved list. */
   save(entry: SavedEntry): Promise<void>;
   openList(): void;
+  /** Store edition: open the checkout / the "restore purchase" page. */
+  unlock(): void;
+  restore(): void;
 }
 
 export type CardPlacement =
@@ -189,6 +195,14 @@ export class ResultCard {
     this.#menu = undefined;
     this.#resave = undefined;
     this.#results = new Map();
+    const banner =
+      'banner' in view && view.banner
+        ? [
+            renderBanner(view.banner, () => {
+              this.#options.client.unlock();
+            }),
+          ]
+        : [];
 
     switch (view.kind) {
       case 'lookup': {
@@ -215,6 +229,8 @@ export class ResultCard {
             close,
           }),
           ...sections,
+          ...banner,
+          renderSupport(),
         );
         break;
       }
@@ -222,7 +238,26 @@ export class ResultCard {
         this.#card.replaceChildren(
           renderTitleHeader('Choose an indicator', close),
           renderChoices(view.choices, view.truncated, (choice) => {
-            this.show({ kind: 'lookup', indicator: choice.indicator, providers: choice.providers });
+            this.show({
+              kind: 'lookup',
+              indicator: choice.indicator,
+              providers: choice.providers,
+              ...(view.banner ? { banner: view.banner } : {}),
+            });
+          }),
+          ...banner,
+        );
+        break;
+      case 'locked':
+        this.#card.replaceChildren(
+          renderTitleHeader('Unlock 4NTL', close),
+          renderLocked(view.text, {
+            unlock: () => {
+              this.#options.client.unlock();
+            },
+            restore: () => {
+              this.#options.client.restore();
+            },
           }),
         );
         break;

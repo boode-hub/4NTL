@@ -58,6 +58,19 @@ test.describe('settings page', () => {
   });
 });
 
+test('the GitHub edition never mentions payment: Support instead of a license', async ({
+  context,
+  extensionId,
+}) => {
+  const page = await openSettings(context, extensionId);
+  await expect(page.locator('#license-panel')).toBeHidden();
+  await expect(page.getByRole('link', { name: '♥ Sponsor' })).toHaveAttribute(
+    'href',
+    'https://github.com/sponsors/boode-hub',
+  );
+  await expect(page.locator('main')).not.toContainText('$2', { useInnerText: true }); // shown text only
+});
+
 test('the Sharingan theme and a custom color apply to the preview and to page cards', async ({
   context,
   extensionId,
