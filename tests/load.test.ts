@@ -11,7 +11,17 @@ import {
   parseIndicator,
   resolveSelection,
 } from '../src/core/indicator';
+import { flagEmoji } from '../src/core/format';
 import { unwrapRedirect } from '../src/core/redirects';
+import { formatReportText } from '../src/core/report-text';
+import {
+  addToList,
+  loadList,
+  normalizeList,
+  SAVED_LIST_MAX,
+  toCsv,
+  type SavedEntry,
+} from '../src/core/saved-list';
 import type { Report } from '../src/core/result';
 import { LookupService } from '../src/background/lookup-service';
 import { PROVIDERS } from '../src/providers/registry';
@@ -171,5 +181,115 @@ describe('lookup service under load', () => {
       cached: true,
     });
     expect(afterRestart).not.toHaveBeenCalled();
+  });
+});
+
+describe('saved list under load', () => {
+  const entry = (i: number): SavedEntry => ({
+    value: `203.0.${Math.floor(i / 256) % 256}.${i % 256}`,
+    type: 'ipv4',
+    verdict: 'malicious',
+    summary: 'AbuseIPDB: Malicious 100% · VirusTotal: Malicious 14 / 94',
+    country: '🇩🇪 Germany (DE)',
+    savedAt: i,
+  });
+
+  it('applies 1,200 simultaneous saves from one page without losing any, capped at the limit', async () => {
+    const store = new MemoryStore();
+    const start = performance.now();
+    await Promise.all(Array.from({ length: 1200 }, (_, i) => addToList(entry(i), store)));
+    const list = await loadList(store);
+    expect(performance.now() - start).toBeLessThan(5000);
+    expect(list).toHaveLength(SAVED_LIST_MAX);
+    // Newest first: the last 1,000 saves, in reverse order.
+    expect(list[0]?.savedAt).toBe(1199);
+    expect(list.at(-1)?.savedAt).toBe(200);
+    expect(new Set(list.map((e) => e.value)).size).toBe(SAVED_LIST_MAX);
+  });
+
+  it('a failing write does not block the ones after it', async () => {
+    const store = new MemoryStore();
+    const set = vi.spyOn(store, 'set').mockRejectedValueOnce(new Error('quota'));
+    const results = await Promise.allSettled([
+      addToList(entry(1), store),
+      addToList(entry(2), store),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(['rejected', 'fulfilled']);
+    expect((await loadList(store)).map((e) => e.savedAt)).toEqual([2]);
+    expect(set).toHaveBeenCalledTimes(2);
+  });
+
+  it('exports a full list of the longest entries quickly', () => {
+    const big = Array.from({ length: SAVED_LIST_MAX }, (_, i) => ({
+      ...entry(i),
+      value: `https://example.com/${'a'.repeat(4000)}${i}`,
+      type: 'url' as const,
+    }));
+    expect(timed(() => toCsv(big))).toBeLessThan(500);
+    expect(toCsv(big).split('\r\n')).toHaveLength(SAVED_LIST_MAX + 1);
+  });
+
+  it('survives any garbage in storage (fuzz)', () => {
+    const junk = [
+      null,
+      undefined,
+      0,
+      NaN,
+      '',
+      'x',
+      [],
+      {},
+      { value: 1 },
+      { value: '1.1.1.1', type: 'ipv4', savedAt: Infinity },
+      { value: '1.1.1.1', type: 'ipv4', savedAt: 1e300 },
+      { value: '1.1.1.1', type: 'ipv4', summary: { toString: () => 'x' } },
+      { value: 'x'.repeat(100_000), type: 'url', summary: 'y'.repeat(100_000) },
+      Object.create(null) as object,
+    ];
+    for (let round = 0; round < 2000; round++) {
+      const raw = Array.from(
+        { length: round % 7 },
+        (_, i) => junk[(round * 31 + i * 7) % junk.length],
+      );
+      const list = normalizeList(raw);
+      for (const e of list) {
+        expect(typeof e.value).toBe('string');
+        expect(e.value.length).toBeLessThanOrEqual(4096);
+        expect(e.summary.length).toBeLessThanOrEqual(500);
+      }
+      expect(() => toCsv(list)).not.toThrow();
+    }
+  });
+});
+
+describe('report text and flags', () => {
+  it('draws a flag for every two-letter code', () => {
+    for (let a = 65; a <= 90; a++) {
+      for (let b = 65; b <= 90; b++) {
+        const flag = flagEmoji(String.fromCharCode(a, b));
+        expect([flag.codePointAt(0), flag.codePointAt(2), flag.length]).toEqual([
+          0x1f1e6 + a - 65,
+          0x1f1e6 + b - 65,
+          4,
+        ]);
+      }
+    }
+  });
+
+  it('formats a report with huge, hostile values quickly', () => {
+    const facts = Array.from({ length: 200 }, (_, i) => ({
+      label: `L${i}`,
+      value: '<img src=x onerror=alert(1)>\n'.repeat(500),
+    }));
+    const outcome = {
+      ok: true as const,
+      fetchedAt: 0,
+      cached: false,
+      report: { ...REPORT, facts, tags: Array.from({ length: 500 }, () => 'tag') },
+    };
+    const results = [{ name: 'A', outcome }, { name: 'B' }];
+    expect(
+      timed(() => formatReportText({ type: 'ipv4', value: '8.8.8.8' }, results, 0)),
+    ).toBeLessThan(200);
   });
 });

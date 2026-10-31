@@ -9,7 +9,8 @@ Select an IP, domain, URL or file hash, right-click, and see the **VirusTotal** 
 **AbuseIPDB** verdicts right where you are. No more copy → new tab → paste → back.
 
 [![CI](https://github.com/boode-hub/4ntl/actions/workflows/ci.yml/badge.svg)](https://github.com/boode-hub/4ntl/actions/workflows/ci.yml)
-![Chrome · Edge · Brave](https://img.shields.io/badge/Chrome%20·%20Edge%20·%20Brave-123%2B-4285F4)
+![Chrome · Edge · Brave · Opera · Vivaldi](https://img.shields.io/badge/Chrome%20·%20Edge%20·%20Brave%20·%20Opera%20·%20Vivaldi-123%2B-4285F4)
+![Firefox](https://img.shields.io/badge/Firefox-140%2B-FF7139)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-0f172a)
 ![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-16a34a)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -43,6 +44,13 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
   Select a whole log line and it lets you pick the indicator.
 - **IPv4, IPv6, domains, URLs, MD5, SHA-1, SHA-256.** AbuseIPDB checks IPs;
   VirusTotal checks everything.
+- **Copy what you need.** The copy button offers the indicator alone or the **full
+  report** as plain text (verdicts, details, links) to paste into a ticket or chat.
+- **Saved list.** Press the bookmark on a card to put the indicator on your list.
+  Open it (click the bookmark again, or right-click the 4NTL icon → **Saved list**),
+  filter it (e.g. only IPs, or only malicious), then **Copy indicators** (one per
+  line, ready for a block list) or **Download CSV**. It stays until you clear it.
+- **Country flags** next to the country, on every platform (Windows included).
 - **Saves your quota.** Results are reused for 30 minutes (configurable, memory only),
   and identical requests are never sent twice.
 - **Private by default.** Private and reserved IPs (10/8, 192.168/16, fe80::/10, …)
@@ -52,9 +60,11 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
   polling, no runtime dependencies.
 - **Out of your way.** The card opens about 3 cm beside the pointer, so it never
   covers what you clicked, and you can drag it anywhere by its header.
-- **Themes.** Auto, Light, Dark and **Sharingan**, plus any accent color you like.
-- **Works everywhere.** On browser pages, the PDF viewer or the Web Store the
-  result opens in a small window instead.
+- **Themes.** Auto, Light, Dark and **Sharingan**, plus any accent color and any
+  card background you like (text stays readable on light or dark backgrounds).
+- **Works everywhere it's allowed.** Inside embedded frames from other sites the
+  card opens in the page's corner; on browser pages, the PDF viewer or the Web
+  Store it opens in a small window. See [Where 4NTL can't run](#where-4ntl-cant-run).
 
 ## Themes
 
@@ -62,24 +72,34 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
 | :-------------------------------------------------------------------: | :-----------------------------------------------------------------: | :---------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: |
 | <img src="docs/media/card-light.png" width="200" alt="Light theme" /> | <img src="docs/media/card-dark.png" width="200" alt="Dark theme" /> | <img src="docs/media/card-sharingan.png" width="200" alt="Sharingan theme" /> | <img src="docs/media/card-sharingan-violet.png" width="200" alt="Sharingan theme with a violet accent" /> |
 
-Pick a theme and accent color in the settings and see it live before you use it.
+Pick a theme, accent color and card background in the settings and see it live before you use it.
 In the Sharingan theme the eye spins while results are loading.
 
 <img src="docs/media/settings-appearance.png" width="520" alt="Appearance settings with theme choices, accent color picker and a live preview card" />
 
 ## Install
 
-Works in Chrome, Edge, Brave and other Chromium browsers (version 123+). Takes about a minute:
+| Browser                                                | Package                   | Version |
+| ------------------------------------------------------ | ------------------------- | ------- |
+| Chrome, Edge, Brave, Opera, Vivaldi (any Chromium one) | `4ntl-vX.Y.Z.zip`         | 123+    |
+| Firefox                                                | `4ntl-firefox-vX.Y.Z.zip` | 140+    |
+
+Chromium browsers, about a minute:
 
 <img src="docs/media/install.gif" width="700" alt="Downloading the zip from Releases, opening the extensions page, turning on Developer mode, Load unpacked, and the installed 4NTL extension with its settings page." />
 
 1. Download the latest `4ntl-vX.Y.Z.zip` from
    [Releases](https://github.com/boode-hub/4ntl/releases/latest) and unzip it into
    a folder you'll keep.
-2. Open `chrome://extensions` (Edge: `edge://extensions`, Brave: `brave://extensions`).
+2. Open `chrome://extensions` (Edge: `edge://extensions`, Brave: `brave://extensions`,
+   Opera: `opera://extensions`, Vivaldi: `vivaldi://extensions`).
 3. Turn on **Developer mode**, click **Load unpacked**, and pick that folder.
 4. The settings page opens: paste your API keys and press **Test** next to each.
    Later, open it again by right-clicking the 4NTL icon → **Options**.
+
+Firefox: download `4ntl-firefox-vX.Y.Z.zip`, open `about:debugging#/runtime/this-firefox`,
+click **Load Temporary Add-on…** and pick the zip. Firefox removes temporary add-ons
+when it closes; the permanent install will come from Firefox Add-ons (AMO).
 
 Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups/min,
 500/day) · [AbuseIPDB](https://www.abuseipdb.com/account/api) (1,000 checks/day).
@@ -96,7 +116,8 @@ Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups
 | Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**              |
 
 Read the verdict. **Full report ↗** opens the provider's page; **Esc** or a click
-elsewhere closes the card; the copy button copies the cleaned-up indicator.
+elsewhere closes the card. The copy button copies the indicator or the full report;
+the bookmark saves it to your list.
 
 Several indicators in one selection? You get a list to pick from:
 
@@ -111,6 +132,18 @@ Several indicators in one selection? You get a list to pick from:
 
 The raw numbers are always shown next to the verdict.
 
+### Where 4NTL can't run
+
+Browsers don't let any extension onto some pages, and some sites replace the
+right-click menu with their own:
+
+| Where                                                                                                  | What to do                                                                                                        |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Browser pages (`chrome://`, `edge://`, `about:`, the new-tab page), extension stores, other extensions | Copy the indicator, then use the address bar: `4ntl` + space + paste                                              |
+| Sites with their own right-click menu (Google Docs/Sheets, Office online, some SIEM consoles)          | Select and press **Alt+Shift+L**, or use the address bar. Docs and Sheets draw text on a canvas, so copy it first |
+| Local files (`file://`)                                                                                | On the extensions page, open 4NTL's **Details** and turn on **Allow access to file URLs**                         |
+| PDFs in the browser's viewer                                                                           | The menu works; the result opens in a small window                                                                |
+
 ## Privacy and security
 
 - Only `virustotal.com` and `abuseipdb.com` can be contacted, enforced by the
@@ -119,7 +152,7 @@ The raw numbers are always shown next to the verdict.
 - The page-side card never sees your API keys, and renders API data as plain text only.
 - No analytics, no telemetry, no third-party code.
 
-Details in [SECURITY.md](SECURITY.md).
+Details in [SECURITY.md](SECURITY.md) and the [privacy policy](PRIVACY.md).
 
 ## Development
 
@@ -144,6 +177,7 @@ npm run dev
 | `npm run check`         | Everything CI runs, except e2e                                   |
 | `npm run try`           | Opens a browser with 4NTL and a demo page, for trying it by hand |
 | `npm run demo`          | Regenerates the GIFs and screenshots in `docs/media`             |
+| `npm run store`         | Chrome Web Store images (`docs/store`) and the upload zip        |
 | `npm run package`       | Builds and zips `4ntl-vX.Y.Z.zip` for release                    |
 
 First-time e2e setup: `npm run e2e:install`. If your machine blocks programs in
@@ -151,8 +185,9 @@ First-time e2e setup: `npm run e2e:install`. If your machine blocks programs in
 (for example `.cache/ms-playwright`, which git ignores) before installing and running.
 `npm run demo` also needs `ffmpeg` on your PATH for the GIFs.
 
-Every push runs lint, type-check, ~380 unit tests and the end-to-end suite in
-GitHub Actions; tagging `vX.Y.Z` publishes a release with the zip attached.
+Every push runs lint, type-check, ~530 unit tests and the end-to-end suite in
+GitHub Actions; tagging `vX.Y.Z` publishes a release with the Chromium and
+Firefox zips attached. `npm run build` builds both (`dist/`, `dist-firefox/`).
 
 More: [architecture](docs/ARCHITECTURE.md) · [adding a provider](docs/ADDING_A_PROVIDER.md) ·
 [roadmap](docs/NEXT.md) · [changelog](CHANGELOG.md)
@@ -163,3 +198,6 @@ More: [architecture](docs/ARCHITECTURE.md) · [adding a provider](docs/ADDING_A_
 
 The Sharingan theme is a fan tribute to _Naruto_ by Masashi Kishimoto. 4NTL is not
 affiliated with or endorsed by its rights holders, VirusTotal, or AbuseIPDB.
+
+Country flags: [Twemoji](https://github.com/twitter/twemoji) artwork (CC BY 4.0) via
+the Twemoji Country Flags font. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

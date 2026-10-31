@@ -4,8 +4,9 @@ import { flush, NOW } from '../../tests/helpers';
 import type { Indicator } from '../core/indicator';
 import type { CardView } from '../core/messages';
 import type { LookupOutcome, Report } from '../core/result';
+import type { SavedEntry } from '../core/saved-list';
 import type { Appearance } from '../core/settings';
-import { HOST_TAG, ResultCard, type CardClient } from './card';
+import { HOST_TAG, isLightColor, ResultCard, type CardClient } from './card';
 import { pointRect } from './position';
 
 const IP: Indicator = { type: 'ipv4', value: '185.220.101.4' };
@@ -57,7 +58,12 @@ function client(
   lookup: CardClient['lookup'] = () =>
     Promise.resolve({ ok: true, report: REPORT, fetchedAt: NOW, cached: false }),
 ) {
-  return { lookup: vi.fn(lookup), openOptions: vi.fn() };
+  return {
+    lookup: vi.fn(lookup),
+    openOptions: vi.fn(),
+    save: vi.fn<(entry: SavedEntry) => Promise<void>>(() => Promise.resolve()),
+    openList: vi.fn(),
+  };
 }
 
 function mount(c = client(), options: { inline?: boolean; onClose?: () => void } = {}) {
@@ -302,24 +308,158 @@ describe('ResultCard – lifecycle', () => {
     expect(card.closed).toBe(false);
   });
 
-  it('copies the indicator and confirms', async () => {
-    const writeText = vi.fn(() => Promise.resolve());
+  const pick = ($$: (s: string) => HTMLElement[], label: string) =>
+    $$('.menu-item').find((item) => item.textContent === label);
+
+  it('copies the indicator from the copy menu and confirms', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>(() => Promise.resolve());
     vi.stubGlobal('navigator', { clipboard: { writeText } });
     vi.useFakeTimers();
     try {
-      const { card, $ } = mount();
+      const { card, $, $$ } = mount();
       card.show(LOOKUP_VIEW);
-      const button = $('[aria-label="Copy indicator"]');
+      const button = $('[aria-label="Copy…"]');
       button?.click();
+      expect(button?.getAttribute('aria-expanded')).toBe('true');
+      pick($$, 'Copy indicator')?.click();
+      expect($('.menu')).toBeNull();
       await vi.waitFor(() => {
         expect(button?.title).toBe('Copied');
       });
       expect(writeText).toHaveBeenCalledWith('185.220.101.4');
       vi.advanceTimersByTime(1500);
-      expect(button?.title).toBe('Copy indicator');
+      expect(button?.title).toBe('Copy…');
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('copies the whole report as text', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>(() => Promise.resolve());
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const { card, $, $$ } = mount();
+    card.show(LOOKUP_VIEW);
+    await flush();
+    $('[aria-label="Copy…"]')?.click();
+    pick($$, 'Copy full report')?.click();
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+    });
+    const text = writeText.mock.calls[0]?.[0] ?? '';
+    expect(text).toContain('185.220.101.4 (IPv4)');
+    expect(text).toContain('AbuseIPDB: Malicious, 100% abuse confidence');
+    expect(text).toContain('  ISP: Example ISP');
+    expect(text).toContain('https://www.abuseipdb.com/check/185.220.101.4');
+  });
+
+  it('closes the copy menu on Escape before closing the card', () => {
+    const { card, $ } = mount();
+    card.show(LOOKUP_VIEW);
+    $('[aria-label="Copy…"]')?.click();
+    expect($('.menu')).not.toBeNull();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect($('.menu')).toBeNull();
+    expect(card.closed).toBe(false);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(card.closed).toBe(true);
+  });
+
+  it('saves to the list, keeps the entry current, then opens the list', async () => {
+    const pending = deferred();
+    const c = client(() => pending.promise);
+    const { card, $ } = mount(c);
+    card.show({ ...LOOKUP_VIEW, providers: [PROVIDERS[0]] });
+    const save = $('[aria-label="Save to list"]');
+    save?.click();
+    await flush();
+    expect(c.save).toHaveBeenCalledWith({
+      value: '185.220.101.4',
+      type: 'ipv4',
+      summary: '',
+      country: '',
+      savedAt: NOW,
+    });
+    expect(save?.classList.contains('on')).toBe(true);
+
+    pending.resolve({ ok: true, report: REPORT, fetchedAt: NOW, cached: false });
+    await flush();
+    expect(c.save).toHaveBeenLastCalledWith(
+      expect.objectContaining({ verdict: 'malicious', summary: 'AbuseIPDB: Malicious 100%' }),
+    );
+
+    save?.click();
+    expect(c.openList).toHaveBeenCalled();
+  });
+
+  it('stays unsaved when saving fails, and can try again', async () => {
+    const c = client();
+    c.save.mockRejectedValueOnce(new Error('quota'));
+    const { card, $ } = mount(c);
+    card.show(LOOKUP_VIEW);
+    const save = $('[aria-label="Save to list"]');
+    save?.click();
+    await flush();
+    expect(save?.classList.contains('on')).toBe(false);
+    expect(save?.title).toBe('Could not save. Try again.');
+    save?.click();
+    await flush();
+    expect(save?.classList.contains('on')).toBe(true);
+    expect(c.save).toHaveBeenCalledTimes(2);
+    expect(c.openList).not.toHaveBeenCalled();
+  });
+
+  it('a new lookup in the same card starts unsaved', async () => {
+    const c = client();
+    const { card, $ } = mount(c);
+    card.show(LOOKUP_VIEW);
+    $('[aria-label="Save to list"]')?.click();
+    await flush();
+    card.show({ ...LOOKUP_VIEW, indicator: { type: 'ipv4', value: '8.8.4.4' } });
+    const save = $('[aria-label="Save to list"]');
+    expect(save?.classList.contains('on')).toBe(false);
+    save?.click();
+    await flush();
+    expect(c.save).toHaveBeenLastCalledWith(expect.objectContaining({ value: '8.8.4.4' }));
+    expect(c.openList).not.toHaveBeenCalled();
+  });
+
+  it('closing the card while a save is in flight is harmless', async () => {
+    let finish: () => void = () => undefined;
+    const c = client();
+    c.save.mockImplementationOnce(() => new Promise<void>((r) => (finish = r)));
+    const { card, $ } = mount(c);
+    card.show(LOOKUP_VIEW);
+    $('[aria-label="Save to list"]')?.click();
+    card.close();
+    finish();
+    await flush();
+    expect(card.closed).toBe(true);
+  });
+
+  it('a retry drops the old result from the copied report until the new one arrives', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>(() => Promise.resolve());
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const outcomes: LookupOutcome[] = [
+      { ok: false, error: { code: 'timeout', message: 'Timed out.' } },
+    ];
+    const pending = deferred();
+    const c = client(() => {
+      const next = outcomes.shift();
+      return next ? Promise.resolve(next) : pending.promise;
+    });
+    const { card, $, $$ } = mount(c);
+    card.show({ ...LOOKUP_VIEW, providers: [PROVIDERS[0]] });
+    await flush();
+    $$('button')
+      .find((b) => b.textContent === 'Retry')
+      ?.click();
+    $('[aria-label="Copy…"]')?.click();
+    pick($$, 'Copy full report')?.click();
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+    });
+    expect(writeText.mock.calls[0]?.[0]).toContain('AbuseIPDB: still checking');
+    expect(writeText.mock.calls[0]?.[0]).not.toContain('Timed out');
   });
 
   it('falls back to execCommand when the Clipboard API is unavailable', async () => {
@@ -330,8 +470,9 @@ describe('ResultCard – lifecycle', () => {
     Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true });
     const { card, $ } = mount();
     card.show(LOOKUP_VIEW);
-    const button = $('[aria-label="Copy indicator"]');
+    const button = $('[aria-label="Copy…"]');
     button?.click();
+    root?.querySelector<HTMLElement>('.menu-item')?.click();
     await vi.waitFor(() => {
       expect(button?.title).toBe('Copied');
     });
@@ -360,14 +501,41 @@ describe('ResultCard – appearance', () => {
     expect(card?.style.getPropertyValue('--accent')).toBe('');
   });
 
+  it.each([
+    ['#f5f0e6', 'light'],
+    ['#1a1b2c', 'dark'],
+  ])('uses background %s with %s text', (background, surface) => {
+    const card = themed({ theme: 'dark', accent: '', background });
+    expect(card?.style.getPropertyValue('--bg')).toBe(background);
+    expect(card?.dataset.surface).toBe(surface);
+  });
+
+  it.each([
+    ['#ffffff', true],
+    ['#f5f0e6', true],
+    ['#9ca3af', true],
+    ['#6b7280', false],
+    ['#ff2d3d', true],
+    ['#b91c1c', false],
+    ['#000000', false],
+  ])('%s needs dark text: %s', (color, light) => {
+    expect(isLightColor(color)).toBe(light);
+  });
+
+  it('keeps the theme background by default', () => {
+    const card = themed({ theme: 'dark', accent: '', background: '' });
+    expect(card?.style.getPropertyValue('--bg')).toBe('');
+    expect(card?.dataset.surface).toBeUndefined();
+  });
+
   it('applies the chosen theme and accent', () => {
-    const card = themed({ theme: 'sharingan', accent: '#8b5cf6' });
+    const card = themed({ theme: 'sharingan', accent: '#8b5cf6', background: '' });
     expect(card?.dataset.theme).toBe('sharingan');
     expect(card?.style.getPropertyValue('--accent')).toBe('#8b5cf6');
   });
 
   it('draws the Sharingan in the header (CSS shows it only in that theme)', () => {
-    const card = themed({ theme: 'sharingan', accent: '' });
+    const card = themed({ theme: 'sharingan', accent: '', background: '' });
     const eye = card?.querySelector('.header .eye');
     expect(eye?.getAttribute('aria-hidden')).toBe('true');
     expect(eye?.querySelectorAll('.tomoe')).toHaveLength(3);
@@ -421,7 +589,7 @@ describe('ResultCard – dragging', () => {
   it('does not start a drag from header buttons', () => {
     const { card, $ } = mount();
     card.show(LOOKUP_VIEW);
-    const button = $('[aria-label="Copy indicator"]');
+    const button = $('[aria-label="Copy…"]');
     button?.dispatchEvent(
       new PointerEvent('pointerdown', { bubbles: true, composed: true, button: 0, pointerId: 2 }),
     );

@@ -142,6 +142,65 @@ test.describe('in-page lookups', () => {
     await expect(page.locator('x-4ntl-card')).toHaveCount(0);
   });
 
+  test('shows country flags with the bundled font', async ({ page, menuClick }) => {
+    await menuClick('185.220.101.4', 'abuseipdb');
+    const card = page.locator('x-4ntl-card .card');
+    await expect(card.locator('dd', { hasText: 'Germany (DE)' })).toHaveText('🇩🇪 Germany (DE)');
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          [...document.fonts].some((f) => f.family.includes('4NTL Flags') && f.status === 'loaded'),
+        ),
+      )
+      .toBe(true);
+  });
+
+  test('saves to the list, offers both copy choices, and the list exports', async ({
+    page,
+    context,
+    extensionId,
+    menuClick,
+  }) => {
+    await menuClick('185.220.101.4', 'all');
+    const card = page.locator('x-4ntl-card .card');
+    await expect(card.locator('[data-provider="virustotal"][data-verdict]')).toBeVisible();
+
+    await card.getByRole('button', { name: 'Copy…' }).click();
+    await expect(card.getByRole('menuitem')).toHaveText(['Copy indicator', 'Copy full report']);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await card.getByRole('menuitem', { name: 'Copy full report' }).click();
+    await expect(card.getByRole('menu')).toHaveCount(0);
+    await expect(card.getByRole('button', { name: 'Copied' })).toBeVisible();
+
+    await card.getByRole('button', { name: 'Save to list' }).click();
+    const opened = context.waitForEvent('page');
+    await card.getByRole('button', { name: 'Saved · open the list' }).click();
+    const list = await opened;
+    await expect(list).toHaveURL(`chrome-extension://${extensionId}/list.html`);
+    // What the card copied (on a plain-http page, via the fallback) is the full report.
+    const report = await list.evaluate(() => navigator.clipboard.readText());
+    expect(report).toContain('185.220.101.4 (IPv4)');
+    expect(report).toContain('AbuseIPDB: Malicious, 100% abuse confidence');
+    expect(report).toContain('VirusTotal: Malicious, 14 / 94');
+    expect(report).toContain('Country: 🇩🇪 Germany (DE)');
+    const row = list.locator('#rows tr');
+    await expect(row).toHaveCount(1);
+    await expect(row.locator('td').first()).toHaveText('185.220.101.4');
+    await expect(row.locator('.verdict')).toHaveText('Malicious');
+    await expect(row).toContainText('🇩🇪 Germany (DE)');
+
+    await list.locator('#filter').selectOption('hash');
+    await expect(list.locator('#rows tr')).toHaveCount(0);
+    await list.locator('#filter').selectOption('ip');
+    const download = list.waitForEvent('download');
+    await list.getByRole('button', { name: 'Download CSV' }).click();
+    expect((await download).suggestedFilename()).toMatch(/^4ntl-saved-\d{4}-\d{2}-\d{2}\.csv$/);
+
+    await list.getByRole('button', { name: 'Remove 185.220.101.4' }).click();
+    await expect(list.locator('#rows tr')).toHaveCount(0);
+    await expect(list.locator('#empty')).toBeVisible();
+  });
+
   test('the keyboard shortcut looks up the current selection', async ({ page, worker }) => {
     await page.locator('#hash').selectText();
     await worker.evaluate(

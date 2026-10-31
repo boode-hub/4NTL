@@ -15,6 +15,7 @@
           <h1>4NTL</h1>
           <p>Threat-intel lookups straight from the right-click menu.</p>
         </div>
+        <a class="btn masthead-link" href="list.html" target="_blank">Saved list</a>
       </header>
 
       <section class="panel" aria-labelledby="keys-title">
@@ -22,6 +23,10 @@
         <p class="hint">
           Keys stay in this browser profile. They are never synced and are only ever sent to the
           provider they belong to.
+        </p>
+        <p id="host-access" class="banner" hidden>
+          4NTL isn't allowed to contact VirusTotal and AbuseIPDB yet, so lookups will fail.
+          <button id="grant-access" class="btn" type="button">Allow</button>
         </p>
         <div id="providers"></div>
       </section>
@@ -56,9 +61,23 @@
           <label for="accent">Accent color</label>
           <div class="input-row">
             <input id="accent" type="color" />
-            <button id="accent-reset" class="btn" type="button">Use theme color</button>
+            <button id="accent-reset" class="btn" type="button" aria-label="Reset accent">
+              Use theme color
+            </button>
           </div>
           <small>Links, highlights and the Sharingan's iris.</small>
+        </div>
+        <div class="field">
+          <label for="background">Card background</label>
+          <div class="input-row">
+            <input id="background" type="color" />
+            <button id="background-reset" class="btn" type="button" aria-label="Reset background">
+              Use theme color
+            </button>
+          </div>
+          <small
+            >The inside of the result card. Text switches to light or dark to stay readable.</small
+          >
         </div>
         <span class="legend">Preview</span>
         <div id="preview" class="preview"></div>

@@ -22,6 +22,7 @@ import { LookupService } from './lookup-service';
 import {
   ELEMENT_ITEM_ID,
   LINK_ITEM_ID,
+  LIST_ITEM_ID,
   menuItemId,
   registerMenus,
   scopeFromMenuItem,
@@ -59,6 +60,9 @@ const linkDeps: LinkDeps = {
   present: (view, target) => presentView(view, target, deps),
 };
 const openOptions = () => chrome.runtime.openOptionsPage();
+const openList = async () => {
+  await chrome.tabs.create({ url: chrome.runtime.getURL('list.html') });
+};
 
 function report(error: unknown) {
   console.error('[4NTL]', error);
@@ -90,6 +94,10 @@ type MenuClick = Pick<
 
 async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): Promise<void> {
   const target = frameOf(tab, info.frameId);
+  if (info.menuItemId === LIST_ITEM_ID) {
+    await openList();
+    return;
+  }
   if (info.menuItemId === LINK_ITEM_ID || info.menuItemId === ELEMENT_ITEM_ID) {
     await checkLink({ target, linkUrl: info.linkUrl, pageUrl: info.pageUrl }, linkDeps);
     return;
@@ -180,6 +188,7 @@ chrome.runtime.onMessage.addListener(
     extensionId: chrome.runtime.id,
     service,
     openOptions,
+    openList,
     onCaptured: async (url, sender) => {
       await checkCaptured(url, frameOf(sender.tab, sender.frameId), linkDeps.present);
     },

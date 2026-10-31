@@ -1,6 +1,6 @@
 {
   "name": "4ntl",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "private": true,
   "description": "Right-click threat-intel lookups (VirusTotal, AbuseIPDB) with an inline result card.",
   "license": "MIT",
@@ -9,13 +9,14 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "node scripts/build.mjs && node scripts/verify-dist.mjs",
+    "build": "node scripts/build.mjs && node scripts/verify-dist.mjs && node scripts/build.mjs --firefox && node scripts/verify-dist.mjs dist-firefox",
     "build:e2e": "node scripts/build.mjs --e2e",
     "dev": "node scripts/build.mjs --watch",
     "try": "npm run build && node scripts/try.mjs",
     "icons": "node scripts/make-icons.mjs",
     "demo": "node scripts/build.mjs --e2e && node scripts/build.mjs && node scripts/demo.mjs",
-    "package": "npm run build && node scripts/package.mjs",
+    "package": "npm run build && node scripts/package.mjs && node scripts/package.mjs dist-firefox",
+    "store": "node scripts/build.mjs --e2e && node scripts/store-assets.mjs && npm run package",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

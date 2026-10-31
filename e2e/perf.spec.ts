@@ -129,3 +129,103 @@ test('after an update, leftovers from the old version are replaced by one workin
   await expect(page.locator('x-4ntl-card')).toHaveCount(1);
   await expect(page.getByText('stale card from a previous version')).toHaveCount(0);
 });
+
+test('the saved list stays fast and exact with 1,000 entries', async ({
+  page: list, // the fixture page: the install-time settings tab is already dealt with
+  extensionId,
+  worker,
+}) => {
+  await worker.evaluate(
+    (max) =>
+      chrome.storage.local.set({
+        'savedList.v1': Array.from({ length: max }, (_, i) => ({
+          value: i % 2 ? `198.51.${Math.floor(i / 256)}.${i % 256}` : `evil-${i}.example`,
+          type: i % 2 ? 'ipv4' : 'domain',
+          verdict: i % 3 ? 'malicious' : 'clean',
+          summary: 'AbuseIPDB: Malicious 100% · VirusTotal: Malicious 14 / 94',
+          country: '🇩🇪 Germany (DE)',
+          savedAt: Date.now() - i * 60_000,
+        })),
+      }),
+    1000,
+  );
+
+  const t0 = Date.now();
+  await list.goto(`chrome-extension://${extensionId}/list.html`);
+  await expect(list.locator('#rows tr')).toHaveCount(1000);
+  const openMs = Date.now() - t0;
+
+  const t1 = Date.now();
+  await list.locator('#filter').selectOption('ip');
+  await expect(list.locator('#rows tr')).toHaveCount(500);
+  const filterMs = Date.now() - t1;
+  await expect(list.locator('#count')).toHaveText('500 of 1000');
+
+  // Capture the copy in the page: the system clipboard is shared with tests running in parallel.
+  await list.evaluate(() => {
+    navigator.clipboard.writeText = (text) => {
+      (window as unknown as { copied: string }).copied = text;
+      return Promise.resolve();
+    };
+  });
+  await list.getByRole('button', { name: 'Copy indicators' }).click();
+  const copied = String(
+    await list.evaluate(() => (window as unknown as { copied?: string }).copied),
+  ).split('\n');
+  expect(copied).toHaveLength(500);
+  expect(copied.filter((line) => !/^198\.51\.\d+\.\d+$/.test(line))).toEqual([]);
+
+  list.once('dialog', (dialog) => void dialog.accept());
+  await list.getByRole('button', { name: 'Clear list' }).click();
+  await expect(list.locator('#empty')).toBeVisible();
+  expect(await worker.evaluate(() => chrome.storage.local.get('savedList.v1'))).toEqual({
+    'savedList.v1': [],
+  });
+
+  console.log('4NTL saved list:', JSON.stringify({ openMs, filterMs }));
+  expect(openMs).toBeLessThan(3000);
+  expect(filterMs).toBeLessThan(1000);
+});
+
+test('copy menu and saving leak nothing over 50 cards', async ({ page, worker, settings }) => {
+  test.setTimeout(120_000);
+  await settings({ apiKeys: { virustotal: VT_KEY, abuseipdb: ABUSE_KEY } });
+  await installFakeApi(worker, ROUTES);
+  await page.goto(PAGE_URL);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Performance.enable');
+  const metrics = async () => {
+    for (let pass = 0; pass < 3; pass++) await cdp.send('HeapProfiler.collectGarbage');
+    const { metrics: list } = await cdp.send('Performance.getMetrics');
+    return Object.fromEntries(list.map((m) => [m.name, m.value]));
+  };
+  const card = page.locator('x-4ntl-card .card');
+  const useCard = async (ip: string) => {
+    await menuClick(worker, ip);
+    await expect(card.locator('[data-verdict]')).toHaveCount(2);
+    await card.getByRole('button', { name: 'Save to list' }).click();
+    await expect(card.locator('.icon-btn.on')).toHaveCount(1);
+    await card.getByRole('button', { name: 'Copy…' }).click();
+    await card.getByRole('menuitem', { name: 'Copy full report' }).click();
+    await expect(card.getByRole('button', { name: 'Copied' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('x-4ntl-card')).toHaveCount(0);
+  };
+
+  for (let i = 1; i <= 3; i++) await useCard(`185.220.103.${i}`);
+  const before = await metrics();
+  for (let i = 0; i < 50; i++) await useCard(`185.220.104.${i}`);
+  const after = await metrics();
+
+  const saved = await worker.evaluate(() => chrome.storage.local.get('savedList.v1'));
+  expect((saved['savedList.v1'] as unknown[]).length).toBe(53);
+  const report = {
+    nodeGrowth: (after.Nodes ?? 0) - (before.Nodes ?? 0),
+    listenerGrowth: (after.JSEventListeners ?? 0) - (before.JSEventListeners ?? 0),
+    heapGrowthKB: Math.round(((after.JSHeapUsedSize ?? 0) - (before.JSHeapUsedSize ?? 0)) / 1024),
+  };
+  console.log('4NTL copy/save:', JSON.stringify(report));
+  expect(report.nodeGrowth).toBeLessThan(100);
+  expect(report.listenerGrowth).toBeLessThan(10);
+  expect(report.heapGrowthKB).toBeLessThan(2048);
+});

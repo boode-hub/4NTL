@@ -74,7 +74,7 @@ describe('VirusTotal reports', () => {
       tags: ['2 suspicious'],
       facts: [
         { label: 'Owner', value: 'Zwiebelfreunde e.V. · AS208294' },
-        { label: 'Country', value: 'Germany (DE)' },
+        { label: 'Country', value: '🇩🇪 Germany (DE)' },
         { label: 'Network', value: '185.220.101.0/24' },
         { label: 'Reputation', value: '-41' },
         { label: 'Last analysis', value: '18 hours ago' },

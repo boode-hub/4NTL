@@ -65,6 +65,7 @@ export type BackgroundMessage =
       readonly force: boolean;
     }
   | { readonly type: '4ntl:open-options' }
+  | { readonly type: '4ntl:open-list' }
   /** The content script caught (and stopped) a navigation during capture. */
   | { readonly type: '4ntl:captured'; readonly url: string };
 
@@ -88,6 +89,7 @@ export function isBackgroundMessage(value: unknown): value is BackgroundMessage 
         typeof value.force === 'boolean'
       );
     case '4ntl:open-options':
+    case '4ntl:open-list':
       return true;
     case '4ntl:captured':
       return typeof value.url === 'string' && value.url.length <= MAX_URL_LENGTH;

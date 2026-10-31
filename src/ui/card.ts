@@ -6,16 +6,27 @@
 import type { Indicator } from '../core/indicator';
 import type { CardView, ProviderInfo } from '../core/messages';
 import type { ProviderId } from '../core/provider-ids';
+import {
+  countryOf,
+  formatReportText,
+  summarize,
+  worstVerdict,
+  type ProviderResult,
+} from '../core/report-text';
 import type { LookupOutcome } from '../core/result';
+import type { SavedEntry } from '../core/saved-list';
 import { DEFAULT_SETTINGS, type Appearance } from '../core/settings';
 import { h, icon, ICONS } from './dom';
+import { ensureFlagFont } from './flags';
 import { clampToViewport, placeCard, type Point, type Rect } from './position';
 import {
   renderChoices,
   renderIndicatorHeader,
+  renderMenu,
   renderNotice,
   renderSection,
   renderTitleHeader,
+  type MenuItem,
   type SectionActions,
   type SectionState,
 } from './render';
@@ -25,6 +36,9 @@ export interface CardClient {
   /** Must resolve (never reject) with an outcome. */
   lookup(provider: ProviderId, indicator: Indicator, force: boolean): Promise<LookupOutcome>;
   openOptions(): void;
+  /** Adds (or refreshes) an entry in the saved list. */
+  save(entry: SavedEntry): Promise<void>;
+  openList(): void;
 }
 
 export type CardPlacement =
@@ -43,6 +57,15 @@ export interface CardOptions {
 export const HOST_TAG = 'x-4ntl-card';
 const COPY_FEEDBACK_MS = 1200;
 const LOADING: SectionState = { status: 'loading' };
+
+/** Whether a user-chosen background needs dark text (WCAG relative luminance). */
+export function isLightColor(hex: string): boolean {
+  const [r = 0, g = 0, b = 0] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.18;
+}
 
 async function copyText(text: string, scratch: HTMLElement): Promise<boolean> {
   try {
@@ -73,12 +96,18 @@ export class ResultCard {
   #closed = false;
   /** Where the user dragged the card; from then on it stays there. */
   #dragged: Point | undefined;
+  /** Finished lookups of the current view, for "Copy full report" and the saved list. */
+  #results = new Map<ProviderId, LookupOutcome>();
+  #menu: { readonly element: HTMLElement; readonly button: HTMLElement } | undefined;
+  /** Set once the current view is saved: keeps its entry up to date as results arrive. */
+  #resave: (() => void) | undefined;
 
   constructor(options: CardOptions) {
     this.#options = options;
     const { placement } = options;
     const fill = placement.mode === 'inline' && placement.fill !== false;
-    const { theme, accent } = options.appearance ?? DEFAULT_SETTINGS.appearance;
+    const { theme, accent, background } = options.appearance ?? DEFAULT_SETTINGS.appearance;
+    ensureFlagFont();
     this.#host = document.createElement(HOST_TAG);
     // Closed: page scripts can't reach into the card. Open in e2e builds so tests can.
     const root = this.#host.attachShadow({ mode: __E2E__ ? 'open' : 'closed' });
@@ -87,12 +116,22 @@ export class ResultCard {
       attrs: { role: 'dialog', 'aria-label': '4NTL lookup', 'data-theme': theme },
     });
     if (accent) this.#card.style.setProperty('--accent', accent);
+    if (background) {
+      this.#card.style.setProperty('--bg', background);
+      this.#card.dataset.surface = isLightColor(background) ? 'light' : 'dark';
+    }
     root.append(h('style', {}, CARD_CSS), this.#card);
 
     this.#listen(window, 'keydown', (event) => {
       if ((event as KeyboardEvent).key !== 'Escape') return;
       event.stopPropagation();
-      this.close();
+      if (!this.#closeMenu()) this.close();
+    });
+    // A click anywhere else in the card closes the copy menu.
+    this.#card.addEventListener('pointerdown', (event) => {
+      const menu = this.#menu;
+      const path = event.composedPath();
+      if (menu && !path.includes(menu.element) && !path.includes(menu.button)) this.#closeMenu();
     });
 
     if (options.placement.mode === 'floating') {
@@ -147,19 +186,34 @@ export class ResultCard {
     const close = () => {
       this.close();
     };
+    this.#menu = undefined;
+    this.#resave = undefined;
+    this.#results = new Map();
 
     switch (view.kind) {
       case 'lookup': {
-        const { indicator } = view;
-        const sections = view.providers.map((provider) =>
+        const { indicator, providers } = view;
+        const results = (): ProviderResult[] =>
+          providers.map((p) => ({ name: p.name, outcome: this.#results.get(p.id) }));
+        const sections = providers.map((provider) =>
           this.#mountSection(viewId, provider, indicator),
         );
         this.#card.replaceChildren(
-          renderIndicatorHeader(
-            indicator,
-            (event) => void this.#copy(indicator.value, event),
+          renderIndicatorHeader(indicator, {
+            save: (event) => void this.#save(indicator, results, event),
+            copy: (event) => {
+              const button = event.currentTarget as HTMLElement;
+              this.#toggleMenu(button, [
+                { label: 'Copy indicator', select: () => void this.#copy(indicator.value, button) },
+                {
+                  label: 'Copy full report',
+                  select: () =>
+                    void this.#copy(formatReportText(indicator, results(), this.#now()), button),
+                },
+              ]);
+            },
             close,
-          ),
+          }),
           ...sections,
         );
         break;
@@ -187,9 +241,12 @@ export class ResultCard {
     this.#options.onClose?.();
   }
 
+  #now(): number {
+    return (this.#options.now ?? Date.now)();
+  }
+
   /** Renders one provider's section and keeps it updated through loading → result → retry. */
   #mountSection(viewId: number, provider: ProviderInfo, indicator: Indicator): HTMLElement {
-    const now = this.#options.now ?? Date.now;
     const actions: SectionActions = {
       retry: () => {
         run(true);
@@ -198,14 +255,17 @@ export class ResultCard {
         this.#options.client.openOptions();
       },
     };
-    let element = renderSection(provider, LOADING, actions, now());
+    let element = renderSection(provider, LOADING, actions, this.#now());
     const swap = (next: HTMLElement) => {
       element.replaceWith(next);
       element = next;
       this.#place();
     };
     const run = (force: boolean) => {
-      if (force) swap(renderSection(provider, LOADING, actions, now()));
+      if (force) {
+        this.#results.delete(provider.id);
+        swap(renderSection(provider, LOADING, actions, this.#now()));
+      }
       void this.#options.client
         .lookup(provider.id, indicator, force)
         .catch((): LookupOutcome => ({
@@ -214,23 +274,94 @@ export class ResultCard {
         }))
         .then((outcome) => {
           if (this.#closed || viewId !== this.#viewId) return;
-          swap(renderSection(provider, { status: 'done', outcome }, actions, now()));
+          this.#results.set(provider.id, outcome);
+          swap(renderSection(provider, { status: 'done', outcome }, actions, this.#now()));
+          this.#resave?.();
         });
     };
     run(false);
     return element;
   }
 
-  async #copy(value: string, event: MouseEvent): Promise<void> {
-    const button = event.currentTarget;
-    if (!(button instanceof HTMLElement)) return;
+  #toggleMenu(button: HTMLElement, items: readonly MenuItem[]): void {
+    if (this.#closeMenu()) return;
+    const element = renderMenu(
+      items.map(({ label, select }) => ({
+        label,
+        select: () => {
+          this.#closeMenu();
+          select();
+        },
+      })),
+    );
+    this.#menu = { element, button };
+    button.setAttribute('aria-expanded', 'true');
+    this.#card.append(element);
+    element.querySelector('button')?.focus();
+  }
+
+  /** Returns whether a menu was open. */
+  #closeMenu(): boolean {
+    if (!this.#menu) return false;
+    this.#menu.element.remove();
+    this.#menu.button.setAttribute('aria-expanded', 'false');
+    this.#menu = undefined;
+    return true;
+  }
+
+  /** The first click saves; once saved, the button opens the list. */
+  async #save(
+    indicator: Indicator,
+    results: () => ProviderResult[],
+    event: MouseEvent,
+  ): Promise<void> {
+    const button = event.currentTarget as HTMLElement;
+    const { client } = this.#options;
+    if (this.#resave) {
+      client.openList();
+      return;
+    }
+    const savedAt = this.#now();
+    const entry = (): SavedEntry => {
+      const current = results();
+      const verdict = worstVerdict(current);
+      return {
+        value: indicator.value,
+        type: indicator.type,
+        ...(verdict ? { verdict } : {}),
+        summary: summarize(current),
+        country: countryOf(current),
+        savedAt,
+      };
+    };
+    const viewId = this.#viewId;
+    try {
+      await client.save(entry());
+    } catch {
+      button.title = 'Could not save. Try again.';
+      return;
+    }
+    if (this.#closed || viewId !== this.#viewId) return;
+    this.#resave = () => {
+      client.save(entry()).catch(() => undefined);
+    };
+    button.classList.add('on');
+    button.title = 'Saved · open the list';
+    button.setAttribute('aria-label', button.title);
+  }
+
+  async #copy(value: string, button: HTMLElement): Promise<void> {
     const ok = await copyText(value, this.#card);
     if (this.#closed) return;
     button.replaceChildren(icon(ok ? ICONS.check : ICONS.copy));
-    button.title = ok ? 'Copied' : 'Copy failed';
+    const label = (text: string) => {
+      button.title = text;
+      button.setAttribute('aria-label', text);
+    };
+    label(ok ? 'Copied' : 'Copy failed');
     const timer = setTimeout(() => {
       button.replaceChildren(icon(ICONS.copy));
-      button.title = 'Copy indicator';
+      label('Copy…');
     }, COPY_FEEDBACK_MS);
     this.#cleanup.push(() => {
       clearTimeout(timer);

@@ -17,7 +17,7 @@ import { PROVIDER_LIST, toInfo } from '../providers/registry';
 import type { Provider } from '../providers/types';
 import { ResultCard } from '../ui/card';
 import { h } from '../ui/dom';
-import { THEME_ACCENTS } from '../ui/styles';
+import { THEME_ACCENTS, THEME_BACKGROUNDS } from '../ui/styles';
 
 const SAVE_DELAY_MS = 400;
 const TOAST_MS = 1500;
@@ -159,7 +159,7 @@ const PREVIEW_REPORTS: Record<ProviderId, Report> = {
     facts: [
       { label: 'Reports (90 d)', value: '1,243 from 312 users' },
       { label: 'ISP', value: 'Zwiebelfreunde e.V.' },
-      { label: 'Country', value: 'Germany (DE)' },
+      { label: 'Country', value: '🇩🇪 Germany (DE)' },
     ],
     reportUrl: 'https://www.abuseipdb.com/check/185.220.101.4',
   },
@@ -179,6 +179,14 @@ function themeAccent(theme: Theme): string {
   return matchMedia('(prefers-color-scheme: dark)').matches
     ? THEME_ACCENTS.dark
     : THEME_ACCENTS.light;
+}
+
+/** The theme's own card background, as the color picker should show it. */
+function themeBackground(theme: Theme): string {
+  if (theme !== 'auto') return THEME_BACKGROUNDS[theme];
+  return matchMedia('(prefers-color-scheme: dark)').matches
+    ? THEME_BACKGROUNDS.dark
+    : THEME_BACKGROUNDS.light;
 }
 
 function applyToPage({ theme, accent }: Appearance): void {
@@ -206,6 +214,8 @@ function createPreview(container: HTMLElement): (appearance: Appearance, delayMs
             }, delayMs),
           ),
         openOptions: () => undefined,
+        save: () => Promise.resolve(),
+        openList: () => undefined,
       },
       // Closing the preview (× or Esc) just brings it back.
       onClose: () => {
@@ -226,6 +236,7 @@ async function main(): Promise<void> {
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   const accentInput = inputById('accent');
+  const backgroundInput = inputById('background');
   const themeInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="theme"]')];
   const renderPreview = createPreview(byId('preview'));
   const fields = {} as Record<ProviderId, KeyField>;
@@ -276,6 +287,7 @@ async function main(): Promise<void> {
   const showAppearance = (delayMs: number) => {
     for (const input of themeInputs) input.checked = input.value === appearance.theme;
     accentInput.value = appearance.accent || themeAccent(appearance.theme);
+    backgroundInput.value = appearance.background || themeBackground(appearance.theme);
     applyToPage(appearance);
     renderPreview(appearance, delayMs);
   };
@@ -295,6 +307,12 @@ async function main(): Promise<void> {
   });
   byId('accent-reset').addEventListener('click', () => {
     setAppearance({ accent: '' }, 0);
+  });
+  backgroundInput.addEventListener('input', () => {
+    setAppearance({ background: backgroundInput.value }, 0);
+  });
+  byId('background-reset').addEventListener('click', () => {
+    setAppearance({ background: '' }, 0);
   });
 
   for (const input of [maxAge, cacheTtl]) {
@@ -322,8 +340,23 @@ async function main(): Promise<void> {
   const command = (await chrome.commands.getAll()).find((c) => c.name === 'lookup-selection');
   byId('shortcut').textContent = command?.shortcut || 'not set';
   byId('change-shortcut').addEventListener('click', () => {
-    void chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    // Firefox has its own shortcut page (and no chrome:// URLs); Chromium browsers map this one.
+    const commands = chrome.commands as { openShortcutSettings?: () => Promise<void> };
+    if (commands.openShortcutSettings) void commands.openShortcutSettings();
+    else void chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
   });
+
+  // Firefox lets users withdraw the API hosts' permission; offer it back.
+  const manifest = chrome.runtime.getManifest() as chrome.runtime.ManifestV3;
+  const origins: string[] = manifest.host_permissions ?? [];
+  const hostAccess = byId('host-access');
+  const checkAccess = async () => {
+    hostAccess.hidden = await chrome.permissions.contains({ origins });
+  };
+  byId('grant-access').addEventListener('click', () => {
+    void chrome.permissions.request({ origins }).then(checkAccess);
+  });
+  await checkAccess();
   byId('version').textContent = chrome.runtime.getManifest().version;
 }
 

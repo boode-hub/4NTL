@@ -20,16 +20,18 @@ const OK: LookupOutcome = {
 function setup() {
   const lookup = vi.fn(() => Promise.resolve(OK));
   const openOptions = vi.fn(() => Promise.resolve());
+  const openList = vi.fn(() => Promise.resolve());
   const onCaptured = vi.fn(() => Promise.resolve());
   const route = createMessageRouter({
     extensionId: 'ext',
     service: { lookup },
     openOptions,
+    openList,
     onCaptured,
   });
   const sendResponse = vi.fn();
   const fromUs = { id: 'ext' } as chrome.runtime.MessageSender;
-  return { route, lookup, openOptions, onCaptured, sendResponse, fromUs };
+  return { route, lookup, openOptions, openList, onCaptured, sendResponse, fromUs };
 }
 
 const lookupMessage = (value: string, type = 'ipv4', force = false) => ({
@@ -72,6 +74,12 @@ describe('message router', () => {
     const { route, openOptions, sendResponse, fromUs } = setup();
     expect(route({ type: '4ntl:open-options' }, fromUs, sendResponse)).toBe(false);
     expect(openOptions).toHaveBeenCalled();
+  });
+
+  it('opens the saved list', () => {
+    const { route, openList, sendResponse, fromUs } = setup();
+    expect(route({ type: '4ntl:open-list' }, fromUs, sendResponse)).toBe(false);
+    expect(openList).toHaveBeenCalled();
   });
 
   it('ignores other extensions and malformed messages', () => {

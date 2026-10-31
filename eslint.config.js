@@ -5,7 +5,15 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/', 'dist-e2e/', 'coverage/', 'playwright-report/', 'test-results/', '.cache/'],
+    ignores: [
+      'dist/',
+      'dist-e2e/',
+      'dist-firefox/',
+      'coverage/',
+      'playwright-report/',
+      'test-results/',
+      '.cache/',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,

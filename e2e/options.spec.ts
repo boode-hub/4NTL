@@ -90,6 +90,13 @@ test('the Sharingan theme and a custom color apply to the preview and to page ca
   await expect(card).toHaveCSS('--accent', '#8b5cf6');
   await expect(card.locator('.eye')).toBeVisible();
 
-  await options.getByRole('button', { name: 'Use theme color' }).click();
+  await options.getByRole('button', { name: 'Reset accent' }).click();
   await expect(options.getByLabel('Accent color')).toHaveValue('#ff2d3d');
+
+  await options.getByLabel('Card background').fill('#f5f0e6');
+  await expect(preview).toHaveCSS('--bg', '#f5f0e6');
+  await expect(preview).toHaveAttribute('data-surface', 'light');
+  await options.getByRole('button', { name: 'Reset background' }).click();
+  await expect(options.getByLabel('Card background')).toHaveValue('#0d0a0b');
+  await expect(preview).not.toHaveAttribute('data-surface', /./);
 });

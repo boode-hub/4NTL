@@ -62,7 +62,7 @@ describe('presentInPage', () => {
       {
         type: '4ntl:show',
         view: VIEW,
-        appearance: { theme: 'sharingan', accent: '#8b5cf6' },
+        appearance: { theme: 'sharingan', accent: '#8b5cf6', background: '' },
         corner: false,
       },
       { frameId: 2 },

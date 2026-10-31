@@ -1,10 +1,18 @@
 import type { Theme } from '../core/settings';
+import { FLAG_FONT } from './flags';
 
 /** Each theme's own accent; a user-picked accent overrides it. */
 export const THEME_ACCENTS = {
   light: '#0369a1',
   dark: '#7dd3fc',
   sharingan: '#ff2d3d',
+} as const satisfies Record<Exclude<Theme, 'auto'>, string>;
+
+/** Each theme's own card background; a user-picked one overrides it. */
+export const THEME_BACKGROUNDS = {
+  light: '#ffffff',
+  dark: '#111827',
+  sharingan: '#0d0a0b',
 } as const satisfies Record<Exclude<Theme, 'auto'>, string>;
 
 /**
@@ -18,7 +26,7 @@ export const CARD_CSS = /* css */ `
 
 .card {
   color-scheme: light dark;
-  --bg: light-dark(#ffffff, #111827);
+  --bg: light-dark(${THEME_BACKGROUNDS.light}, ${THEME_BACKGROUNDS.dark});
   --fg: light-dark(#0f172a, #e5e7eb);
   --muted: light-dark(#64748b, #9ca3af);
   --border: light-dark(#e2e8f0, #273244);
@@ -49,8 +57,9 @@ export const CARD_CSS = /* css */ `
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: var(--shadow);
-  font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font: 13px/1.4 '${FLAG_FONT}', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   text-align: left;
+  position: relative;
   animation: enter 120ms ease-out;
 }
 .card *, .card *::before, .card *::after { box-sizing: border-box; }
@@ -60,7 +69,7 @@ export const CARD_CSS = /* css */ `
 .card[data-theme='dark'] { color-scheme: dark; }
 .card[data-theme='sharingan'] {
   color-scheme: dark;
-  --bg: #0d0a0b;
+  --bg: ${THEME_BACKGROUNDS.sharingan};
   --fg: #f5eff0;
   --muted: #a99ea0;
   --border: #3b1a1f;
@@ -72,6 +81,22 @@ export const CARD_CSS = /* css */ `
 }
 .card[data-theme='sharingan'] .header { border-bottom-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 .card[data-theme='sharingan'] .provider-name { color: var(--fg); letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+
+/* A user-picked background (--bg, set inline): text and lines follow its lightness. */
+.card[data-surface='light'] {
+  color-scheme: light;
+  --fg: #0f172a;
+  --muted: color-mix(in srgb, #0f172a 62%, var(--bg));
+  --border: color-mix(in srgb, #0f172a 14%, var(--bg));
+  --subtle: color-mix(in srgb, #0f172a 6%, var(--bg));
+}
+.card[data-surface='dark'] {
+  color-scheme: dark;
+  --fg: #f1f5f9;
+  --muted: color-mix(in srgb, #f1f5f9 62%, var(--bg));
+  --border: color-mix(in srgb, #f1f5f9 16%, var(--bg));
+  --subtle: color-mix(in srgb, #f1f5f9 8%, var(--bg));
+}
 
 /* The Sharingan: shown only in that theme; it spins while anything is loading. */
 .eye { display: none; flex: none; width: 20px; height: 20px; }
@@ -117,6 +142,20 @@ export const CARD_CSS = /* css */ `
   outline: 2px solid var(--accent); outline-offset: 1px;
 }
 .icon-btn svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn.on, .icon-btn[aria-expanded='true'] { color: var(--accent); }
+.icon-btn.on svg { fill: currentColor; }
+
+.menu {
+  position: absolute; top: 40px; right: 8px; z-index: 1;
+  display: grid; min-width: 160px; padding: 4px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px light-dark(rgba(15, 23, 42, 0.16), rgba(0, 0, 0, 0.5));
+}
+.menu-item {
+  font: inherit; text-align: left; padding: 6px 10px;
+  border: 0; border-radius: 5px; background: transparent; color: var(--fg); cursor: pointer;
+}
+.menu-item:hover, .menu-item:focus-visible { background: var(--subtle); outline: none; }
 
 .provider { padding: 10px 12px 12px; }
 .provider + .provider { border-top: 1px solid var(--border); }

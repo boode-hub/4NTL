@@ -15,6 +15,8 @@ export interface Appearance {
   readonly theme: Theme;
   /** `#rrggbb`, or '' for the theme's own accent color. */
   readonly accent: string;
+  /** The card's inside color, `#rrggbb`, or '' for the theme's own. */
+  readonly background: string;
 }
 
 export interface Settings {
@@ -35,7 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   apiKeys: { abuseipdb: '', virustotal: '' },
   abuseIpdbMaxAgeDays: 90,
   cacheTtlMinutes: 30,
-  appearance: { theme: 'auto', accent: '' },
+  appearance: { theme: 'auto', accent: '', background: '' },
 };
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -43,10 +45,10 @@ const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 export function normalizeAppearance(raw: unknown): Appearance {
   const input = asRecord(raw);
   const theme = THEMES.find((name) => name === input.theme) ?? 'auto';
-  // Validated: the accent ends up in the card's CSS.
-  const accent =
-    typeof input.accent === 'string' && HEX_COLOR.test(input.accent) ? input.accent : '';
-  return { theme, accent: accent.toLowerCase() };
+  // Validated: both colors end up in the card's CSS.
+  const color = (value: unknown) =>
+    typeof value === 'string' && HEX_COLOR.test(value) ? value.toLowerCase() : '';
+  return { theme, accent: color(input.accent), background: color(input.background) };
 }
 
 function clampInt(value: unknown, limits: { min: number; max: number }, fallback: number): number {

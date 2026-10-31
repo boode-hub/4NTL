@@ -1,5 +1,6 @@
 dist/
 dist-e2e/
+dist-firefox/
 coverage/
 playwright-report/
 test-results/

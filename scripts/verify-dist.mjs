@@ -2,14 +2,14 @@
  * Release guard: fails if dist/ is not a clean production build. Catches the
  * e2e build (test hooks, <all_urls>) or debug artefacts ever being shipped.
  *
- *   node scripts/verify-dist.mjs
+ *   node scripts/verify-dist.mjs [dist-firefox]
  */
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dist = path.join(root, 'dist');
+const dist = path.join(root, process.argv[2] ?? 'dist');
 const problems = [];
 
 async function exists(file) {
@@ -42,7 +42,7 @@ if (manifest.content_scripts) {
 }
 
 const referenced = [
-  manifest.background.service_worker,
+  manifest.background.service_worker ?? manifest.background.scripts?.[0],
   manifest.options_ui.page,
   'content.js',
   'result.html',
@@ -62,7 +62,7 @@ for (const file of await listFiles(dist)) {
 }
 
 if (problems.length > 0) {
-  console.error(`dist/ failed release checks:\n  - ${problems.join('\n  - ')}`);
+  console.error(`${path.basename(dist)}/ failed release checks:\n  - ${problems.join('\n  - ')}`);
   process.exit(1);
 }
-console.log(`dist/ v${manifest.version} passed release checks.`);
+console.log(`${path.basename(dist)}/ v${manifest.version} passed release checks.`);

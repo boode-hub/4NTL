@@ -69,20 +69,23 @@ describe('load/save', () => {
 
 describe('appearance', () => {
   it('defaults to the automatic theme with its own accent', () => {
-    expect(normalizeAppearance(undefined)).toEqual({ theme: 'auto', accent: '' });
+    expect(normalizeAppearance(undefined)).toEqual({ theme: 'auto', accent: '', background: '' });
   });
 
-  it('keeps known themes and valid hex accents (lower-cased)', () => {
-    expect(normalizeAppearance({ theme: 'sharingan', accent: '#FF2D3D' })).toEqual({
-      theme: 'sharingan',
-      accent: '#ff2d3d',
-    });
+  it('keeps known themes and valid hex colors (lower-cased)', () => {
+    expect(
+      normalizeAppearance({ theme: 'sharingan', accent: '#FF2D3D', background: '#1A1B2C' }),
+    ).toEqual({ theme: 'sharingan', accent: '#ff2d3d', background: '#1a1b2c' });
   });
 
   it.each(['red', '#fff', '#12345g', 'red;} body{display:none', '#ff2d3d ', 42])(
-    'rejects accent %j (it ends up in CSS)',
-    (accent) => {
-      expect(normalizeAppearance({ theme: 'dark', accent }).accent).toBe('');
+    'rejects color %j (it ends up in CSS)',
+    (color) => {
+      expect(normalizeAppearance({ theme: 'dark', accent: color, background: color })).toEqual({
+        theme: 'dark',
+        accent: '',
+        background: '',
+      });
     },
   );
 
@@ -106,7 +109,7 @@ describe('affectsResults', () => {
       affectsResults(base, {
         ...base,
         cacheTtlMinutes: 5,
-        appearance: { theme: 'sharingan', accent: '#123456' },
+        appearance: { theme: 'sharingan', accent: '#123456', background: '#000000' },
       }),
     ).toBe(false);
   });

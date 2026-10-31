@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>4NTL saved list</title>
+    <link rel="stylesheet" href="options.css" />
+    <style>
+      body {
+        min-height: 100vh;
+      }
+      main {
+        max-width: 960px;
+      }
+      td:nth-child(2),
+      td:nth-child(6) {
+        white-space: nowrap;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .toolbar .spacer {
+        flex: 1;
+      }
+      select {
+        font: inherit;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--fg);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 12px;
+      }
+      td.ioc {
+        font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+        overflow-wrap: anywhere;
+      }
+      td.summary {
+        color: var(--muted);
+      }
+      td.country {
+        font-family: '4NTL Flags', system-ui, sans-serif;
+        white-space: nowrap;
+      }
+      .verdict {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--subtle);
+        white-space: nowrap;
+      }
+      .verdict.malicious {
+        color: light-dark(#991b1b, #fca5a5);
+        background: light-dark(#fee2e2, rgba(248, 113, 113, 0.16));
+      }
+      .verdict.suspicious {
+        color: light-dark(#92400e, #fcd34d);
+        background: light-dark(#fef3c7, rgba(251, 191, 36, 0.16));
+      }
+      .verdict.clean {
+        color: light-dark(#166534, #86efac);
+        background: light-dark(#dcfce7, rgba(74, 222, 128, 0.14));
+      }
+      .remove {
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+      .remove:hover {
+        background: var(--subtle);
+        color: var(--fg);
+      }
+      .empty {
+        color: var(--muted);
+        padding: 24px 0;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="masthead">
+        <img src="icons/icon-48.png" width="40" height="40" alt="" />
+        <div>
+          <h1>Saved list</h1>
+          <p>Indicators you saved from the 4NTL card. Export them all at once, e.g. to block.</p>
+        </div>
+      </header>
+
+      <section class="panel" aria-label="Saved indicators">
+        <div class="toolbar">
+          <label for="filter">Show</label>
+          <select id="filter">
+            <option value="all">All</option>
+            <option value="ip">IP addresses</option>
+            <option value="domain">Domains</option>
+            <option value="url">URLs</option>
+            <option value="hash">File hashes</option>
+            <option value="malicious">Malicious or suspicious</option>
+          </select>
+          <span id="count" class="hint"></span>
+          <span class="spacer"></span>
+          <button id="copy" class="btn" type="button">Copy indicators</button>
+          <button id="csv" class="btn" type="button">Download CSV</button>
+          <button id="clear" class="btn" type="button">Clear list</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Type</th>
+              <th>Verdict</th>
+              <th>Country</th>
+              <th>Details</th>
+              <th>Saved</th>
+              <th aria-label="Remove"></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p id="empty" class="empty" hidden>
+          Nothing saved yet. Click the bookmark on a 4NTL card to add an indicator here.
+        </p>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="list.js"></script>
+  </body>
+</html>

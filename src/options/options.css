@@ -306,3 +306,22 @@ footer {
     transition: none;
   }
 }
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  color: var(--warn);
+}
+.banner[hidden] {
+  display: none;
+}
+
+.masthead-link {
+  margin-left: auto;
+  text-decoration: none;
+}

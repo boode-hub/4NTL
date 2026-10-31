@@ -27,14 +27,21 @@ export function formatRelativeTime(timestampMs: number, nowMs: number): string {
   return 'just now';
 }
 
-/** "DE" → "Germany (DE)"; unknown codes are returned unchanged. */
+/** "DE" → "🇩🇪": two regional-indicator letters, which fonts draw as the flag. */
+export function flagEmoji(code: string): string {
+  return String.fromCodePoint(0x1f1e6 + code.charCodeAt(0) - 65, 0x1f1e6 + code.charCodeAt(1) - 65);
+}
+
+/** "DE" → "🇩🇪 Germany (DE)"; unknown codes are returned unchanged. */
 export function formatCountry(code: string): string {
   const upper = code.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(upper)) return code;
   try {
     const name = regionNames.of(upper);
     // CLDR names the reserved code ZZ (and unassigned ones) "Unknown Region".
-    return name && name !== upper && name !== 'Unknown Region' ? `${name} (${upper})` : upper;
+    return name && name !== upper && name !== 'Unknown Region'
+      ? `${flagEmoji(upper)} ${name} (${upper})`
+      : upper;
   } catch {
     return upper;
   }

@@ -1,7 +1,7 @@
 /**
  * Right-click menus: on a selection, "4NTL: look up “…”" ▸ one entry per provider
  * plus "All providers"; on a link, "4NTL: check this link"; anywhere else (buttons,
- * cards, images), "4NTL: check what this opens".
+ * cards, images), "4NTL: check what this opens"; on the toolbar icon, "Saved list".
  */
 import { isProviderId } from '../core/provider-ids';
 import { PROVIDER_LIST } from '../providers/registry';
@@ -11,6 +11,7 @@ const ROOT_ID = '4ntl';
 const ITEM_PREFIX = '4ntl:lookup:';
 export const LINK_ITEM_ID = '4ntl:link';
 export const ELEMENT_ITEM_ID = '4ntl:element';
+export const LIST_ITEM_ID = '4ntl:saved-list';
 
 export function menuItemId(scope: ProviderScope): string {
   return ITEM_PREFIX + scope;
@@ -51,6 +52,10 @@ export async function registerMenus(): Promise<void> {
   await create({
     id: ELEMENT_ITEM_ID,
     title: '4NTL: check what this opens',
-    contexts: ['page', 'image', 'frame'],
+    // Not 'editable': selecting text in a field would then match two entries and
+    // Chrome would push the lookup menu one level down into a submenu.
+    contexts: ['page', 'image', 'frame', 'video', 'audio'],
   });
+  // Right-click the toolbar icon.
+  await create({ id: LIST_ITEM_ID, title: 'Saved list', contexts: ['action'] });
 }

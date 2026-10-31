@@ -23,8 +23,8 @@ describe('formatRelativeTime', () => {
 
 describe('formatCountry', () => {
   it('expands ISO codes', () => {
-    expect(formatCountry('DE')).toBe('Germany (DE)');
-    expect(formatCountry('us')).toBe('United States (US)');
+    expect(formatCountry('DE')).toBe('🇩🇪 Germany (DE)');
+    expect(formatCountry('us')).toBe('🇺🇸 United States (US)');
   });
 
   it('passes through anything that is not a known ISO code', () => {

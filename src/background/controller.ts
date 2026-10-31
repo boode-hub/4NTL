@@ -35,8 +35,15 @@ export async function presentView(
   if (view.kind === 'lookup') {
     for (const provider of view.providers) void deps.service.lookup(provider.id, view.indicator);
   }
-  const shown = target !== undefined && (await deps.presentInPage(target, view, corner));
-  if (!shown) await deps.presentInWindow(view);
+  if (target !== undefined) {
+    if (await deps.presentInPage(target, view, corner)) return;
+    // An embedded frame from another site can't be scripted with activeTab; the
+    // top page can, so show the card there (in the corner) before using a window.
+    if (target.frameId !== 0 && (await deps.presentInPage({ ...target, frameId: 0 }, view, true))) {
+      return;
+    }
+  }
+  await deps.presentInWindow(view);
 }
 
 export async function handleLookupRequest(

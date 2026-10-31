@@ -45,7 +45,7 @@ describe('AbuseIPDB', () => {
         { label: 'Last reported', value: '3 hours ago' },
         { label: 'ISP', value: 'Zwiebelfreunde e.V.' },
         { label: 'Usage', value: 'Data Center/Web Hosting/Transit' },
-        { label: 'Country', value: 'Germany (DE)' },
+        { label: 'Country', value: '🇩🇪 Germany (DE)' },
         { label: 'Domain', value: 'torservers.net' },
       ],
       reportUrl: 'https://www.abuseipdb.com/check/185.220.101.4',

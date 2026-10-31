@@ -65,19 +65,45 @@ function link(url: string | undefined, label: string): HTMLAnchorElement | null 
   );
 }
 
-export function renderIndicatorHeader(
-  indicator: Indicator,
-  onCopy: (event: MouseEvent) => void,
-  onClose: () => void,
-): HTMLElement {
+export interface HeaderActions {
+  readonly save: (event: MouseEvent) => void;
+  /** Opens the copy menu. */
+  readonly copy: (event: MouseEvent) => void;
+  readonly close: () => void;
+}
+
+export function renderIndicatorHeader(indicator: Indicator, actions: HeaderActions): HTMLElement {
+  const copy = iconButton('Copy…', ICONS.copy, actions.copy);
+  copy.setAttribute('aria-haspopup', 'menu');
+  copy.setAttribute('aria-expanded', 'false');
   return h(
     'div',
     { class: 'header' },
     sharinganEye(),
     h('span', { class: 'ioc', attrs: { title: indicator.value } }, indicator.value),
     h('span', { class: 'type' }, INDICATOR_LABELS[indicator.type]),
-    iconButton('Copy indicator', ICONS.copy, onCopy),
-    iconButton('Close', ICONS.close, onClose),
+    iconButton('Save to list', ICONS.save, actions.save),
+    copy,
+    iconButton('Close', ICONS.close, actions.close),
+  );
+}
+
+export interface MenuItem {
+  readonly label: string;
+  readonly select: () => void;
+}
+
+export function renderMenu(items: readonly MenuItem[]): HTMLElement {
+  return h(
+    'div',
+    { class: 'menu', attrs: { role: 'menu' } },
+    ...items.map(({ label, select }) =>
+      h(
+        'button',
+        { class: 'menu-item', attrs: { type: 'button', role: 'menuitem' }, on: { click: select } },
+        label,
+      ),
+    ),
   );
 }
 

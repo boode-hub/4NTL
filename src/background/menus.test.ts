@@ -43,10 +43,12 @@ describe('registerMenus', () => {
       ['4ntl:lookup:all', 'All providers', 'normal'],
       ['4ntl:link', '4NTL: check this link', 'normal'],
       ['4ntl:element', '4NTL: check what this opens', 'normal'],
+      ['4ntl:saved-list', 'Saved list', 'normal'],
     ]);
-    expect(created.slice(0, -2).every((item) => item.contexts?.join() === 'selection')).toBe(true);
-    expect(created.at(-2)?.contexts).toEqual(['link']);
-    expect(created.at(-1)?.contexts).toEqual(['page', 'image', 'frame']);
+    expect(created.slice(0, -3).every((item) => item.contexts?.join() === 'selection')).toBe(true);
+    expect(created.at(-3)?.contexts).toEqual(['link']);
+    expect(created.at(-2)?.contexts).toEqual(['page', 'image', 'frame', 'video', 'audio']);
+    expect(created.at(-1)?.contexts).toEqual(['action']);
   });
 
   it('surfaces creation errors', async () => {

@@ -21,6 +21,7 @@ export default defineConfig({
         'src/background/badge.ts',
         'src/content/index.ts',
         'src/options/options.ts',
+        'src/list/list.ts',
         'src/result/result.ts',
       ],
       reporter: ['text', 'html', 'lcov'],

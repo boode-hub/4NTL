@@ -24,6 +24,8 @@ flowchart LR
   Ctrl -. "restricted page" .-> Win["result window<br/>src/result"]
   LS <--> Cache[("storage.session<br/>TTL cache")]
   LS --> Settings[("storage.local<br/>settings.v1")]
+  Card -- "Save to list" --> Saved[("storage.local<br/>savedList.v1")]
+  Saved --> List["saved list page<br/>src/list"]
   VT --> VTAPI(("VirusTotal API"))
   AB --> ABAPI(("AbuseIPDB API"))
 ```
@@ -56,8 +58,9 @@ card opens in a small popup window instead.
 | **Private/reserved IPs are rejected before any request**                         | They can't have reputation data, and sending them would leak internal network details.                                                                                                                                          |
 | **The card uses a closed shadow root, and text only**                            | Page CSS can't break it, page scripts can't read it, and API data can never become markup (`innerHTML` is banned by lint). Positioning uses CSSOM, which page CSP doesn't block.                                                |
 | **Themes are CSS only**                                                          | Colors are defined once with `light-dark()`; a theme just sets `color-scheme` (Sharingan adds its own palette). The worker sends the appearance with each card, and the accent is validated as `#rrggbb` before it reaches CSS. |
+| **Flags from a bundled font, registered from bytes**                             | Windows has no flag emoji. A flags-only Twemoji font (78 KB) is inlined and added with `new FontFace(bytes)`, so page CSP, web-accessible resources and fingerprinting don't come into it.                                      |
 | **No timers, alarms or keep-alives in the worker**                               | The browser can suspend it whenever it's idle.                                                                                                                                                                                  |
-| **Manifest generated in code** (`scripts/manifest.mjs`)                          | Per-target differences (e2e today, Firefox later) live in one place. A release guard (`scripts/verify-dist.mjs`) rejects any build with test hooks or broad host access.                                                        |
+| **Manifest generated in code** (`scripts/manifest.mjs`)                          | Per-target differences (Chromium, Firefox, e2e) live in one place. A release guard (`scripts/verify-dist.mjs`) rejects any build with test hooks or broad host access.                                                          |
 
 ## Testing strategy
 

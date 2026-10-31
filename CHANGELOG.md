@@ -4,6 +4,31 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-10-31
+
+### Added
+
+- **Copy menu**: copy just the indicator, or the full report as plain text
+  (every provider's verdict, details and report link) for tickets and chats.
+- **Saved list**: the bookmark on a card saves the indicator (with its verdict,
+  summary and country) to a list that stays until you clear it. The list page
+  filters by type or verdict, copies all indicators one per line (for block
+  lists) or downloads them as CSV. Open it from the card, from the toolbar
+  icon's right-click menu, or from the settings page.
+- **Card background color** in the settings, with live preview. Text and lines
+  switch to dark or light automatically to stay readable.
+- **Country flags** next to country names, drawn with a bundled flag font so they
+  also show on Windows (which has no flag emoji).
+- **Firefox** build (Firefox 140+), `4ntl-firefox-vX.Y.Z.zip`, attached to releases.
+  The settings page offers to restore API access if it was withdrawn in Firefox.
+
+### Changed
+
+- "4NTL: check what this opens" also appears on videos and audio (for example,
+  video thumbnails that link somewhere).
+- When an embedded frame from another site can't host the card, it opens in the
+  page's top-right corner instead of a separate window.
+
 ## [0.3.2] - 2026-10-28
 
 Reliability, memory and performance review.

@@ -1,8 +1,9 @@
 /**
- * Zips dist/ into 4ntl-v<version>.zip for the Chrome Web Store / Edge Add-ons
- * or for sharing. Dependency-free (deflate via node:zlib).
+ * Zips dist/ into 4ntl-v<version>.zip (Chrome Web Store, Edge Add-ons, Opera
+ * add-ons) or dist-firefox/ into 4ntl-firefox-v<version>.zip (Firefox Add-ons).
+ * Dependency-free (deflate via node:zlib).
  *
- *   npm run package
+ *   node scripts/package.mjs [dist-firefox]
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -10,9 +11,10 @@ import { fileURLToPath } from 'node:url';
 import { deflateRawSync } from 'node:zlib';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dist = path.join(root, 'dist');
+const firefox = process.argv[2] === 'dist-firefox';
+const dist = path.join(root, firefox ? 'dist-firefox' : 'dist');
 const { version } = JSON.parse(await readFile(path.join(dist, 'manifest.json'), 'utf8'));
-const output = path.join(root, `4ntl-v${version}.zip`);
+const output = path.join(root, `4ntl-${firefox ? 'firefox-' : ''}v${version}.zip`);
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;

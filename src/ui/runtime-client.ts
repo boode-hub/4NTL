@@ -1,6 +1,7 @@
 /** CardClient backed by extension messaging to the service worker (which holds the API keys). */
 import type { BackgroundMessage } from '../core/messages';
 import type { LookupOutcome } from '../core/result';
+import { addToList } from '../core/saved-list';
 import type { CardClient } from './card';
 
 function isOutcome(value: unknown): value is LookupOutcome {
@@ -43,6 +44,13 @@ export const runtimeClient: CardClient = {
   },
   openOptions() {
     const message: BackgroundMessage = { type: '4ntl:open-options' };
+    chrome.runtime.sendMessage(message).catch(() => undefined);
+  },
+  async save(entry) {
+    await addToList(entry);
+  },
+  openList() {
+    const message: BackgroundMessage = { type: '4ntl:open-list' };
     chrome.runtime.sendMessage(message).catch(() => undefined);
   },
 };
