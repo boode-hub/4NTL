@@ -253,6 +253,8 @@ test.describe('in-page lookups', () => {
     worker,
   }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: SECURE_URL });
+    // The whole frame inside the window, whatever the OS fonts: the picture shows only what is on screen.
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto(FRAMED_URL);
     await page.frameLocator('iframe').locator('#ip').selectText();
     await worker.evaluate(

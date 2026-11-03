@@ -4,7 +4,10 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [0.6.1] - 2026-11-03
+## [0.6.2] - 2026-11-03
+
+0.6.1 was tagged but never released (a test needed a taller window on Linux);
+its changes ship here.
 
 ### Fixed
 
