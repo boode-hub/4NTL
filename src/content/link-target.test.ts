@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
-import { deepestHovered, findLinkTargets } from './link-target';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { deepestHovered, findLinkTargets, findTargetsAt, textOf } from './link-target';
 
 const PAGE = 'https://intranet-app.com/inbox?id=7';
 
@@ -21,7 +21,16 @@ function el(tag: string, attrs: Record<string, string> = {}, ...children: Node[]
 
 afterEach(() => {
   document.body.replaceChildren();
+  Reflect.deleteProperty(document, 'elementsFromPoint');
 });
+
+/** Fakes what is stacked under the pointer (happy-dom has no elementsFromPoint). */
+function stack(elements: Element[]): void {
+  Object.defineProperty(document, 'elementsFromPoint', {
+    configurable: true,
+    value: vi.fn(() => elements),
+  });
+}
 
 describe('findLinkTargets', () => {
   it('reads plain and relative links', () => {
@@ -161,5 +170,100 @@ describe('findLinkTargets', () => {
 describe('deepestHovered', () => {
   it('is undefined when nothing is hovered', () => {
     expect(deepestHovered(document)).toBeUndefined();
+  });
+});
+
+describe('findTargetsAt', () => {
+  it('finds the link under a transparent overlay (the "whole card is clickable" pattern)', () => {
+    const link = el('a', { href: 'https://evil.com/offer' });
+    const start = mount((b) => {
+      b.append(el('div', {}, link, el('div', { id: 'start', class: 'overlay' })));
+    });
+    // The overlay is on top; the real link is underneath it at the pointer.
+    stack([start, link, document.body]);
+    expect(findTargetsAt(start, { x: 10, y: 10 }, PAGE)).toEqual(['https://evil.com/offer']);
+  });
+
+  it('finds the link inside the box that was clicked (a card’s padding)', () => {
+    const start = mount((b) => {
+      b.append(
+        el(
+          'div',
+          { id: 'start', class: 'card' },
+          el('h3', {}, el('a', { href: '/post/42' })),
+          el('p', {}, document.createTextNode('Read more about it')),
+        ),
+      );
+    });
+    expect(findTargetsAt(start, undefined, PAGE)).toEqual(['https://intranet-app.com/post/42']);
+  });
+
+  it('does not guess inside a whole menu or list of links', () => {
+    const start = mount((b) => {
+      b.append(
+        el(
+          'nav',
+          { id: 'start' },
+          ...Array.from({ length: 8 }, (_, i) => el('a', { href: `/page/${String(i)}` })),
+        ),
+      );
+    });
+    expect(findTargetsAt(start, undefined, PAGE)).toEqual([]);
+  });
+
+  it('never borrows a link from around a button (its destination is its own click)', () => {
+    const start = mount((b) => {
+      b.append(
+        el(
+          'section',
+          {},
+          el('p', {}, el('a', { href: 'https://unrelated.example/download' })),
+          el('p', {}, el('button', { id: 'start' })),
+        ),
+      );
+    });
+    expect(findTargetsAt(start, undefined, PAGE)).toEqual([]);
+  });
+
+  it('does not search a whole page section for a link', () => {
+    const start = mount((b) => {
+      b.append(
+        el(
+          'article',
+          {},
+          el('a', { href: 'https://far.example/' }),
+          el('p', {}, document.createTextNode('long text '.repeat(60))),
+          el('span', { id: 'start' }),
+        ),
+      );
+    });
+    expect(findTargetsAt(start, undefined, PAGE)).toEqual([]);
+  });
+
+  it('still prefers the clicked element and its ancestors', () => {
+    const start = mount((b) => {
+      b.append(el('a', { href: 'https://near.example/' }, el('span', { id: 'start' })));
+    });
+    stack([el('a', { href: 'https://far.example/' })]);
+    expect(findTargetsAt(start, { x: 1, y: 1 }, PAGE)).toEqual(['https://near.example/']);
+  });
+});
+
+describe('textOf', () => {
+  it('reads a table cell, and a text field by its value', () => {
+    const cell = el('td', {}, document.createTextNode(' 185.220.101.4 '));
+    const input = document.createElement('input');
+    input.value = 'src=10.0.0.1 dst=8.8.8.8';
+    document.body.append(el('table', {}, el('tr', {}, cell)), input);
+    expect(textOf(cell)).toBe('185.220.101.4');
+    expect(textOf(input)).toBe('src=10.0.0.1 dst=8.8.8.8');
+  });
+
+  it('ignores empty elements and whole page regions', () => {
+    const empty = el('div');
+    const huge = el('main', {}, document.createTextNode('x '.repeat(3000)));
+    document.body.append(empty, huge);
+    expect(textOf(empty)).toBeUndefined();
+    expect(textOf(huge)).toBeUndefined();
   });
 });

@@ -32,22 +32,26 @@ describe('registerMenus', () => {
     return created;
   }
 
-  it('builds a selection submenu with one entry per provider plus "All providers"', async () => {
+  it('shows a single "4NTL" entry, with the right choices inside for what was clicked', async () => {
     const created = stubChrome();
     await registerMenus();
-    expect(created.map((item) => [item.id, item.title, item.type ?? 'normal'])).toEqual([
-      ['4ntl', '4NTL: look up “%s”', 'normal'],
-      ['4ntl:lookup:abuseipdb', 'AbuseIPDB', 'normal'],
-      ['4ntl:lookup:virustotal', 'VirusTotal', 'normal'],
-      ['4ntl:separator', undefined, 'separator'],
-      ['4ntl:lookup:all', 'All providers', 'normal'],
-      ['4ntl:link', '4NTL: check this link', 'normal'],
-      ['4ntl:element', '4NTL: check what this opens', 'normal'],
-      ['4ntl:saved-list', 'Saved list', 'normal'],
+    expect(
+      created.map((item) => [item.id, item.parentId, item.title, item.type ?? 'normal']),
+    ).toEqual([
+      ['4ntl', undefined, '4NTL', 'normal'],
+      ['4ntl:lookup:all', '4ntl', 'Look up “%s”', 'normal'],
+      ['4ntl:separator', '4ntl', undefined, 'separator'],
+      ['4ntl:lookup:abuseipdb', '4ntl', 'AbuseIPDB only', 'normal'],
+      ['4ntl:lookup:virustotal', '4ntl', 'VirusTotal only', 'normal'],
+      ['4ntl:link', '4ntl', 'Check this link', 'normal'],
+      ['4ntl:element', '4ntl', 'Check what’s here', 'normal'],
+      ['4ntl:saved-list', undefined, 'Saved list', 'normal'],
     ]);
-    expect(created.slice(0, -3).every((item) => item.contexts?.join() === 'selection')).toBe(true);
+    const element = ['page', 'image', 'frame', 'video', 'audio', 'editable'];
+    expect(created[0]?.contexts).toEqual(['selection', 'link', ...element]);
+    expect(created.slice(1, 5).every((item) => item.contexts?.join() === 'selection')).toBe(true);
     expect(created.at(-3)?.contexts).toEqual(['link']);
-    expect(created.at(-2)?.contexts).toEqual(['page', 'image', 'frame', 'video', 'audio']);
+    expect(created.at(-2)?.contexts).toEqual(element);
     expect(created.at(-1)?.contexts).toEqual(['action']);
   });
 

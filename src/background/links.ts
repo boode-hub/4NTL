@@ -1,5 +1,5 @@
 /**
- * "4NTL: check this link / what this opens": works out where a right-clicked
+ * "4NTL ▸ Check this link / Check what’s here": works out where a right-clicked
  * link, button or card leads, in order of reliability:
  *   1. the browser's own link address, when it's a real one;
  *   2. what the page says (handlers, data attributes, forms…), via the content script;
@@ -7,9 +7,9 @@
  * Wrapped links (Safe Links, Proofpoint…) are unwrapped by the indicator parser.
  */
 import { parseIndicator, type Indicator } from '../core/indicator';
-import type { CardView } from '../core/messages';
+import type { CardView, InspectResponse } from '../core/messages';
 import type { FrameTarget } from './present';
-import { CAPTURE_NOTICE, NO_LINK_NOTICE, viewForIndicators } from './view';
+import { buildView, CAPTURE_NOTICE, NO_LINK_NOTICE, viewForIndicators } from './view';
 
 export interface LinkCheck {
   readonly target: FrameTarget | undefined;
@@ -20,7 +20,7 @@ export interface LinkCheck {
 }
 
 export interface LinkDeps {
-  readonly inspect: (target: FrameTarget) => Promise<string[]>;
+  readonly inspect: (target: FrameTarget) => Promise<InspectResponse>;
   readonly capture: (target: FrameTarget) => Promise<boolean>;
   readonly present: (view: CardView, target: FrameTarget | undefined) => Promise<void>;
 }
@@ -58,11 +58,18 @@ export function indicatorsFromUrls(urls: readonly string[]): Indicator[] {
 export async function checkLink(check: LinkCheck, deps: LinkDeps): Promise<CardView> {
   const { target } = check;
   const direct = directLink(check.linkUrl, check.pageUrl);
-  const urls = direct ? [direct] : target ? await deps.inspect(target) : [];
-  const indicators = indicatorsFromUrls(urls);
+  const found: InspectResponse = direct
+    ? { urls: [direct] }
+    : target
+      ? await deps.inspect(target)
+      : { urls: [] };
+  const indicators = indicatorsFromUrls(found.urls);
+  // No link at all: an IP, domain or hash written in what was clicked (a table cell, a field).
+  const fromText = indicators.length === 0 && found.text ? buildView(found.text, 'all') : undefined;
 
   let view: CardView;
   if (indicators.length > 0) view = viewForIndicators(indicators, 'all');
+  else if (fromText && fromText.kind !== 'notice') view = fromText;
   else if (target && (await deps.capture(target))) view = CAPTURE_NOTICE;
   else view = NO_LINK_NOTICE;
   await deps.present(view, target);

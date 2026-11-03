@@ -1,13 +1,20 @@
+import { readFile } from 'node:fs/promises';
 import {
   ABUSE_KEY,
   expect,
   fixture,
   optionsUrl,
   PAGE_URL,
+  SECURE_URL,
   test,
   VT_KEY,
   type FakeRoute,
 } from './fixtures';
+
+/** Width and height from a PNG's header. */
+function pngSize(bytes: Buffer): { width: number; height: number } {
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
 import type { Worker } from '@playwright/test';
 
 const KEYS = { apiKeys: { virustotal: VT_KEY, abuseipdb: ABUSE_KEY } };
@@ -166,9 +173,13 @@ test.describe('in-page lookups', () => {
     await expect(card.locator('[data-provider="virustotal"][data-verdict]')).toBeVisible();
 
     await card.getByRole('button', { name: 'Copy…' }).click();
-    await expect(card.getByRole('menuitem')).toHaveText(['Copy indicator', 'Copy full report']);
+    await expect(card.getByRole('menuitem')).toHaveText([
+      'Copy indicator',
+      'Copy card as image',
+      'Copy details as text',
+    ]);
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await card.getByRole('menuitem', { name: 'Copy full report' }).click();
+    await card.getByRole('menuitem', { name: 'Copy details as text' }).click();
     await expect(card.getByRole('menu')).toHaveCount(0);
     await expect(card.getByRole('button', { name: 'Copied' })).toBeVisible();
 
@@ -199,6 +210,59 @@ test.describe('in-page lookups', () => {
     await list.getByRole('button', { name: 'Remove 185.220.101.4' }).click();
     await expect(list.locator('#rows tr')).toHaveCount(0);
     await expect(list.locator('#empty')).toBeVisible();
+  });
+
+  test('copies the card itself as a picture (https page: to the clipboard)', async ({
+    page,
+    context,
+    worker,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: SECURE_URL });
+    await page.goto(SECURE_URL);
+    await worker.evaluate(
+      (url) =>
+        (
+          globalThis as unknown as {
+            __4ntl: { simulateMenuClick(u: string, s: string, p: string): Promise<unknown> };
+          }
+        ).__4ntl.simulateMenuClick(url, '185.220.101.4', 'all'),
+      SECURE_URL,
+    );
+    const card = page.locator('x-4ntl-card .card');
+    await expect(card.locator('[data-verdict]')).toHaveCount(2);
+    const box = await card.boundingBox();
+    await card.getByRole('button', { name: 'Copy…' }).click();
+    await card.getByRole('menuitem', { name: 'Copy card as image' }).click();
+    await expect(card.getByRole('button', { name: 'Copied' })).toBeVisible();
+    const image = await page.evaluate(async () => {
+      const [item] = await navigator.clipboard.read();
+      if (!item?.types.includes('image/png')) return null;
+      const bitmap = await createImageBitmap(await item.getType('image/png'));
+      return { width: bitmap.width, height: bitmap.height };
+    });
+    expect(image).not.toBeNull();
+    // The picture is the card: its size (at this window's 1x scale), within a pixel.
+    expect(Math.abs((image?.width ?? 0) - Math.round(box?.width ?? 0))).toBeLessThanOrEqual(1);
+    expect(Math.abs((image?.height ?? 0) - Math.round(box?.height ?? 0))).toBeLessThanOrEqual(1);
+  });
+
+  test('on a plain http page, the card picture is saved as a file instead', async ({
+    page,
+    menuClick,
+  }) => {
+    await menuClick('185.220.101.4', 'all');
+    const card = page.locator('x-4ntl-card .card');
+    await expect(card.locator('[data-verdict]')).toHaveCount(2);
+    const box = await card.boundingBox();
+    await card.getByRole('button', { name: 'Copy…' }).click();
+    const download = page.waitForEvent('download');
+    await card.getByRole('menuitem', { name: 'Copy card as image' }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toBe('4ntl-185.220.101.4.png');
+    const size = pngSize(await readFile(await file.path()));
+    expect(Math.abs(size.width - Math.round(box?.width ?? 0))).toBeLessThanOrEqual(1);
+    expect(size.height).toBeGreaterThan(200);
+    await expect(card.getByRole('button', { name: 'Saved to Downloads' })).toBeVisible();
   });
 
   test('the keyboard shortcut looks up the current selection', async ({ page, worker }) => {

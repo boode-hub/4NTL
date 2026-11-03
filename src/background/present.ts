@@ -53,17 +53,21 @@ export async function presentInPage(
 }
 
 /** Asks the right-clicked frame where the element under the pointer leads. */
-export async function inspectInPage(target: FrameTarget): Promise<string[]> {
+export async function inspectInPage(target: FrameTarget): Promise<InspectResponse> {
   try {
     await ensureContentScript(target);
     const inspect: ContentMessage = { type: '4ntl:inspect' };
-    const response: unknown = await chrome.tabs.sendMessage(target.tabId, inspect, {
-      frameId: target.frameId,
-    });
-    const urls = (response as Partial<InspectResponse> | undefined)?.urls;
-    return Array.isArray(urls) ? urls.filter((url): url is string => typeof url === 'string') : [];
+    const response = await chrome.tabs.sendMessage<
+      ContentMessage,
+      Partial<Record<keyof InspectResponse, unknown>> | undefined
+    >(target.tabId, inspect, { frameId: target.frameId });
+    const urls = Array.isArray(response?.urls)
+      ? response.urls.filter((url): url is string => typeof url === 'string')
+      : [];
+    const text = typeof response?.text === 'string' ? response.text.slice(0, 2000) : '';
+    return text ? { urls, text } : { urls };
   } catch {
-    return [];
+    return { urls: [] };
   }
 }
 

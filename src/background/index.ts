@@ -38,6 +38,7 @@ import {
   type FrameTarget,
 } from './present';
 import { createMessageRouter } from './router';
+import { captureCard } from './screenshot';
 import { readSelection } from './selection';
 import {
   buildView,
@@ -248,6 +249,7 @@ chrome.runtime.onMessage.addListener(
     openOptions,
     openList,
     license,
+    captureCard,
     onCaptured: async (url, sender) => {
       await checkCaptured(url, frameOf(sender.tab, sender.frameId), linkDeps.present);
     },

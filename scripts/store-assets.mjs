@@ -75,7 +75,11 @@ const scenes = [
     'Buttons with no link: click once, 4NTL catches where it goes and blocks it',
     true,
   ],
-  ['screenshot-4.png', 'Copy the indicator or the full report, and save it to your list', false],
+  [
+    'screenshot-4.png',
+    'Copy the indicator, a picture of the card, or the details; save it to your list',
+    false,
+  ],
 ];
 
 const context = await chromium.launchPersistentContext('', {

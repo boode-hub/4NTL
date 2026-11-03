@@ -86,3 +86,45 @@ describe('readSelection with cross-origin frames', () => {
     expect(executeScript).toHaveBeenCalledTimes(2);
   });
 });
+
+/** Pretends the pointer is over these elements (happy-dom has no :hover). */
+function hoverOver(...elements: Element[]): void {
+  // readSelectionInPage only ever queries ':hover'.
+  vi.spyOn(document, 'querySelectorAll').mockReturnValue(
+    elements as unknown as NodeListOf<Element>,
+  );
+}
+
+describe('readSelectionInPage: nothing selected', () => {
+  it('uses the text under the pointer when nothing is selected (apps that block selecting)', () => {
+    const cell = document.createElement('td');
+    cell.textContent = '185.220.101.4';
+    document.body.append(cell);
+    document.getSelection()?.removeAllRanges();
+    hoverOver(document.body, cell);
+    expect(readSelectionInPage()).toMatchObject({ text: '185.220.101.4', hovered: true });
+  });
+
+  it('ignores a whole page region under the pointer', () => {
+    const main = document.createElement('main');
+    main.textContent = '8.8.8.8 '.repeat(500);
+    document.body.append(main);
+    document.getSelection()?.removeAllRanges();
+    hoverOver(main);
+    expect(readSelectionInPage().text).toBe('');
+  });
+});
+
+describe('pickSelection: selection beats hover', () => {
+  it('prefers a real selection in any frame over text under the pointer', () => {
+    expect(
+      pickSelection([
+        { frameId: 0, result: { text: '1.1.1.1', focused: true, hovered: true } },
+        { frameId: 5, result: { text: '8.8.8.8', focused: false } },
+      ]),
+    ).toEqual({ frameId: 5, text: '8.8.8.8' });
+    expect(
+      pickSelection([{ frameId: 0, result: { text: '1.1.1.1', focused: true, hovered: true } }]),
+    ).toEqual({ frameId: 0, text: '1.1.1.1' });
+  });
+});

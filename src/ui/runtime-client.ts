@@ -1,5 +1,5 @@
 /** CardClient backed by extension messaging to the service worker (which holds the API keys). */
-import type { BackgroundMessage } from '../core/messages';
+import type { BackgroundMessage, CaptureResponse } from '../core/messages';
 import type { LookupOutcome } from '../core/result';
 import { addToList } from '../core/saved-list';
 import type { CardClient } from './card';
@@ -52,6 +52,16 @@ export const runtimeClient: CardClient = {
   openList() {
     const message: BackgroundMessage = { type: '4ntl:open-list' };
     chrome.runtime.sendMessage(message).catch(() => undefined);
+  },
+  async captureCard(rect, viewportWidth) {
+    const message: BackgroundMessage = { type: '4ntl:capture-card', rect, viewportWidth };
+    const response = await chrome.runtime.sendMessage<
+      BackgroundMessage,
+      CaptureResponse | undefined
+    >(message);
+    if (!response || 'error' in response) throw new Error(response?.error ?? 'No screenshot.');
+    const data = response.dataUrl.slice(response.dataUrl.indexOf(',') + 1);
+    return new Blob([Uint8Array.from(atob(data), (c) => c.charCodeAt(0))], { type: 'image/png' });
   },
   unlock() {
     const message: BackgroundMessage = { type: '4ntl:unlock' };

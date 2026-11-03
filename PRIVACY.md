@@ -54,6 +54,15 @@ a 3-day trial and then a one-time $2 unlock. Payments are handled by
 ExtensionPay's privacy policy: <https://extensionpay.com/privacy>. Stripe's:
 <https://stripe.com/privacy>.
 
+## Pictures of the card, and the "embedded frames" switch
+
+- **Copy card as image** takes a screenshot of the browser tab you're using and
+  cuts out the card. It happens on your computer only: the picture goes to your
+  clipboard (or your Downloads folder) and is never sent anywhere.
+- **Work inside embedded frames from other sites** (off by default) asks the
+  browser to let 4NTL read pages in frames from other sites. 4NTL still only reads
+  anything when you use it (right-click, shortcut), exactly as on the page itself.
+
 ## What 4NTL stores, and where
 
 - **Your API keys and settings** (theme, colors, cache lifetime,

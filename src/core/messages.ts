@@ -65,6 +65,8 @@ export type ContentMessage =
 
 export interface InspectResponse {
   readonly urls: readonly string[];
+  /** The clicked element's own text, for an IP / domain / hash when there's no link. */
+  readonly text?: string;
 }
 
 /** UI surface → service worker. */
@@ -83,6 +85,8 @@ export type BackgroundMessage =
   | { readonly type: '4ntl:restore' }
   /** Store edition: the current Access (answered with a LicenseResponse). */
   | { readonly type: '4ntl:license'; readonly refresh: boolean }
+  /** "Copy card as image": screenshot the tab, cut out this box (CSS px). Answered with a CaptureResponse. */
+  | { readonly type: '4ntl:capture-card'; readonly rect: CardRect; readonly viewportWidth: number }
   /** The content script caught (and stopped) a navigation during capture. */
   | { readonly type: '4ntl:captured'; readonly url: string };
 
@@ -90,6 +94,25 @@ export type LookupResponse = LookupOutcome;
 
 export interface LicenseResponse {
   readonly access: Access;
+}
+
+export interface CardRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export type CaptureResponse = { readonly dataUrl: string } | { readonly error: string };
+
+/** Only sane boxes from the page are acted on. */
+export function isCardRect(value: unknown): value is CardRect {
+  if (!isObject(value)) return false;
+  const ok = (n: unknown, min: number) =>
+    typeof n === 'number' && Number.isFinite(n) && n >= min && n <= 100_000;
+  return (
+    ok(value.x, -100_000) && ok(value.y, -100_000) && ok(value.width, 1) && ok(value.height, 1)
+  );
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -116,6 +139,13 @@ export function isBackgroundMessage(value: unknown): value is BackgroundMessage 
       return true;
     case '4ntl:license':
       return typeof value.refresh === 'boolean';
+    case '4ntl:capture-card':
+      return (
+        isCardRect(value.rect) &&
+        typeof value.viewportWidth === 'number' &&
+        value.viewportWidth > 0 &&
+        value.viewportWidth <= 100_000
+      );
     case '4ntl:captured':
       return typeof value.url === 'string' && value.url.length <= MAX_URL_LENGTH;
     default:

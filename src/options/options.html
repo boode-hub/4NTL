@@ -105,6 +105,18 @@
           <button id="clear-cache" class="btn" type="button">Clear cached results</button>
           <span id="cache-status" class="status" role="status"></span>
         </div>
+        <div class="field switch-field">
+          <label class="switch">
+            <input id="all-frames" type="checkbox" />
+            Work inside embedded frames from other sites
+          </label>
+          <small>
+            Some security consoles show their data in a frame from another site, where the browser
+            doesn't let 4NTL read selections or links. Turn this on if 4NTL doesn't react inside a
+            web app. The browser asks you to confirm; 4NTL still only acts when you use it.
+          </small>
+          <small id="all-frames-status" class="status" role="status"></small>
+        </div>
       </section>
 
       <section class="panel" aria-labelledby="usage-title">
@@ -114,18 +126,19 @@
             Select an IP, domain, URL or file hash on any page. Defanged forms like
             <code>1.2.3[.]4</code> or <code>hxxps://evil[.]com</code> work too.
           </li>
-          <li>Right-click it → <b>4NTL</b> → pick a provider, or <b>All providers</b>.</li>
+          <li>Right-click it → <b>4NTL</b> → <b>Look up “…”</b>, or one provider.</li>
           <li>
-            Right-click a link → <b>4NTL: check this link</b>, or a button or card →
-            <b>4NTL: check what this opens</b>. If it has no address until clicked, click it once:
-            4NTL catches where it goes and stops it from opening.
+            Right-click a link → <b>4NTL</b> → <b>Check this link</b>, or a button, card or table
+            cell → <b>4NTL</b> → <b>Check what’s here</b>. If it has no address until clicked, click
+            it once: 4NTL catches where it goes and stops it from opening.
           </li>
           <li>
             Click the 4NTL toolbar icon to check the page you're on, or type <code>4ntl</code> and a
             space in the address bar, then paste a link or indicator.
           </li>
           <li>
-            Or press <kbd id="shortcut">Alt+Shift+L</kbd> to check the selection everywhere at once.
+            Or press <kbd id="shortcut">Alt+Shift+L</kbd> to check the selection, or whatever the
+            pointer is over, on all providers at once.
             <button id="change-shortcut" class="linklike" type="button">Change shortcut</button>
           </li>
         </ol>

@@ -55,6 +55,13 @@ describe('manifest', () => {
     }
   });
 
+  it('broad access is only ever optional (the "embedded frames" switch), never granted at install', () => {
+    for (const manifest of [chromium, firefox]) {
+      expect(manifest.optional_host_permissions).toEqual(['<all_urls>']);
+      expect(manifest.host_permissions).not.toContain('<all_urls>');
+    }
+  });
+
   it('only the test build gets broad host access', () => {
     expect(createManifest({ version: '1.2.3', e2e: true }).host_permissions).toEqual([
       ...API_HOSTS,

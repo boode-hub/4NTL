@@ -22,6 +22,7 @@ function setup() {
   const lookup = vi.fn(() => Promise.resolve(OK));
   const openOptions = vi.fn(() => Promise.resolve());
   const openList = vi.fn(() => Promise.resolve());
+  const captureCard = vi.fn(() => Promise.resolve('data:image/png;base64,AAAA'));
   const access = vi.fn<(refresh: boolean) => Promise<Access>>(() =>
     Promise.resolve({ status: 'open' }),
   );
@@ -37,11 +38,22 @@ function setup() {
     openOptions,
     openList,
     license,
+    captureCard,
     onCaptured,
   });
   const sendResponse = vi.fn();
   const fromUs = { id: 'ext' } as chrome.runtime.MessageSender;
-  return { route, lookup, openOptions, openList, license, onCaptured, sendResponse, fromUs };
+  return {
+    route,
+    lookup,
+    openOptions,
+    openList,
+    license,
+    captureCard,
+    onCaptured,
+    sendResponse,
+    fromUs,
+  };
 }
 
 const lookupMessage = (value: string, type = 'ipv4', force = false) => ({
@@ -115,6 +127,48 @@ describe('message router', () => {
     expect(license.unlock).toHaveBeenCalled();
     expect(license.restore).toHaveBeenCalled();
     expect(route({ type: '4ntl:license' }, fromUs, sendResponse)).toBe(false);
+  });
+
+  it('captures the card only for a card inside a tab, with a sane box', async () => {
+    const { route, captureCard, sendResponse } = setup();
+    const inTab = { id: 'ext', tab: { windowId: 9 } } as chrome.runtime.MessageSender;
+    const message = {
+      type: '4ntl:capture-card',
+      rect: { x: 10, y: 20, width: 320, height: 400 },
+      viewportWidth: 1280,
+    };
+    expect(route(message, inTab, sendResponse)).toBe(true);
+    await flush();
+    expect(captureCard).toHaveBeenCalledWith(9, message.rect, 1280);
+    expect(sendResponse).toHaveBeenCalledWith({ dataUrl: 'data:image/png;base64,AAAA' });
+
+    expect(route(message, { id: 'ext' }, sendResponse)).toBe(false);
+    for (const rect of [
+      { x: 0, y: 0, width: 0, height: 10 },
+      { x: Number.NaN, y: 0, width: 10, height: 10 },
+      { x: 0, y: 0, width: 1e9, height: 10 },
+      'everything',
+    ]) {
+      expect(route({ ...message, rect }, inTab, sendResponse)).toBe(false);
+    }
+    expect(captureCard).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a failed capture instead of hanging', async () => {
+    const { route, captureCard, sendResponse } = setup();
+    captureCard.mockRejectedValueOnce(new Error('Cannot capture this page.'));
+    const inTab = { id: 'ext', tab: { windowId: 9 } } as chrome.runtime.MessageSender;
+    route(
+      {
+        type: '4ntl:capture-card',
+        rect: { x: 0, y: 0, width: 10, height: 10 },
+        viewportWidth: 100,
+      },
+      inTab,
+      sendResponse,
+    );
+    await flush();
+    expect(sendResponse).toHaveBeenCalledWith({ error: 'Cannot capture this page.' });
   });
 
   it('opens the saved list', () => {

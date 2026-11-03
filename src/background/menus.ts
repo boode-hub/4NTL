@@ -1,7 +1,8 @@
 /**
- * Right-click menus: on a selection, "4NTL: look up “…”" ▸ one entry per provider
- * plus "All providers"; on a link, "4NTL: check this link"; anywhere else (buttons,
- * cards, images), "4NTL: check what this opens"; on the toolbar icon, "Saved list".
+ * Right-click menu: a single "4NTL" entry. Inside it: on a selection, "Look up “…”"
+ * plus one entry per provider; on a link, "Check this link"; anywhere else
+ * (buttons, cards, images, text fields), "Check what’s here". On the toolbar
+ * icon, "Saved list".
  */
 import { isProviderId } from '../core/provider-ids';
 import { PROVIDER_LIST } from '../providers/registry';
@@ -33,28 +34,53 @@ function create(properties: chrome.contextMenus.CreateProperties): Promise<void>
   });
 }
 
+/** Everything except a selection or a link: the page, images, frames, media, text fields. */
+const ELEMENT_CONTEXTS: [
+  `${chrome.contextMenus.ContextType}`,
+  ...`${chrome.contextMenus.ContextType}`[],
+] = ['page', 'image', 'frame', 'video', 'audio', 'editable'];
+
 /** Idempotent: safe to call on every install/update. */
 export async function registerMenus(): Promise<void> {
   await chrome.contextMenus.removeAll();
-  const contexts: ['selection'] = ['selection'];
-  await create({ id: ROOT_ID, title: '4NTL: look up “%s”', contexts });
+  // One entry, "4NTL", wherever you right-click; what's inside depends on what you clicked.
+  await create({
+    id: ROOT_ID,
+    title: '4NTL',
+    contexts: ['selection', 'link', ...ELEMENT_CONTEXTS],
+  });
+  const selection: ['selection'] = ['selection'];
+  await create({
+    id: menuItemId('all'),
+    parentId: ROOT_ID,
+    title: 'Look up “%s”',
+    contexts: selection,
+  });
+  await create({
+    id: `${ROOT_ID}:separator`,
+    parentId: ROOT_ID,
+    type: 'separator',
+    contexts: selection,
+  });
   for (const provider of PROVIDER_LIST) {
     await create({
       id: menuItemId(provider.id),
       parentId: ROOT_ID,
-      title: provider.name,
-      contexts,
+      title: `${provider.name} only`,
+      contexts: selection,
     });
   }
-  await create({ id: `${ROOT_ID}:separator`, parentId: ROOT_ID, type: 'separator', contexts });
-  await create({ id: menuItemId('all'), parentId: ROOT_ID, title: 'All providers', contexts });
-  await create({ id: LINK_ITEM_ID, title: '4NTL: check this link', contexts: ['link'] });
+  await create({
+    id: LINK_ITEM_ID,
+    parentId: ROOT_ID,
+    title: 'Check this link',
+    contexts: ['link'],
+  });
   await create({
     id: ELEMENT_ITEM_ID,
-    title: '4NTL: check what this opens',
-    // Not 'editable': selecting text in a field would then match two entries and
-    // Chrome would push the lookup menu one level down into a submenu.
-    contexts: ['page', 'image', 'frame', 'video', 'audio'],
+    parentId: ROOT_ID,
+    title: 'Check what’s here',
+    contexts: ELEMENT_CONTEXTS,
   });
   // Right-click the toolbar icon.
   await create({ id: LIST_ITEM_ID, title: 'Saved list', contexts: ['action'] });

@@ -8,6 +8,7 @@ export declare function createManifest(options: {
   store?: boolean;
 }): chrome.runtime.ManifestV3 & {
   minimum_chrome_version?: string;
+  optional_host_permissions?: string[];
   browser_specific_settings?: {
     gecko: {
       id: string;

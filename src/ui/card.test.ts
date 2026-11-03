@@ -343,7 +343,7 @@ describe('ResultCard – lifecycle', () => {
     card.show(LOOKUP_VIEW);
     await flush();
     $('[aria-label="Copy…"]')?.click();
-    pick($$, 'Copy full report')?.click();
+    pick($$, 'Copy details as text')?.click();
     await vi.waitFor(() => {
       expect(writeText).toHaveBeenCalled();
     });
@@ -509,7 +509,7 @@ describe('ResultCard – lifecycle', () => {
       .find((b) => b.textContent === 'Retry')
       ?.click();
     $('[aria-label="Copy…"]')?.click();
-    pick($$, 'Copy full report')?.click();
+    pick($$, 'Copy details as text')?.click();
     await vi.waitFor(() => {
       expect(writeText).toHaveBeenCalled();
     });

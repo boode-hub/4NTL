@@ -28,6 +28,7 @@ const URL_ROUTES: FakeRoute[] = [
 ];
 
 type Hook =
+  | 'simulateShortcut'
   | 'simulateElementClick'
   | 'simulateLinkClick'
   | 'simulateActionClick'
@@ -63,6 +64,42 @@ test.describe('links that are not plain links', () => {
     await hook(worker, 'simulateElementClick', APP_URL);
     await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/card');
     await expect(card(page).locator('[data-provider="virustotal"] .pill')).toHaveText('Suspicious');
+  });
+
+  test('a link hidden under a transparent overlay ("the whole tile is clickable")', async ({
+    page,
+    worker,
+  }) => {
+    // Load 4NTL into the page first, so it sees the right-click itself.
+    await hook(worker, 'simulateMenuClick', APP_URL, '8.8.8.8', 'virustotal');
+    await page.keyboard.press('Escape');
+    const link = await page.locator('#tile-link').boundingBox();
+    if (!link) throw new Error('no tile link');
+    await page.mouse.click(link.x + 5, link.y + link.height / 2, { button: 'right' });
+    await hook(worker, 'simulateElementClick', APP_URL);
+    await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/tile');
+  });
+
+  test('a link inside the box that was right-clicked', async ({ page, worker }) => {
+    await page.locator('#post-body').hover();
+    await hook(worker, 'simulateElementClick', APP_URL);
+    await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/post');
+  });
+
+  test('no link at all: the IP written in a table cell', async ({ page, worker }) => {
+    await page.locator('#cell').hover();
+    await hook(worker, 'simulateElementClick', APP_URL);
+    await expect(card(page).locator('.ioc')).toHaveText('185.220.101.4');
+    await expect(card(page).locator('[data-provider="abuseipdb"][data-verdict]')).toBeVisible();
+  });
+
+  test('the shortcut looks up what the pointer is over when nothing is selected', async ({
+    page,
+    worker,
+  }) => {
+    await page.locator('#noselect').hover();
+    await hook(worker, 'simulateShortcut', APP_URL);
+    await expect(card(page).locator('.ioc')).toHaveText('185.220.101.4');
   });
 
   test('a "#" link whose real target is in its click handler', async ({ page, worker }) => {

@@ -4,7 +4,7 @@
  * timer when closed. Used floating in web pages and inline in the fallback window.
  */
 import type { Indicator } from '../core/indicator';
-import type { CardView, ProviderInfo } from '../core/messages';
+import type { CardRect, CardView, ProviderInfo } from '../core/messages';
 import type { ProviderId } from '../core/provider-ids';
 import {
   countryOf,
@@ -42,6 +42,8 @@ export interface CardClient {
   /** Adds (or refreshes) an entry in the saved list. */
   save(entry: SavedEntry): Promise<void>;
   openList(): void;
+  /** A PNG of this box of the visible tab ("Copy card as image"); absent where impossible. */
+  captureCard?(rect: CardRect, viewportWidth: number): Promise<Blob>;
   /** Store edition: open the checkout / the "restore purchase" page. */
   unlock(): void;
   restore(): void;
@@ -219,8 +221,18 @@ export class ResultCard {
               const button = event.currentTarget as HTMLElement;
               this.#toggleMenu(button, [
                 { label: 'Copy indicator', select: () => void this.#copy(indicator.value, button) },
+                ...(this.#options.client.captureCard
+                  ? [
+                      {
+                        label: 'Copy card as image',
+                        select: () => {
+                          this.#copyImage(button, indicator.value);
+                        },
+                      },
+                    ]
+                  : []),
                 {
-                  label: 'Copy full report',
+                  label: 'Copy details as text',
                   select: () =>
                     void this.#copy(formatReportText(indicator, results(), this.#now()), button),
                 },
@@ -387,13 +399,65 @@ export class ResultCard {
 
   async #copy(value: string, button: HTMLElement): Promise<void> {
     const ok = await copyText(value, this.#card);
-    if (this.#closed) return;
-    button.replaceChildren(icon(ok ? ICONS.check : ICONS.copy));
-    const label = (text: string) => {
-      button.title = text;
-      button.setAttribute('aria-label', text);
+    this.#flash(button, ok ? 'Copied' : 'Copy failed');
+  }
+
+  /**
+   * A picture of the card itself, to paste into a ticket or chat. The clipboard
+   * write starts right away (inside the click) with the image to follow; where
+   * pages may not put images on the clipboard (plain http), it's saved instead.
+   */
+  #copyImage(button: HTMLElement, indicator: string): void {
+    const { client } = this.#options;
+    if (!client.captureCard) return;
+    const image = (async () => {
+      // Let the copy menu disappear from the screen first.
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const box = this.#card.getBoundingClientRect();
+      if (!client.captureCard) throw new Error('No screenshots here.');
+      return client.captureCard(
+        { x: box.left, y: box.top, width: box.width, height: box.height },
+        window.innerWidth,
+      );
+    })();
+    const save = async () => {
+      const url = URL.createObjectURL(await image);
+      const name = `4ntl-${indicator.replace(/[^\w.-]+/g, '_').slice(0, 80)}.png`;
+      const link = h('a', { attrs: { href: url, download: name } });
+      this.#card.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 10_000);
     };
-    label(ok ? 'Copied' : 'Copy failed');
+    void (async () => {
+      let result = 'Copied';
+      try {
+        // Plain http pages have no async clipboard at all.
+        if (!window.isSecureContext || typeof ClipboardItem !== 'function') throw new Error();
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': image })]);
+      } catch {
+        try {
+          await save();
+          result = 'Saved to Downloads';
+        } catch {
+          result = 'Copy failed';
+        }
+      }
+      this.#flash(button, result);
+    })();
+  }
+
+  /** Brief feedback on the copy button ("Copied", "Copy failed", …). */
+  #flash(button: HTMLElement, text: string): void {
+    if (this.#closed) return;
+    button.replaceChildren(icon(text === 'Copy failed' ? ICONS.copy : ICONS.check));
+    const label = (value: string) => {
+      button.title = value;
+      button.setAttribute('aria-label', value);
+    };
+    label(text);
     const timer = setTimeout(() => {
       button.replaceChildren(icon(ICONS.copy));
       label('Copy…');

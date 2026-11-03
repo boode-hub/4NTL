@@ -22,7 +22,7 @@ import {
   type PointerMark,
 } from './anchor';
 import { armCapture } from './capture';
-import { deepestHovered, findLinkTargets } from './link-target';
+import { deepestHovered, findTargetsAt, textOf, type Point } from './link-target';
 
 let card: ResultCard | undefined;
 let pointer: PointerMark | undefined;
@@ -31,7 +31,7 @@ let pointer: PointerMark | undefined;
  * single-page app may throw that part of the page away, and we must not keep
  * it alive.
  */
-let rightClicked: { element: WeakRef<Element>; at: number } | undefined;
+let rightClicked: { element: WeakRef<Element>; point: Point; at: number } | undefined;
 let cancelCapture: (() => void) | undefined;
 
 // Remember what and where the user right-clicks. (The first right-click in a
@@ -41,7 +41,13 @@ document.addEventListener(
   (event) => {
     pointer = { x: event.clientX, y: event.clientY, at: Date.now() };
     const [target] = event.composedPath();
-    if (target instanceof Element) rightClicked = { element: new WeakRef(target), at: Date.now() };
+    if (target instanceof Element) {
+      rightClicked = {
+        element: new WeakRef(target),
+        point: { x: event.clientX, y: event.clientY },
+        at: Date.now(),
+      };
+    }
   },
   { capture: true, passive: true },
 );
@@ -78,9 +84,17 @@ function show(view: CardView, appearance: Appearance, corner: boolean): void {
 
 function inspect(): InspectResponse {
   const recent = rightClicked && Date.now() - rightClicked.at <= POINTER_MAX_AGE_MS;
-  const element = (recent ? rightClicked?.element.deref() : undefined) ?? deepestHovered(document);
+  const clicked = recent ? rightClicked?.element.deref() : undefined;
+  // The first right-click in a page comes before this script: use :hover then.
+  const element = clicked ?? deepestHovered(document);
+  const point = clicked ? rightClicked?.point : undefined;
   rightClicked = undefined;
-  return { urls: element ? findLinkTargets(element, document.baseURI) : [] };
+  if (!element) return { urls: [] };
+  const text = textOf(element);
+  return {
+    urls: findTargetsAt(element, point, document.baseURI),
+    ...(text ? { text } : {}),
+  };
 }
 
 function capture(): void {

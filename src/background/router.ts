@@ -1,7 +1,13 @@
 /** Handles messages from the extension's own UI surfaces. Everything else is ignored. */
 import { parseIndicator } from '../core/indicator';
 import type { Access } from '../core/license';
-import { isBackgroundMessage, type LicenseResponse, type LookupResponse } from '../core/messages';
+import {
+  isBackgroundMessage,
+  type CaptureResponse,
+  type CardRect,
+  type LicenseResponse,
+  type LookupResponse,
+} from '../core/messages';
 import type { LookupService } from './lookup-service';
 
 export interface RouterDeps {
@@ -15,6 +21,12 @@ export interface RouterDeps {
     readonly unlock: () => Promise<void>;
     readonly restore: () => Promise<void>;
   };
+  /** "Copy card as image": a PNG data: URL of that box of the window's visible tab. */
+  readonly captureCard: (
+    windowId: number,
+    rect: CardRect,
+    viewportWidth: number,
+  ) => Promise<string>;
   /** A content script caught where a JavaScript-only button was going. */
   readonly onCaptured: (url: string, sender: chrome.runtime.MessageSender) => Promise<void>;
 }
@@ -22,7 +34,7 @@ export interface RouterDeps {
 type Listener = (
   message: unknown,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response: LookupResponse | LicenseResponse) => void,
+  sendResponse: (response: LookupResponse | LicenseResponse | CaptureResponse) => void,
 ) => boolean;
 
 export function createMessageRouter(deps: RouterDeps): Listener {
@@ -76,6 +88,19 @@ export function createMessageRouter(deps: RouterDeps): Listener {
           sendResponse({ access });
         });
         return true;
+      case '4ntl:capture-card': {
+        const windowId = sender.tab?.windowId;
+        if (windowId === undefined) return false; // only a card inside a tab can be captured
+        void deps.captureCard(windowId, message.rect, message.viewportWidth).then(
+          (dataUrl) => {
+            sendResponse({ dataUrl });
+          },
+          (error: unknown) => {
+            sendResponse({ error: error instanceof Error ? error.message : String(error) });
+          },
+        );
+        return true;
+      }
       case '4ntl:captured':
         // Only content scripts in a tab can catch a click.
         if (sender.tab?.id !== undefined) void deps.onCaptured(message.url, sender);

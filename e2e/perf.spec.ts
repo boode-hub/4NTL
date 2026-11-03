@@ -206,7 +206,7 @@ test('copy menu and saving leak nothing over 50 cards', async ({ page, worker, s
     await card.getByRole('button', { name: 'Save to list' }).click();
     await expect(card.locator('.icon-btn.on')).toHaveCount(1);
     await card.getByRole('button', { name: 'Copy…' }).click();
-    await card.getByRole('menuitem', { name: 'Copy full report' }).click();
+    await card.getByRole('menuitem', { name: 'Copy details as text' }).click();
     await expect(card.getByRole('button', { name: 'Copied' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('x-4ntl-card')).toHaveCount(0);

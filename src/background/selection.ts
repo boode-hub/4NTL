@@ -4,6 +4,8 @@ import type { FrameTarget } from './present';
 export interface FrameSelection {
   readonly text: string;
   readonly focused: boolean;
+  /** Nothing was selected: this is the text of what the pointer is over. */
+  readonly hovered?: boolean;
 }
 
 /**
@@ -21,7 +23,32 @@ export function readSelectionInPage(): FrameSelection {
     }
   }
   if (!text) text = document.getSelection()?.toString() ?? '';
-  return { text: text.trim(), focused: document.hasFocus() };
+  text = text.trim();
+  if (text) return { text, focused: document.hasFocus() };
+
+  // Nothing selected (or the app blocks selecting): use what the pointer is over,
+  // e.g. a table cell in a console whose own right-click menu hides the browser's.
+  let scope: Document | ShadowRoot = document;
+  let hovered: Element | undefined;
+  for (let depth = 0; depth < 10; depth++) {
+    const list: NodeListOf<Element> = scope.querySelectorAll(':hover');
+    const last = list[list.length - 1];
+    if (!last) break;
+    hovered = last;
+    if (!last.shadowRoot) break;
+    scope = last.shadowRoot;
+  }
+  const value =
+    hovered instanceof HTMLInputElement || hovered instanceof HTMLTextAreaElement
+      ? hovered.value
+      : hovered instanceof HTMLElement
+        ? hovered.innerText
+        : '';
+  const under = value.trim();
+  // A whole page region isn't "the thing under the pointer".
+  return under && under.length <= 2000
+    ? { text: under, focused: document.hasFocus(), hovered: true }
+    : { text: '', focused: document.hasFocus() };
 }
 
 /** Picks the frame the user is most plausibly acting on: focused with a selection first. */
@@ -31,10 +58,20 @@ export function pickSelection(
   const candidates = results.flatMap(({ frameId, result }) => {
     const selection = result as Partial<FrameSelection> | undefined;
     return typeof selection?.text === 'string' && selection.text !== ''
-      ? [{ frameId, text: selection.text, focused: selection.focused === true }]
+      ? [
+          {
+            frameId,
+            text: selection.text,
+            focused: selection.focused === true,
+            hovered: selection.hovered === true,
+          },
+        ]
       : [];
   });
-  const best = candidates.find((c) => c.focused) ?? candidates[0];
+  // A real selection beats the text under the pointer; the focused frame beats others.
+  const selected = candidates.filter((c) => !c.hovered);
+  const pool = selected.length > 0 ? selected : candidates;
+  const best = pool.find((c) => c.focused) ?? pool[0];
   return best && { frameId: best.frameId, text: best.text };
 }
 

@@ -381,6 +381,28 @@ async function main(): Promise<void> {
     if (saveTimer !== undefined) void save();
   });
 
+  // "Work inside embedded frames": the optional all-sites permission.
+  const allFrames = inputById('all-frames');
+  const allFramesStatus = byId('all-frames-status');
+  const everywhere = { origins: ['<all_urls>'] };
+  allFrames.checked = await chrome.permissions.contains(everywhere);
+  allFrames.addEventListener('change', () => {
+    const want = allFrames.checked;
+    void (want ? chrome.permissions.request(everywhere) : chrome.permissions.remove(everywhere))
+      .then((changed) => {
+        allFrames.checked = want === changed ? want : !want;
+        setStatus(
+          allFramesStatus,
+          want && !changed ? 'Not allowed. 4NTL keeps working on the page itself.' : '',
+          'warn',
+        );
+      })
+      .catch((error: unknown) => {
+        allFrames.checked = !want;
+        setStatus(allFramesStatus, String(error), 'error');
+      });
+  });
+
   const cacheStatus = byId('cache-status');
   byId('clear-cache').addEventListener('click', () => {
     void new TtlCache(chrome.storage.session, REPORT_CACHE)

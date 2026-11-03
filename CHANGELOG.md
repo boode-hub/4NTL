@@ -4,6 +4,29 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-11-03
+
+### Added
+
+- **Copy card as image**: a picture of the card itself (theme, flags and all) on
+  the clipboard, ready to paste into a ticket or chat. On plain http pages, where
+  browsers don't allow copying images, it's saved to Downloads instead. "Copy
+  details as text" stays.
+- **Point and press**: with nothing selected, **Alt+Shift+L** looks up what the
+  pointer is over. Works in consoles that replace the right-click menu or block
+  selecting text.
+- **Work inside embedded frames from other sites** (settings, off by default): for
+  web apps that show their data in a frame 4NTL couldn't reach.
+
+### Changed
+
+- The right-click menu is one entry, **4NTL**, with the choices inside it
+  (**Look up “…”**, one provider, **Check this link**, **Check what’s here**).
+- "Check what’s here" finds far more destinations: links hidden under a
+  transparent layer (whole-card links), links inside the card or row you clicked,
+  more data attributes, and, when there's no link at all, the IP, domain or hash
+  written in the cell, label or text field you clicked.
+
 ## [0.5.2] - 2026-10-31
 
 ### Changed

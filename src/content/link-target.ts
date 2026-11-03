@@ -3,7 +3,8 @@
  * buttons and cards wired up in JavaScript, `href="#"` or `javascript:` links
  * with the real target in a handler, data attributes, forms, SVG links and
  * web components. Walks from the element up through its ancestors (crossing
- * shadow roots) and returns the destinations found on the nearest one.
+ * shadow roots) and returns the destinations found on the nearest one; also
+ * looks under the pointer and inside the element (see findTargetsAt).
  */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -26,6 +27,12 @@ const LINK_ATTRIBUTES = new Set([
   'data-to',
   'routerlink',
   'ng-reflect-router-link',
+  'data-uri',
+  'data-link-url',
+  'data-outbound-url',
+  'data-expanded-url',
+  'data-full-url',
+  'data-saferedirecturl',
 ]);
 
 /** Attributes that hold absolute URLs but aren't where a click goes. */
@@ -140,4 +147,76 @@ export function deepestHovered(doc: Document): Element | undefined {
     scope = last.shadowRoot;
   }
   return deepest;
+}
+
+export interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Elements stacked under a point, top first, looking into open shadow roots. */
+function stackAt(doc: Document, point: Point): Element[] {
+  if (typeof doc.elementsFromPoint !== 'function') return [];
+  const stack = doc.elementsFromPoint(point.x, point.y);
+  const inner = stack[0]?.shadowRoot?.elementsFromPoint(point.x, point.y) ?? [];
+  return [...inner, ...stack].slice(0, MAX_DEPTH * 2);
+}
+
+/** A control's destination is its own click (caught by "click it once"), never a nearby link. */
+const CONTROLS = 'button, input, select, textarea, [role="button"], [onclick]';
+/** About a card or a table row; more text than this is a page section, not "what was clicked". */
+const MAX_BOX_TEXT = 400;
+
+/** Links inside what was clicked (a card's padding, a table row), if there are only a few. */
+function linksWithin(start: Element, base: URL): string[] {
+  if (start.closest(CONTROLS)) return [];
+  let element: Element | null = start;
+  for (let depth = 0; element && depth < 3; depth++) {
+    if (element === element.ownerDocument.body) break;
+    if (element.textContent.length > MAX_BOX_TEXT) break;
+    const anchors = element.querySelectorAll('a[href], area[href]');
+    if (anchors.length > MAX_TARGETS) break; // a whole list or menu: too vague to pick from
+    const found = [...anchors].flatMap((anchor) => destinationsOf(anchor, base));
+    if (found.length > 0) return [...new Set(found)].slice(0, MAX_TARGETS);
+    element = parentAcrossShadow(element);
+  }
+  return [];
+}
+
+/**
+ * Where a right-click leads, trying in turn: the clicked element and its
+ * ancestors; whatever else is stacked under the pointer (a transparent layer
+ * on top of a card often hides the real link from the click); links inside
+ * the clicked element.
+ */
+export function findTargetsAt(start: Element, point: Point | undefined, baseUrl: string): string[] {
+  const base = new URL(baseUrl);
+  const box = start.getBoundingClientRect();
+  const at = point ?? { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+  const tried = new Set<Element>();
+  for (const element of [start, ...stackAt(start.ownerDocument, at)]) {
+    if (tried.has(element)) continue;
+    tried.add(element);
+    const found = findLinkTargets(element, baseUrl);
+    if (found.length > 0) return found;
+  }
+  return linksWithin(start, base);
+}
+
+const MAX_TEXT = 2000;
+
+/**
+ * The text of what was right-clicked (a table cell, a label, a text field's
+ * value), for finding an IP, domain or hash when there's no link. Undefined
+ * when it's a whole page region rather than one thing.
+ */
+export function textOf(element: Element): string | undefined {
+  const text =
+    element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement
+      ? element.value
+      : element instanceof HTMLElement
+        ? element.innerText
+        : element.textContent;
+  const trimmed = text.trim();
+  return trimmed && trimmed.length <= MAX_TEXT ? trimmed : undefined;
 }

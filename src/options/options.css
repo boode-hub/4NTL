@@ -333,6 +333,21 @@ a.btn {
 .btn.primary[hidden] {
   display: none;
 }
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.switch input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.switch-field {
+  margin-top: 18px;
+}
 .license-help {
   display: block;
   margin-top: 10px;

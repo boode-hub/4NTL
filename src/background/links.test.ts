@@ -6,10 +6,10 @@ import { CAPTURE_NOTICE, NO_LINK_NOTICE } from './view';
 const PAGE = 'https://app.example.org/inbox';
 const TARGET = { tabId: 3, frameId: 0 };
 
-function deps(inspected: string[] = [], canCapture = true) {
+function deps(inspected: string[] = [], canCapture = true, text?: string) {
   const shown: CardView[] = [];
   const value: LinkDeps = {
-    inspect: vi.fn(() => Promise.resolve(inspected)),
+    inspect: vi.fn(() => Promise.resolve(text ? { urls: inspected, text } : { urls: inspected })),
     capture: vi.fn(() => Promise.resolve(canCapture)),
     present: vi.fn((view: CardView) => {
       shown.push(view);
@@ -105,5 +105,32 @@ describe('checkCaptured', () => {
     const present = vi.fn(() => Promise.resolve());
     await checkCaptured('blob:https://x/1', TARGET, present);
     expect(present).toHaveBeenCalledWith(NO_LINK_NOTICE, TARGET);
+  });
+});
+
+describe('checkLink: no link, but an indicator in the text', () => {
+  it('falls back to an indicator written in what was clicked (a table cell)', async () => {
+    const d = deps([], true, '185.220.101.4');
+    const view = await checkLink({ target: TARGET, pageUrl: PAGE }, d.value);
+    expect(view).toMatchObject({ kind: 'lookup', indicator: { value: '185.220.101.4' } });
+    expect(d.value.capture).not.toHaveBeenCalled();
+  });
+
+  it('offers a choice when the text holds several', async () => {
+    const d = deps([], true, 'src=185.220.101.4 dst=8.8.8.8');
+    const view = await checkLink({ target: TARGET, pageUrl: PAGE }, d.value);
+    expect(view.kind).toBe('choose');
+  });
+
+  it('a real destination still wins over the text', async () => {
+    const d = deps(['https://evil.com/x'], true, '185.220.101.4');
+    const view = await checkLink({ target: TARGET, pageUrl: PAGE }, d.value);
+    expect(view).toMatchObject({ kind: 'lookup', indicator: { type: 'url' } });
+  });
+
+  it('plain words (a "Download" button) still wait for the click', async () => {
+    const d = deps([], true, 'Download');
+    const view = await checkLink({ target: TARGET, pageUrl: PAGE }, d.value);
+    expect(view).toBe(CAPTURE_NOTICE);
   });
 });

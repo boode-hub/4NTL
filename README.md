@@ -27,13 +27,18 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
 
 ## Features
 
-- **One click, or one key.** Right-click → **4NTL** → AbuseIPDB, VirusTotal or
-  **All providers**. Or select and press **Alt+Shift+L**.
-- **Any link, button or card.** Right-click a link → **4NTL: check this link**, or
-  a button, card or image → **4NTL: check what this opens**. 4NTL finds the
-  destination even when the page hides it in JavaScript. If a button only gets an
-  address when clicked, click it once: 4NTL catches where it was going and **stops
-  it from opening**.
+- **One menu entry: 4NTL.** Right-click → **4NTL** → **Look up “…”** (all
+  providers) or one provider. Or select and press **Alt+Shift+L**.
+- **Any link, button or card.** Right-click → **4NTL** → **Check this link**, or on
+  a button, card, image or table cell → **Check what’s here**. 4NTL finds the
+  destination even when the page hides it in JavaScript or under a transparent
+  layer, or looks inside the card for its link. No link at all? It looks up the
+  IP, domain or hash written there. If a button only gets an address when
+  clicked, click it once: 4NTL catches where it was going and **stops it from
+  opening**.
+- **Works in web apps that fight you.** Console with its own right-click menu, or
+  text you can't select? Point at the IP and press **Alt+Shift+L**. Data shown in a
+  frame from another site? Turn on **Work inside embedded frames** in the settings.
 - **Unwraps protected links.** Outlook Safe Links, Proofpoint URL Defense, Barracuda,
   Google, Facebook, YouTube, Slack and LinkedIn redirects are looked up as the real
   destination.
@@ -44,8 +49,9 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
   Select a whole log line and it lets you pick the indicator.
 - **IPv4, IPv6, domains, URLs, MD5, SHA-1, SHA-256.** AbuseIPDB checks IPs;
   VirusTotal checks everything.
-- **Copy what you need.** The copy button offers the indicator alone or the **full
-  report** as plain text (verdicts, details, links) to paste into a ticket or chat.
+- **Copy what you need.** The copy button offers the indicator alone, **the card
+  as a picture** (paste it straight into a ticket or chat), or the details as plain
+  text.
 - **Saved list.** Press the bookmark on a card to put the indicator on your list.
   Open it (click the bookmark again, or right-click the 4NTL icon → **Saved list**),
   filter it (e.g. only IPs, or only malicious), then **Copy indicators** (one per
@@ -106,18 +112,18 @@ Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups
 
 ## Using it
 
-| To check…                      | Do this                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------- |
-| An IP, hash, domain or URL     | Select it → right-click → **4NTL** → a provider or **All providers**      |
-| The same, faster               | Select it → **Alt+Shift+L**                                               |
-| A link                         | Right-click it → **4NTL: check this link**                                |
-| A button, card or image        | Right-click it → **4NTL: check what this opens** (then click it if asked) |
-| The page you're on             | Click the **4NTL** toolbar icon                                           |
-| Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**              |
+| To check…                      | Do this                                                                |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| An IP, hash, domain or URL     | Select it → right-click → **4NTL** → **Look up “…”** (or one provider) |
+| The same, faster               | Select it, or just point at it, → **Alt+Shift+L**                      |
+| A link                         | Right-click it → **4NTL** → **Check this link**                        |
+| A button, card, image or cell  | Right-click it → **4NTL** → **Check what’s here** (click it if asked)  |
+| The page you're on             | Click the **4NTL** toolbar icon                                        |
+| Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**           |
 
 Read the verdict. **Full report ↗** opens the provider's page; **Esc** or a click
-elsewhere closes the card. The copy button copies the indicator or the full report;
-the bookmark saves it to your list.
+elsewhere closes the card. The copy button copies the indicator, the card as a
+picture, or the details as text; the bookmark saves it to your list.
 
 Several indicators in one selection? You get a list to pick from:
 
@@ -137,12 +143,13 @@ The raw numbers are always shown next to the verdict.
 Browsers don't let any extension onto some pages, and some sites replace the
 right-click menu with their own:
 
-| Where                                                                                                  | What to do                                                                                                        |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Browser pages (`chrome://`, `edge://`, `about:`, the new-tab page), extension stores, other extensions | Copy the indicator, then use the address bar: `4ntl` + space + paste                                              |
-| Sites with their own right-click menu (Google Docs/Sheets, Office online, some SIEM consoles)          | Select and press **Alt+Shift+L**, or use the address bar. Docs and Sheets draw text on a canvas, so copy it first |
-| Local files (`file://`)                                                                                | On the extensions page, open 4NTL's **Details** and turn on **Allow access to file URLs**                         |
-| PDFs in the browser's viewer                                                                           | The menu works; the result opens in a small window                                                                |
+| Where                                                                                                  | What to do                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Browser pages (`chrome://`, `edge://`, `about:`, the new-tab page), extension stores, other extensions | Copy the indicator, then use the address bar: `4ntl` + space + paste                                                               |
+| Sites with their own right-click menu (Google Docs/Sheets, Office online, some SIEM consoles)          | Point at the IP (or select it) and press **Alt+Shift+L**. Docs and Sheets draw text on a canvas: copy it, then use the address bar |
+| Web apps showing data in a frame from another site                                                     | Settings → turn on **Work inside embedded frames from other sites**                                                                |
+| Local files (`file://`)                                                                                | On the extensions page, open 4NTL's **Details** and turn on **Allow access to file URLs**                                          |
+| PDFs in the browser's viewer                                                                           | The menu works; the result opens in a small window                                                                                 |
 
 ## Privacy and security
 

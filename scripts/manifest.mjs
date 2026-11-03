@@ -60,6 +60,9 @@ export function createManifest({ version, e2e = false, browser = 'chromium', sto
       // is never granted there. Release builds must never contain this.
       ...(e2e ? ['<all_urls>'] : []),
     ],
+    // Off unless the user turns on "Work inside embedded frames" in the settings:
+    // lets 4NTL read selections and links in frames from other sites (some consoles).
+    optional_host_permissions: ['<all_urls>'],
     // Store edition: ExtensionPay's script on its own site tells 4NTL about a purchase.
     ...(store
       ? {

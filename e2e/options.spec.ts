@@ -71,6 +71,15 @@ test('the GitHub edition never mentions payment: Support instead of a license', 
   await expect(page.locator('main')).not.toContainText('$2', { useInnerText: true }); // shown text only
 });
 
+test('the "embedded frames" switch shows whether 4NTL may read frames from other sites', async ({
+  context,
+  extensionId,
+}) => {
+  const page = await openSettings(context, extensionId);
+  // The test build is granted every site, so the switch reads as on.
+  await expect(page.getByLabel('Work inside embedded frames from other sites')).toBeChecked();
+});
+
 test('the free edition records the install date, so early users stay free in the paid update', async ({
   worker,
 }) => {

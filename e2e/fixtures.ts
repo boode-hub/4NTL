@@ -70,11 +70,25 @@ const APP = `<!doctype html>
   <p><a id="fake" href="#" onclick="window.location.href='https://evil.com/fake'">Fake link</a></p>
   <p><a id="wrapped" href="${SAFE_LINK}">Wrapped link</a></p>
   <p><button id="js-nav">Continue</button> <button id="js-open">Open offer</button></p>
+  <div id="tile" style="position: relative; width: 240px; padding: 12px; border: 1px solid #ccc">
+    <a id="tile-link" href="https://evil.com/tile">Tile title</a>
+    <p>Whole tile is clickable</p>
+    <span id="overlay" style="position: absolute; inset: 0"></span>
+  </div>
+  <div style="padding: 12px; border: 1px solid #ccc; width: 240px">
+    <h3><a href="https://evil.com/post">Post title</a></h3>
+    <p id="post-body">Body text of the post</p>
+  </div>
+  <table><tr><td id="cell">185.220.101.4</td></tr></table>
+  <p id="noselect" style="user-select: none">Alert from 185.220.101.4</p>
   <script>
     document.getElementById('js-nav').addEventListener('click', () => { location.href = 'https://evil.com/next-step'; });
     document.getElementById('js-open').addEventListener('click', () => { window.open('https://evil.com/popup', '_blank'); });
   </script>
 </body></html>`;
+
+/** The test page again, over https (where pages may put images on the clipboard). */
+export const SECURE_URL = 'https://secure.4ntl.test/';
 
 /** A public-looking page, for checking "the page I'm on". */
 export const PHISH_URL = 'https://phish-demo.com/login';
@@ -200,6 +214,9 @@ export const test = base.extend<Fixtures & Options>({
               body: PAGE,
               headers: { 'content-security-policy': STRICT_CSP },
             }),
+    );
+    await context.route(`${SECURE_URL}**`, (route) =>
+      route.fulfill({ contentType: 'text/html', body: PAGE }),
     );
     await context.route(`${PHISH_URL}**`, (route) =>
       route.fulfill({ contentType: 'text/html', body: '<h1>Sign in to your account</h1>' }),

@@ -128,15 +128,19 @@ describe('inspectInPage / captureInPage', () => {
     sendMessage.mockImplementation(
       (_tab: number, message: { type: string }) =>
         Promise.resolve(
-          message.type === '4ntl:inspect' ? { urls: ['https://evil.com/', 42] } : 'pong',
+          message.type === '4ntl:inspect'
+            ? { urls: ['https://evil.com/', 42], text: ` 8.8.8.8 ${'x'.repeat(5000)}` }
+            : 'pong',
         ) as Promise<string>,
     );
-    expect(await inspectInPage(TARGET)).toEqual(['https://evil.com/']);
+    const found = await inspectInPage(TARGET);
+    expect(found.urls).toEqual(['https://evil.com/']);
+    expect(found.text?.length).toBe(2000); // capped
   });
 
   it('returns nothing when the page cannot be scripted', async () => {
     stubChrome({ injectFails: true });
-    expect(await inspectInPage(TARGET)).toEqual([]);
+    expect(await inspectInPage(TARGET)).toEqual({ urls: [] });
     expect(await captureInPage(TARGET)).toBe(false);
   });
 
