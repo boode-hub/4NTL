@@ -6,7 +6,7 @@ import type { CardView } from '../core/messages';
 import type { LookupOutcome, Report } from '../core/result';
 import type { SavedEntry } from '../core/saved-list';
 import type { Appearance } from '../core/settings';
-import { HOST_TAG, isLightColor, ResultCard, type CardClient } from './card';
+import { boxInTopWindow, HOST_TAG, isLightColor, ResultCard, type CardClient } from './card';
 import { pointRect } from './position';
 
 const IP: Indicator = { type: 'ipv4', value: '185.220.101.4' };
@@ -398,7 +398,7 @@ describe('ResultCard – lifecycle', () => {
     card.show(LOOKUP_VIEW);
     const support = $('a.support');
     expect(support?.textContent).toBe('♥ Support 4NTL');
-    expect(support?.getAttribute('href')).toBe('https://github.com/sponsors/boode-hub');
+    expect(support?.getAttribute('href')).toBe('https://buymeacoffee.com/boode');
     expect(support?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
@@ -649,5 +649,18 @@ describe('ResultCard – dragging', () => {
       new PointerEvent('pointerdown', { bubbles: true, composed: true, button: 0, pointerId: 2 }),
     );
     expect($('.card')?.classList.contains('dragging')).toBe(false);
+  });
+});
+
+describe('boxInTopWindow', () => {
+  it('in the top window, is the element box and the window width', () => {
+    const element = document.createElement('div');
+    document.body.append(element);
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(new DOMRect(10, 20, 300, 200));
+    expect(boxInTopWindow(element)).toEqual({
+      rect: { x: 10, y: 20, width: 300, height: 200 },
+      viewportWidth: window.innerWidth,
+    });
+    element.remove();
   });
 });

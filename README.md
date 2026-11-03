@@ -211,7 +211,7 @@ updates itself; paying for it supports the project. Paid on another computer?
 **Settings → Restore purchase** with the email you paid with.
 
 Want to support it either way? ⭐ Star the repo or
-[sponsor the project](https://github.com/sponsors/boode-hub), the little
+[buy me a coffee](https://buymeacoffee.com/boode), the little
 **♥ Support 4NTL** link on every card goes there too.
 
 ## License and credits

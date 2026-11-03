@@ -5,6 +5,7 @@ import {
   fixture,
   optionsUrl,
   PAGE_URL,
+  FRAMED_URL,
   SECURE_URL,
   test,
   VT_KEY,
@@ -246,6 +247,61 @@ test.describe('in-page lookups', () => {
     expect(Math.abs((image?.height ?? 0) - Math.round(box?.height ?? 0))).toBeLessThanOrEqual(1);
   });
 
+  test('a card inside a frame: the picture is still the card, not the area around it', async ({
+    page,
+    context,
+    worker,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: SECURE_URL });
+    await page.goto(FRAMED_URL);
+    await page.frameLocator('iframe').locator('#ip').selectText();
+    await worker.evaluate(
+      (url) =>
+        (
+          globalThis as unknown as { __4ntl: { simulateShortcut(u: string): Promise<unknown> } }
+        ).__4ntl.simulateShortcut(url),
+      FRAMED_URL,
+    );
+    const card = page.frameLocator('iframe').locator('x-4ntl-card .card');
+    await expect(card.locator('[data-verdict]')).toHaveCount(2);
+    await page.waitForTimeout(200); // entrance animation
+    const expected = (await card.screenshot()).toString('base64');
+    await card.getByRole('button', { name: 'Copy…' }).click();
+    await card.getByRole('menuitem', { name: 'Copy card as image' }).click();
+    await expect(card.getByRole('status')).toHaveText(
+      'Picture of the card copied: paste it into a ticket or chat.',
+    );
+    // Same size as the card, and the same pixels (a wrong crop differs everywhere).
+    const diff = await page.evaluate(async (want) => {
+      const [item] = await navigator.clipboard.read();
+      if (!item) return null;
+      const got = await createImageBitmap(await item.getType('image/png'));
+      const ref = await createImageBitmap(
+        new Blob([Uint8Array.from(atob(want), (c) => c.charCodeAt(0))], { type: 'image/png' }),
+      );
+      const pixels = (bitmap: ImageBitmap) => {
+        const canvas = new OffscreenCanvas(ref.width, ref.height);
+        const context2d = canvas.getContext('2d');
+        if (!context2d) throw new Error('no canvas');
+        context2d.drawImage(bitmap, 0, 0);
+        return context2d.getImageData(0, 0, ref.width, ref.height).data;
+      };
+      const a = pixels(got);
+      const b = pixels(ref);
+      let total = 0;
+      for (let i = 0; i < a.length; i++) total += Math.abs((a[i] ?? 0) - (b[i] ?? 0));
+      return {
+        width: got.width - ref.width,
+        height: got.height - ref.height,
+        mean: total / a.length,
+      };
+    }, expected);
+    expect(diff).not.toBeNull();
+    expect(Math.abs(diff?.width ?? 99)).toBeLessThanOrEqual(1);
+    expect(Math.abs(diff?.height ?? 99)).toBeLessThanOrEqual(1);
+    expect(diff?.mean ?? 255).toBeLessThan(3);
+  });
+
   test('on a plain http page, the card picture is saved as a file instead', async ({
     page,
     menuClick,
@@ -263,6 +319,9 @@ test.describe('in-page lookups', () => {
     expect(Math.abs(size.width - Math.round(box?.width ?? 0))).toBeLessThanOrEqual(1);
     expect(size.height).toBeGreaterThan(200);
     await expect(card.getByRole('button', { name: 'Saved to Downloads' })).toBeVisible();
+    await expect(card.getByRole('status')).toContainText(
+      'saved to Downloads as 4ntl-185.220.101.4.png',
+    );
   });
 
   test('the keyboard shortcut looks up the current selection', async ({ page, worker }) => {

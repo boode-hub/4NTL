@@ -4,6 +4,19 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-11-03
+
+### Fixed
+
+- **Copy card as image** now says what happened, right in the card: copied,
+  saved to Downloads (pages that don't allow copying pictures), or why it
+  couldn't take the picture. Before, the only sign was a tooltip.
+- A card shown inside a frame is pictured correctly (the crop used to miss it).
+
+### Changed
+
+- The Support links go to Buy Me a Coffee (buymeacoffee.com/boode).
+
 ## [0.6.0] - 2026-11-03
 
 ### Added

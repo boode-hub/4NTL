@@ -64,7 +64,47 @@ export interface CardOptions {
 
 export const HOST_TAG = 'x-4ntl-card';
 const COPY_FEEDBACK_MS = 1200;
+const NOTE_MS = 6000;
 const LOADING: SectionState = { status: 'loading' };
+
+/**
+ * The card's box in the top window (what a tab screenshot shows), adding the
+ * offsets of the frames it sits in. Undefined inside another site's frame,
+ * whose position this page may not read.
+ */
+export function boxInTopWindow(
+  element: Element,
+): { rect: CardRect; viewportWidth: number } | undefined {
+  const box = element.getBoundingClientRect();
+  let x = box.left;
+  let y = box.top;
+  let win: Window = element.ownerDocument.defaultView ?? window;
+  try {
+    while (win !== win.top) {
+      const frame = win.frameElement;
+      if (!frame) return undefined;
+      const outer = frame.getBoundingClientRect();
+      x += outer.left + frame.clientLeft;
+      y += outer.top + frame.clientTop;
+      win = win.parent;
+    }
+    return { rect: { x, y, width: box.width, height: box.height }, viewportWidth: win.innerWidth };
+  } catch {
+    return undefined;
+  }
+}
+
+/** Why a picture of the card couldn't be taken, in words a user can act on. */
+function pictureError(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  if (message === 'frame') {
+    return 'No picture inside another site’s embedded frame. Use “Copy details as text”.';
+  }
+  if (/permission|activeTab/i.test(message)) {
+    return 'The browser allows the picture only right after you use 4NTL on this tab. Look it up again, then copy.';
+  }
+  return `Couldn’t take the picture${message ? ` (${message})` : ''}. Use “Copy details as text”.`;
+}
 
 /** Whether a user-chosen background needs dark text (WCAG relative luminance). */
 export function isLightColor(hex: string): boolean {
@@ -410,19 +450,18 @@ export class ResultCard {
   #copyImage(button: HTMLElement, indicator: string): void {
     const { client } = this.#options;
     if (!client.captureCard) return;
+    this.#card.querySelector('.note')?.remove(); // not part of the picture
     const image = (async () => {
       // Let the copy menu disappear from the screen first.
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const box = this.#card.getBoundingClientRect();
+      const place = boxInTopWindow(this.#card);
+      if (!place) throw new Error('frame');
       if (!client.captureCard) throw new Error('No screenshots here.');
-      return client.captureCard(
-        { x: box.left, y: box.top, width: box.width, height: box.height },
-        window.innerWidth,
-      );
+      return client.captureCard(place.rect, place.viewportWidth);
     })();
+    const name = `4ntl-${indicator.replace(/[^\w.-]+/g, '_').slice(0, 80)}.png`;
     const save = async () => {
       const url = URL.createObjectURL(await image);
-      const name = `4ntl-${indicator.replace(/[^\w.-]+/g, '_').slice(0, 80)}.png`;
       const link = h('a', { attrs: { href: url, download: name } });
       this.#card.append(link);
       link.click();
@@ -432,26 +471,44 @@ export class ResultCard {
       }, 10_000);
     };
     void (async () => {
-      let result = 'Copied';
       try {
         // Plain http pages have no async clipboard at all.
         if (!window.isSecureContext || typeof ClipboardItem !== 'function') throw new Error();
         await navigator.clipboard.write([new ClipboardItem({ 'image/png': image })]);
+        this.#flash(
+          button,
+          'Copied',
+          'Picture of the card copied: paste it into a ticket or chat.',
+        );
       } catch {
         try {
           await save();
-          result = 'Saved to Downloads';
-        } catch {
-          result = 'Copy failed';
+          this.#flash(
+            button,
+            'Saved to Downloads',
+            `This page doesn’t allow copying pictures, so it was saved to Downloads as ${name}.`,
+          );
+        } catch (error) {
+          this.#flash(button, 'Copy failed', pictureError(error));
         }
       }
-      this.#flash(button, result);
     })();
   }
 
-  /** Brief feedback on the copy button ("Copied", "Copy failed", …). */
-  #flash(button: HTMLElement, text: string): void {
+  /** Brief feedback on the copy button ("Copied", "Copy failed", …), and a visible note if given. */
+  #flash(button: HTMLElement, text: string, note?: string): void {
     if (this.#closed) return;
+    if (note) {
+      this.#card.querySelector('.note')?.remove();
+      const line = h('p', { class: 'note', attrs: { role: 'status' } }, note);
+      this.#card.append(line);
+      const noteTimer = setTimeout(() => {
+        line.remove();
+      }, NOTE_MS);
+      this.#cleanup.push(() => {
+        clearTimeout(noteTimer);
+      });
+    }
     button.replaceChildren(icon(text === 'Copy failed' ? ICONS.copy : ICONS.check));
     const label = (value: string) => {
       button.title = value;

@@ -64,9 +64,9 @@ test('the GitHub edition never mentions payment: Support instead of a license', 
 }) => {
   const page = await openSettings(context, extensionId);
   await expect(page.locator('#license-panel')).toBeHidden();
-  await expect(page.getByRole('link', { name: '♥ Sponsor' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: '☕ Buy me a coffee' })).toHaveAttribute(
     'href',
-    'https://github.com/sponsors/boode-hub',
+    'https://buymeacoffee.com/boode',
   );
   await expect(page.locator('main')).not.toContainText('$2', { useInnerText: true }); // shown text only
 });

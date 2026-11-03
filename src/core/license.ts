@@ -10,7 +10,7 @@ export const TRIAL_DAYS = 3;
 export const PRICE = '$2';
 export const FREE_EDITION_URL = 'https://github.com/boode-hub/4NTL/releases/latest';
 /** Anyone can support the project, any amount, any time (both editions). */
-export const SUPPORT_URL = 'https://github.com/sponsors/boode-hub';
+export const SUPPORT_URL = 'https://buymeacoffee.com/boode';
 /** The extension's ID at extensionpay.com. Release checks refuse to ship the placeholder. */
 export const EXTPAY_ID = 'EXTPAY-ID-PLACEHOLDER';
 

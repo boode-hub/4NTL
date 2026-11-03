@@ -168,7 +168,7 @@ test('a purchase is recognised: settings say so and lookups work again', async (
     'Unlocked for life. Thank you for supporting 4NTL!',
   );
   await expect(settings.getByRole('button', { name: 'Unlock for $2' })).toBeHidden();
-  await expect(settings.getByRole('link', { name: '♥ Sponsor' })).toBeVisible();
+  await expect(settings.getByRole('link', { name: '☕ Buy me a coffee' })).toBeVisible();
 
   await page.bringToFront();
   await menuClick('185.220.101.4', 'all');

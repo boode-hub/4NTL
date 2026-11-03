@@ -90,6 +90,11 @@ const APP = `<!doctype html>
 /** The test page again, over https (where pages may put images on the clipboard). */
 export const SECURE_URL = 'https://secure.4ntl.test/';
 
+/** The https test page inside a same-origin frame, away from the window's corner. */
+export const FRAMED_URL = `${SECURE_URL}framed`;
+const FRAMED = `<!doctype html><body style="margin: 0">
+  <iframe src="/inner" style="position: absolute; left: 150px; top: 90px; width: 760px; height: 640px; border: 6px solid #888"></iframe>`;
+
 /** A public-looking page, for checking "the page I'm on". */
 export const PHISH_URL = 'https://phish-demo.com/login';
 
@@ -216,7 +221,10 @@ export const test = base.extend<Fixtures & Options>({
             }),
     );
     await context.route(`${SECURE_URL}**`, (route) =>
-      route.fulfill({ contentType: 'text/html', body: PAGE }),
+      route.fulfill({
+        contentType: 'text/html',
+        body: route.request().url() === FRAMED_URL ? FRAMED : PAGE,
+      }),
     );
     await context.route(`${PHISH_URL}**`, (route) =>
       route.fulfill({ contentType: 'text/html', body: '<h1>Sign in to your account</h1>' }),

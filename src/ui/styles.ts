@@ -211,6 +211,10 @@ export const CARD_CSS = /* css */ `
   padding: 8px 12px; border-top: 1px solid var(--border);
   background: var(--subtle); color: var(--muted); font-size: 12px;
 }
+.note {
+  margin: 0; padding: 8px 12px; border-top: 1px solid var(--border);
+  background: var(--subtle); color: var(--fg); font-size: 12px;
+}
 .support {
   display: block; width: fit-content; margin: 0 12px 8px auto;
   color: var(--muted); font-size: 11px; text-decoration: none; border-radius: 3px;
