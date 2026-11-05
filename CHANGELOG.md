@@ -4,6 +4,14 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.7.2] - 2026-11-05
+
+### Changed
+
+- **One package for Chrome and Firefox**: `4ntl-vX.Y.Z.zip` installs in any
+  Chromium browser and in Firefox; `4ntl-firefox-vX.Y.Z.zip` is gone. The store
+  edition is likewise one `4ntl-store-vX.Y.Z.zip` for both stores.
+
 ## [0.7.1] - 2026-11-05
 
 ### Fixed

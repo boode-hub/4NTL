@@ -86,10 +86,8 @@ In the Sharingan theme the eye spins while results are loading.
 
 ## Install
 
-| Browser                                                | Package                   | Version |
-| ------------------------------------------------------ | ------------------------- | ------- |
-| Chrome, Edge, Brave, Opera, Vivaldi (any Chromium one) | `4ntl-vX.Y.Z.zip`         | 123+    |
-| Firefox                                                | `4ntl-firefox-vX.Y.Z.zip` | 140+    |
+One package, `4ntl-vX.Y.Z.zip`, for Chrome, Edge, Brave, Opera, Vivaldi (any
+Chromium browser, 123+) and Firefox (140+).
 
 Chromium browsers, about a minute:
 
@@ -104,7 +102,7 @@ Chromium browsers, about a minute:
 4. The settings page opens: paste your API keys and press **Test** next to each.
    Later, open it again by right-clicking the 4NTL icon → **Options**.
 
-Firefox: download `4ntl-firefox-vX.Y.Z.zip`, open `about:debugging#/runtime/this-firefox`,
+Firefox: download the same `4ntl-vX.Y.Z.zip`, open `about:debugging#/runtime/this-firefox`,
 click **Load Temporary Add-on…** and pick the zip. Firefox removes temporary add-ons
 when it closes; the permanent install will come from Firefox Add-ons (AMO).
 
@@ -194,8 +192,8 @@ First-time e2e setup: `npm run e2e:install`. If your machine blocks programs in
 `npm run demo` also needs `ffmpeg` on your PATH for the GIFs.
 
 Every push runs lint, type-check, ~530 unit tests and the end-to-end suite in
-GitHub Actions; tagging `vX.Y.Z` publishes a release with the Chromium and
-Firefox zips attached. `npm run build` builds both (`dist/`, `dist-firefox/`).
+GitHub Actions; tagging `vX.Y.Z` publishes a release with the zip attached.
+`npm run build` builds `dist/`, which loads in both Chromium and Firefox.
 
 More: [architecture](docs/ARCHITECTURE.md) · [adding a provider](docs/ADDING_A_PROVIDER.md) ·
 [roadmap](docs/NEXT.md) · [changelog](CHANGELOG.md)

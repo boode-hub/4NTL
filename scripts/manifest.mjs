@@ -1,6 +1,7 @@
 /**
  * Single source of truth for manifest.json. Generated at build time so that
- * per-target differences (Chromium, Firefox, the e2e build) live in one place.
+ * per-edition differences (free, store, e2e) live in one place. One manifest serves
+ * Chromium and Firefox: each browser ignores the other's keys.
  */
 
 const API_HOSTS = ['https://www.virustotal.com', 'https://api.abuseipdb.com'];
@@ -18,11 +19,10 @@ const ICONS = {
 export const GECKO_ID = '4ntl@boode-hub';
 
 /**
- * @param {{ version: string, e2e?: boolean, browser?: 'chromium' | 'firefox', store?: boolean }} options
+ * @param {{ version: string, e2e?: boolean, store?: boolean }} options
  * @returns {chrome.runtime.ManifestV3}
  */
-export function createManifest({ version, e2e = false, browser = 'chromium', store = false }) {
-  const firefox = browser === 'firefox';
+export function createManifest({ version, e2e = false, store = false }) {
   const hosts = store ? [...API_HOSTS, PAYMENT_HOST] : API_HOSTS;
   return {
     manifest_version: 3,
@@ -31,27 +31,24 @@ export function createManifest({ version, e2e = false, browser = 'chromium', sto
     version,
     description:
       'Select an IP, hash, domain or URL, right-click, and see VirusTotal and AbuseIPDB verdicts right where you are.',
-    ...(firefox
-      ? {
-          browser_specific_settings: {
-            gecko: {
-              id: GECKO_ID,
-              // 140 (ESR): MV3 scripting in the page's world, storage.session, popovers,
-              // light-dark(), and the data-collection consent shown at install.
-              strict_min_version: '140.0',
-              data_collection_permissions: { required: ['websiteContent', 'authenticationInfo'] },
-            },
-            // Firefox for Android got data_collection_permissions in 142.
-            gecko_android: { strict_min_version: '142.0' },
-          },
-        }
-      : { minimum_chrome_version: '123' }),
+    minimum_chrome_version: '123',
+    // Chromium ignores this block.
+    browser_specific_settings: {
+      gecko: {
+        id: GECKO_ID,
+        // 140 (ESR): MV3 scripting in the page's world, storage.session, popovers,
+        // light-dark(), and the data-collection consent shown at install.
+        strict_min_version: '140.0',
+        data_collection_permissions: { required: ['websiteContent', 'authenticationInfo'] },
+      },
+      // Firefox for Android got data_collection_permissions in 142.
+      gecko_android: { strict_min_version: '142.0' },
+    },
     icons: ICONS,
     action: { default_title: '4NTL – settings', default_icon: ICONS },
-    // Firefox runs MV3 background code as an event page rather than a service worker.
-    background: firefox
-      ? { scripts: ['background.js'], type: 'module' }
-      : { service_worker: 'background.js', type: 'module' },
+    // Chromium runs the service worker and ignores "scripts" (121+); Firefox runs
+    // "scripts" as an event page and ignores "service_worker".
+    background: { service_worker: 'background.js', scripts: ['background.js'], type: 'module' },
     options_ui: { page: 'options.html', open_in_tab: true },
     // activeTab + scripting: the UI is injected only into the tab the user acts on,
     // so the extension never needs "read and change all your data on all websites".

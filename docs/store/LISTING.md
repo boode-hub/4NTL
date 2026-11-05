@@ -123,13 +123,13 @@ Leave every other category unticked. Then certify all three statements:
 
 ## Firefox Add-ons (AMO)
 
-Submit `4ntl-store-firefox-vX.Y.Z.zip` at <https://addons.mozilla.org/developers/addon/submit/>
+Submit the same `4ntl-store-vX.Y.Z.zip` as the Chrome Web Store at <https://addons.mozilla.org/developers/addon/submit/>
 ("On this site"). The same name, summary, description, screenshots and privacy
 policy apply. AMO asks for the source code because the bundle is built: upload a
 zip of the repository (without `node_modules`) and give these build steps:
 
 ```
-Node.js 22+, then: npm ci && npm run build   → dist-firefox/ is the add-on
+Node.js 22+, then: npm ci && npm run build   → dist-store/ is the add-on
 ```
 
 Data collection (declared in the manifest, shown at install): website content

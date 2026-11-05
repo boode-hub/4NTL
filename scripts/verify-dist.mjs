@@ -2,7 +2,7 @@
  * Release guard: fails if dist/ is not a clean production build. Catches the
  * e2e build (test hooks, <all_urls>) or debug artefacts ever being shipped.
  *
- *   node scripts/verify-dist.mjs [dist-firefox]
+ *   node scripts/verify-dist.mjs [dist-store] [--release]
  */
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';

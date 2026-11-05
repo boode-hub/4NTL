@@ -1,10 +1,9 @@
 /**
- * Zips a build folder: dist/ → 4ntl-v<version>.zip, dist-firefox/ →
- * 4ntl-firefox-v<version>.zip (the free GitHub edition), dist-store/ →
- * 4ntl-store-v<version>.zip and dist-store-firefox/ → 4ntl-store-firefox-v<version>.zip
- * (the paid store edition). Dependency-free (deflate via node:zlib).
+ * Zips a build folder: dist/ → 4ntl-v<version>.zip (the free GitHub edition),
+ * dist-store/ → 4ntl-store-v<version>.zip (the paid store edition). Each zip
+ * installs in Chromium and Firefox. Dependency-free (deflate via node:zlib).
  *
- *   node scripts/package.mjs [dist-firefox | dist-store | dist-store-firefox]
+ *   node scripts/package.mjs [dist-store]
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -13,7 +12,7 @@ import { deflateRawSync } from 'node:zlib';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const folder = process.argv[2] ?? 'dist';
-if (!/^dist(-store)?(-firefox)?$/.test(folder)) throw new Error(`not a release folder: ${folder}`);
+if (!/^dist(-store)?$/.test(folder)) throw new Error(`not a release folder: ${folder}`);
 const dist = path.join(root, folder);
 const { version } = JSON.parse(await readFile(path.join(dist, 'manifest.json'), 'utf8'));
 const output = path.join(root, `${folder.replace(/^dist/, '4ntl')}-v${version}.zip`);

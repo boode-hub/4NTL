@@ -46,7 +46,7 @@ Still to do, in order:
 - **Configurable verdict thresholds** (currently constants in each provider).
 - **Client-side rate limiting** for the VirusTotal free tier (4/min): queue
   instead of failing with "quota reached".
-- **Firefox e2e**: drive `dist-firefox/` with `web-ext run` or Playwright's
+- **Firefox e2e**: drive `dist/` with `web-ext run` or Playwright's
   Firefox to cover the same suite; then publish on AMO.
 - **Saved list extras**: notes per entry, re-check all, export as STIX/MISP.
 - **Localisation** via `chrome.i18n` (all strings are English today).
