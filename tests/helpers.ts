@@ -13,7 +13,7 @@ export const TEST_SETTINGS: Settings = {
   apiKeys: { abuseipdb: ABUSE_KEY, virustotal: VT_KEY },
   abuseIpdbMaxAgeDays: 90,
   cacheTtlMinutes: 30,
-  appearance: { theme: 'auto', accent: '', background: '' },
+  appearance: { theme: 'auto', accent: '', background: '', width: 0 },
 };
 
 export function jsonResponse(

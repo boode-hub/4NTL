@@ -80,6 +80,8 @@ export type BackgroundMessage =
     }
   | { readonly type: '4ntl:open-options' }
   | { readonly type: '4ntl:open-list' }
+  /** The user resized the card: remember its width for the next ones. */
+  | { readonly type: '4ntl:card-width'; readonly width: number }
   /** Store edition: open the checkout / the "restore purchase" page. */
   | { readonly type: '4ntl:unlock' }
   | { readonly type: '4ntl:restore' }
@@ -139,6 +141,8 @@ export function isBackgroundMessage(value: unknown): value is BackgroundMessage 
       return true;
     case '4ntl:license':
       return typeof value.refresh === 'boolean';
+    case '4ntl:card-width':
+      return typeof value.width === 'number' && Number.isFinite(value.width);
     case '4ntl:capture-card':
       return (
         isCardRect(value.rect) &&

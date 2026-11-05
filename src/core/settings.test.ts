@@ -69,13 +69,23 @@ describe('load/save', () => {
 
 describe('appearance', () => {
   it('defaults to the automatic theme with its own accent', () => {
-    expect(normalizeAppearance(undefined)).toEqual({ theme: 'auto', accent: '', background: '' });
+    expect(normalizeAppearance(undefined)).toEqual({
+      theme: 'auto',
+      accent: '',
+      background: '',
+      width: 0,
+    });
   });
 
   it('keeps known themes and valid hex colors (lower-cased)', () => {
     expect(
-      normalizeAppearance({ theme: 'sharingan', accent: '#FF2D3D', background: '#1A1B2C' }),
-    ).toEqual({ theme: 'sharingan', accent: '#ff2d3d', background: '#1a1b2c' });
+      normalizeAppearance({
+        theme: 'sharingan',
+        accent: '#FF2D3D',
+        background: '#1A1B2C',
+        width: 0,
+      }),
+    ).toEqual({ theme: 'sharingan', accent: '#ff2d3d', background: '#1a1b2c', width: 0 });
   });
 
   it.each(['red', '#fff', '#12345g', 'red;} body{display:none', '#ff2d3d ', 42])(
@@ -85,9 +95,23 @@ describe('appearance', () => {
         theme: 'dark',
         accent: '',
         background: '',
+        width: 0,
       });
     },
   );
+
+  it.each([
+    [0, 0],
+    [undefined, 0],
+    ['wide', 0],
+    [-5, 0],
+    [500, 500],
+    [412.6, 413],
+    [100, 280],
+    [5000, 720],
+  ])('card width %j becomes %j (0: the default)', (width, expected) => {
+    expect(normalizeAppearance({ width }).width).toBe(expected);
+  });
 
   it('falls back to auto for unknown themes', () => {
     expect(normalizeAppearance({ theme: 'mangekyo' }).theme).toBe('auto');
@@ -109,7 +133,7 @@ describe('affectsResults', () => {
       affectsResults(base, {
         ...base,
         cacheTtlMinutes: 5,
-        appearance: { theme: 'sharingan', accent: '#123456', background: '#000000' },
+        appearance: { theme: 'sharingan', accent: '#123456', background: '#000000', width: 0 },
       }),
     ).toBe(false);
   });

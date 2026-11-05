@@ -21,6 +21,9 @@ describe('manifest', () => {
       strict_min_version: '140.0',
       data_collection_permissions: { required: ['websiteContent', 'authenticationInfo'] },
     });
+    expect(firefox.browser_specific_settings?.gecko_android).toEqual({
+      strict_min_version: '142.0',
+    });
     expect(GECKO_ID).toMatch(/^[\w.-]+@[\w.-]+$/);
   });
 

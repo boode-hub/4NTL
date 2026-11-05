@@ -14,6 +14,7 @@ import {
   affectsResults,
   hasAnyApiKey,
   loadSettings,
+  saveSettings,
   normalizeSettings,
   SETTINGS_KEY,
 } from '../core/settings';
@@ -248,6 +249,10 @@ chrome.runtime.onMessage.addListener(
     service,
     openOptions,
     openList,
+    saveCardWidth: async (width) => {
+      const settings = await loadSettings();
+      await saveSettings({ ...settings, appearance: { ...settings.appearance, width } });
+    },
     license,
     captureCard,
     onCaptured: async (url, sender) => {

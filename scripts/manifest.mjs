@@ -41,6 +41,8 @@ export function createManifest({ version, e2e = false, browser = 'chromium', sto
               strict_min_version: '140.0',
               data_collection_permissions: { required: ['websiteContent', 'authenticationInfo'] },
             },
+            // Firefox for Android got data_collection_permissions in 142.
+            gecko_android: { strict_min_version: '142.0' },
           },
         }
       : { minimum_chrome_version: '123' }),

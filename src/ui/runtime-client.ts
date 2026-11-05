@@ -49,6 +49,10 @@ export const runtimeClient: CardClient = {
   async save(entry) {
     await addToList(entry);
   },
+  saveWidth(width) {
+    const message: BackgroundMessage = { type: '4ntl:card-width', width };
+    chrome.runtime.sendMessage(message).catch(() => undefined);
+  },
   openList() {
     const message: BackgroundMessage = { type: '4ntl:open-list' };
     chrome.runtime.sendMessage(message).catch(() => undefined);

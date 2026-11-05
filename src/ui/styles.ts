@@ -63,6 +63,8 @@ export const CARD_CSS = /* css */ `
   animation: enter 120ms ease-out;
 }
 .card *, .card *::before, .card *::after { box-sizing: border-box; }
+/* Drag the bottom-right corner to make the card wider. */
+.card:not(.inline) { resize: horizontal; min-width: 280px; max-width: min(720px, calc(100vw - 16px)); }
 .card.inline { width: 100%; max-height: none; border: 0; border-radius: 0; box-shadow: none; animation: none; }
 
 .card[data-theme='light'] { color-scheme: light; }

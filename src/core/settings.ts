@@ -17,7 +17,12 @@ export interface Appearance {
   readonly accent: string;
   /** The card's inside color, `#rrggbb`, or '' for the theme's own. */
   readonly background: string;
+  /** The card's width in px, set by resizing it; 0 for the default. */
+  readonly width: number;
 }
+
+/** How wide the card may be resized (px). */
+export const CARD_WIDTH = { min: 280, max: 720 } as const;
 
 export interface Settings {
   readonly apiKeys: Readonly<Record<ProviderId, string>>;
@@ -37,7 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   apiKeys: { abuseipdb: '', virustotal: '' },
   abuseIpdbMaxAgeDays: 90,
   cacheTtlMinutes: 30,
-  appearance: { theme: 'auto', accent: '', background: '' },
+  appearance: { theme: 'auto', accent: '', background: '', width: 0 },
 };
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -48,7 +53,10 @@ export function normalizeAppearance(raw: unknown): Appearance {
   // Validated: both colors end up in the card's CSS.
   const color = (value: unknown) =>
     typeof value === 'string' && HEX_COLOR.test(value) ? value.toLowerCase() : '';
-  return { theme, accent: color(input.accent), background: color(input.background) };
+  // 0 (or nothing stored) keeps the default width.
+  const width =
+    typeof input.width === 'number' && input.width > 0 ? clampInt(input.width, CARD_WIDTH, 0) : 0;
+  return { theme, accent: color(input.accent), background: color(input.background), width };
 }
 
 function clampInt(value: unknown, limits: { min: number; max: number }, fallback: number): number {

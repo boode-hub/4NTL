@@ -15,6 +15,7 @@ export declare function createManifest(options: {
       strict_min_version: string;
       data_collection_permissions: { required: string[] };
     };
+    gecko_android: { strict_min_version: string };
   };
   background: { service_worker?: string; scripts?: string[]; type?: string };
 };

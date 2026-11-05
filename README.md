@@ -65,7 +65,8 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
 - **Light.** Nothing runs on a page until you use 4NTL there. No background
   polling, no runtime dependencies.
 - **Out of your way.** The card opens about 3 cm beside the pointer, so it never
-  covers what you clicked, and you can drag it anywhere by its header.
+  covers what you clicked, and you can drag it anywhere by its header. Want it
+  wider? Drag its bottom-right corner: 4NTL remembers the width.
 - **Themes.** Auto, Light, Dark and **Sharingan**, plus any accent color and any
   card background you like (text stays readable on light or dark backgrounds).
 - **Works everywhere it's allowed.** Inside embedded frames from other sites the

@@ -4,6 +4,18 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-11-05
+
+### Added
+
+- **Resize the card**: drag its bottom-right corner to make it wider (280 to
+  720 px). The width is remembered for the next cards.
+
+### Fixed
+
+- Firefox for Android: the minimum version is 142, the first with the data
+  collection consent 4NTL declares (clears a Mozilla lint warning).
+
 ## [0.6.2] - 2026-11-03
 
 0.6.1 was tagged but never released (a test needed a taller window on Linux);

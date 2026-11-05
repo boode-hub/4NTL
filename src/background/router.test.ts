@@ -22,6 +22,7 @@ function setup() {
   const lookup = vi.fn(() => Promise.resolve(OK));
   const openOptions = vi.fn(() => Promise.resolve());
   const openList = vi.fn(() => Promise.resolve());
+  const saveCardWidth = vi.fn(() => Promise.resolve());
   const captureCard = vi.fn(() => Promise.resolve('data:image/png;base64,AAAA'));
   const access = vi.fn<(refresh: boolean) => Promise<Access>>(() =>
     Promise.resolve({ status: 'open' }),
@@ -37,6 +38,7 @@ function setup() {
     service: { lookup },
     openOptions,
     openList,
+    saveCardWidth,
     license,
     captureCard,
     onCaptured,
@@ -48,6 +50,7 @@ function setup() {
     lookup,
     openOptions,
     openList,
+    saveCardWidth,
     license,
     captureCard,
     onCaptured,
@@ -175,6 +178,14 @@ describe('message router', () => {
     const { route, openList, sendResponse, fromUs } = setup();
     expect(route({ type: '4ntl:open-list' }, fromUs, sendResponse)).toBe(false);
     expect(openList).toHaveBeenCalled();
+  });
+
+  it('remembers the width the card was resized to', () => {
+    const { route, saveCardWidth, sendResponse, fromUs } = setup();
+    expect(route({ type: '4ntl:card-width', width: 480 }, fromUs, sendResponse)).toBe(false);
+    expect(saveCardWidth).toHaveBeenCalledWith(480);
+    route({ type: '4ntl:card-width', width: 'wide' }, fromUs, sendResponse);
+    expect(saveCardWidth).toHaveBeenCalledTimes(1);
   });
 
   it('ignores other extensions and malformed messages', () => {

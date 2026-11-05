@@ -15,6 +15,8 @@ export interface RouterDeps {
   readonly service: Pick<LookupService, 'lookup'>;
   readonly openOptions: () => Promise<void>;
   readonly openList: () => Promise<void>;
+  /** Stores the card width the user resized to. */
+  readonly saveCardWidth: (width: number) => Promise<void>;
   /** Store edition; the GitHub edition answers 'open' and never opens a checkout. */
   readonly license: {
     readonly access: (refresh: boolean) => Promise<Access>;
@@ -73,6 +75,9 @@ export function createMessageRouter(deps: RouterDeps): Listener {
       }
       case '4ntl:open-options':
         void deps.openOptions();
+        return false;
+      case '4ntl:card-width':
+        void deps.saveCardWidth(message.width);
         return false;
       case '4ntl:open-list':
         void deps.openList();

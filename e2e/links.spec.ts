@@ -206,6 +206,33 @@ test('the card opens ~3 cm from the pointer and can be dragged anywhere', async 
   await expect(header).toBeVisible(); // still open: dragging isn't a click outside
 });
 
+test('the corner grip makes the card wider, and the next card keeps that width', async ({
+  page,
+  worker,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.goto(PAGE_URL);
+  await hook(worker, 'simulateMenuClick', PAGE_URL, '185.220.101.4', 'all');
+  await expect(card(page).locator('[data-provider="virustotal"][data-verdict]')).toBeVisible();
+  await page.waitForTimeout(200); // entrance animation
+  const before = await card(page).boundingBox();
+  if (!before) throw new Error('card not visible');
+  const corner = { x: before.x + before.width - 3, y: before.y + before.height - 3 };
+  await page.mouse.move(corner.x, corner.y);
+  await page.mouse.down();
+  await page.mouse.move(corner.x + 120, corner.y, { steps: 8 });
+  await page.mouse.up();
+  const after = await card(page).boundingBox();
+  expect(Math.round((after?.width ?? 0) - before.width)).toBeGreaterThanOrEqual(115);
+
+  await page.waitForTimeout(800); // the width is saved once resizing stops
+  await page.keyboard.press('Escape');
+  await hook(worker, 'simulateMenuClick', PAGE_URL, '8.8.8.8', 'all');
+  await expect(card(page)).toBeVisible();
+  const next = await card(page).boundingBox();
+  expect(Math.abs((next?.width ?? 0) - (after?.width ?? 0))).toBeLessThan(3);
+});
+
 test('opens ~3 cm beside the point you right-clicked', async ({ page, worker }) => {
   await page.goto(PAGE_URL);
   // The first lookup injects the page script; from then on it sees right-clicks.

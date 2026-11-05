@@ -550,6 +550,16 @@ describe('ResultCard – appearance', () => {
     return root?.querySelector<HTMLElement>('.card');
   };
 
+  it('opens at the width it was last resized to (floating cards only)', () => {
+    expect(themed({ theme: 'dark', accent: '', background: '', width: 480 })?.style.width).toBe(
+      '480px',
+    );
+    expect(themed({ theme: 'dark', accent: '', background: '', width: 0 })?.style.width).toBe('');
+    expect(
+      themed({ theme: 'dark', accent: '', background: '', width: 480 }, true)?.style.width,
+    ).toBe('');
+  });
+
   it('uses the automatic theme with its own accent by default', () => {
     const card = themed();
     expect(card?.dataset.theme).toBe('auto');
@@ -560,7 +570,7 @@ describe('ResultCard – appearance', () => {
     ['#f5f0e6', 'light'],
     ['#1a1b2c', 'dark'],
   ])('uses background %s with %s text', (background, surface) => {
-    const card = themed({ theme: 'dark', accent: '', background });
+    const card = themed({ theme: 'dark', accent: '', background, width: 0 });
     expect(card?.style.getPropertyValue('--bg')).toBe(background);
     expect(card?.dataset.surface).toBe(surface);
   });
@@ -578,19 +588,19 @@ describe('ResultCard – appearance', () => {
   });
 
   it('keeps the theme background by default', () => {
-    const card = themed({ theme: 'dark', accent: '', background: '' });
+    const card = themed({ theme: 'dark', accent: '', background: '', width: 0 });
     expect(card?.style.getPropertyValue('--bg')).toBe('');
     expect(card?.dataset.surface).toBeUndefined();
   });
 
   it('applies the chosen theme and accent', () => {
-    const card = themed({ theme: 'sharingan', accent: '#8b5cf6', background: '' });
+    const card = themed({ theme: 'sharingan', accent: '#8b5cf6', background: '', width: 0 });
     expect(card?.dataset.theme).toBe('sharingan');
     expect(card?.style.getPropertyValue('--accent')).toBe('#8b5cf6');
   });
 
   it('draws the Sharingan in the header (CSS shows it only in that theme)', () => {
-    const card = themed({ theme: 'sharingan', accent: '', background: '' });
+    const card = themed({ theme: 'sharingan', accent: '', background: '', width: 0 });
     const eye = card?.querySelector('.header .eye');
     expect(eye?.getAttribute('aria-hidden')).toBe('true');
     expect(eye?.querySelectorAll('.tomoe')).toHaveLength(3);

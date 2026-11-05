@@ -42,6 +42,8 @@ export interface CardClient {
   /** Adds (or refreshes) an entry in the saved list. */
   save(entry: SavedEntry): Promise<void>;
   openList(): void;
+  /** The user resized the card to this width (px). */
+  saveWidth?(width: number): void;
   /** A PNG of this box of the visible tab ("Copy card as image"); absent where impossible. */
   captureCard?(rect: CardRect, viewportWidth: number): Promise<Blob>;
   /** Store edition: open the checkout / the "restore purchase" page. */
@@ -154,7 +156,7 @@ export class ResultCard {
     this.#options = options;
     const { placement } = options;
     const fill = placement.mode === 'inline' && placement.fill !== false;
-    const { theme, accent, background } = options.appearance ?? DEFAULT_SETTINGS.appearance;
+    const { theme, accent, background, width } = options.appearance ?? DEFAULT_SETTINGS.appearance;
     ensureFlagFont();
     this.#host = document.createElement(HOST_TAG);
     // Closed: page scripts can't reach into the card. Open in e2e builds so tests can.
@@ -215,13 +217,37 @@ export class ResultCard {
       this.#listen(document, 'pointerdown', (event) => {
         if (!event.composedPath().includes(this.#host)) this.close();
       });
+      if (width) this.#card.style.width = `${width}px`;
       this.#enableDragging();
+      this.#rememberWidth();
       this.#listen(window, 'resize', () => {
         this.#place();
       });
     } else {
       options.placement.container.append(this.#host);
     }
+  }
+
+  /** The corner grip resizes the card (CSS resize); the new width is kept for the next cards. */
+  #rememberWidth(): void {
+    if (typeof ResizeObserver !== 'function') return;
+    let last = Math.round(this.#card.getBoundingClientRect().width);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const observer = new ResizeObserver(() => {
+      const width = Math.round(this.#card.getBoundingClientRect().width);
+      // Only the width: the height follows the content as results arrive.
+      if (!width || Math.abs(width - last) < 2) return;
+      last = width;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        this.#options.client.saveWidth?.(width);
+      }, 400);
+    });
+    observer.observe(this.#card);
+    this.#cleanup.push(() => {
+      observer.disconnect();
+      clearTimeout(timer);
+    });
   }
 
   get closed(): boolean {
