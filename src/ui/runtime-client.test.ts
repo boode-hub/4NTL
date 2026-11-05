@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { NO_ANSWER } from './card';
 import { runtimeClient } from './runtime-client';
 
 const IP = { type: 'ipv4', value: '8.8.8.8' } as const;
@@ -10,6 +11,21 @@ function stubRuntime(sendMessage: () => Promise<unknown>, alive = true) {
 }
 
 describe('runtimeClient', () => {
+  it('gets the card picture, or says why not', async () => {
+    const rect = { x: 1, y: 2, width: 300, height: 200 };
+    stubRuntime(() => Promise.resolve({ dataUrl: 'data:image/png;base64,iVBORw==' }));
+    const blob = await runtimeClient.captureCard?.(rect, 1280);
+    expect(blob?.type).toBe('image/png');
+    expect(blob?.size).toBe(4);
+    stubRuntime(() => Promise.resolve({ error: 'Cannot capture this page.' }));
+    await expect(runtimeClient.captureCard?.(rect, 1280)).rejects.toThrow(
+      'Cannot capture this page.',
+    );
+    // No answer at all: an older background still running (rebuilt but not reloaded).
+    stubRuntime(() => Promise.resolve(undefined));
+    await expect(runtimeClient.captureCard?.(rect, 1280)).rejects.toThrow(NO_ANSWER);
+  });
+
   it('sends lookups to the service worker and returns its outcome', async () => {
     const outcome = { ok: false, error: { code: 'auth', message: 'nope' } };
     const send = stubRuntime(() => Promise.resolve(outcome));

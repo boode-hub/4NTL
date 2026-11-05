@@ -2,7 +2,7 @@
 import type { BackgroundMessage, CaptureResponse } from '../core/messages';
 import type { LookupOutcome } from '../core/result';
 import { addToList } from '../core/saved-list';
-import type { CardClient } from './card';
+import { NO_ANSWER, type CardClient } from './card';
 
 function isOutcome(value: unknown): value is LookupOutcome {
   return (
@@ -63,7 +63,9 @@ export const runtimeClient: CardClient = {
       BackgroundMessage,
       CaptureResponse | undefined
     >(message);
-    if (!response || 'error' in response) throw new Error(response?.error ?? 'No screenshot.');
+    // No answer: the running background predates this request (rebuilt but not reloaded).
+    if (!response) throw new Error(NO_ANSWER);
+    if ('error' in response) throw new Error(response.error);
     const data = response.dataUrl.slice(response.dataUrl.indexOf(',') + 1);
     return new Blob([Uint8Array.from(atob(data), (c) => c.charCodeAt(0))], { type: 'image/png' });
   },

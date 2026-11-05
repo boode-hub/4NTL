@@ -316,14 +316,15 @@ test.describe('in-page lookups', () => {
     const download = page.waitForEvent('download');
     await card.getByRole('menuitem', { name: 'Copy card as image' }).click();
     const file = await download;
-    expect(file.suggestedFilename()).toBe('4ntl-185.220.101.4.png');
-    const size = pngSize(await readFile(await file.path()));
-    expect(Math.abs(size.width - Math.round(box?.width ?? 0))).toBeLessThanOrEqual(1);
-    expect(size.height).toBeGreaterThan(200);
+    // The button label lasts 1.2 s, so check it before the (slower) file read.
     await expect(card.getByRole('button', { name: 'Saved to Downloads' })).toBeVisible();
     await expect(card.getByRole('status')).toContainText(
       'saved to Downloads as 4ntl-185.220.101.4.png',
     );
+    expect(file.suggestedFilename()).toBe('4ntl-185.220.101.4.png');
+    const size = pngSize(await readFile(await file.path()));
+    expect(Math.abs(size.width - Math.round(box?.width ?? 0))).toBeLessThanOrEqual(1);
+    expect(size.height).toBeGreaterThan(200);
   });
 
   test('the keyboard shortcut looks up the current selection', async ({ page, worker }) => {

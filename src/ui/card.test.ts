@@ -6,7 +6,14 @@ import type { CardView } from '../core/messages';
 import type { LookupOutcome, Report } from '../core/result';
 import type { SavedEntry } from '../core/saved-list';
 import type { Appearance } from '../core/settings';
-import { boxInTopWindow, HOST_TAG, isLightColor, ResultCard, type CardClient } from './card';
+import {
+  boxInTopWindow,
+  HOST_TAG,
+  NO_ANSWER,
+  isLightColor,
+  ResultCard,
+  type CardClient,
+} from './card';
 import { pointRect } from './position';
 
 const IP: Indicator = { type: 'ipv4', value: '185.220.101.4' };
@@ -334,6 +341,20 @@ describe('ResultCard – lifecycle', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('says to reload 4NTL when its background does not answer the picture request', async () => {
+    const c = { ...client(), captureCard: vi.fn(() => Promise.reject(new Error(NO_ANSWER))) };
+    const { card, $, $$ } = mount(c);
+    card.show(LOOKUP_VIEW);
+    await flush();
+    $('[aria-label="Copy…"]')?.click();
+    pick($$, 'Copy card as image')?.click();
+    await vi.waitFor(() => {
+      expect($('[role="status"]')?.textContent).toContain('click Reload on 4NTL');
+    });
+    expect(c.captureCard).toHaveBeenCalled();
+    expect($('[aria-label="Copy failed"]')).toBeTruthy();
   });
 
   it('copies the whole report as text', async () => {

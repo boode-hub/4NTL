@@ -25,7 +25,7 @@ export interface RouterDeps {
   };
   /** "Copy card as image": a PNG data: URL of that box of the window's visible tab. */
   readonly captureCard: (
-    windowId: number,
+    windowId: number | undefined,
     rect: CardRect,
     viewportWidth: number,
   ) => Promise<string>;
@@ -94,9 +94,8 @@ export function createMessageRouter(deps: RouterDeps): Listener {
         });
         return true;
       case '4ntl:capture-card': {
-        const windowId = sender.tab?.windowId;
-        if (windowId === undefined) return false; // only a card inside a tab can be captured
-        void deps.captureCard(windowId, message.rect, message.viewportWidth).then(
+        // Not in a regular tab (an app or side window): the focused window is where it was clicked.
+        void deps.captureCard(sender.tab?.windowId, message.rect, message.viewportWidth).then(
           (dataUrl) => {
             sendResponse({ dataUrl });
           },

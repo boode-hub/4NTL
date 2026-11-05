@@ -145,7 +145,10 @@ describe('message router', () => {
     expect(captureCard).toHaveBeenCalledWith(9, message.rect, 1280);
     expect(sendResponse).toHaveBeenCalledWith({ dataUrl: 'data:image/png;base64,AAAA' });
 
-    expect(route(message, { id: 'ext' }, sendResponse)).toBe(false);
+    // Outside a regular tab: the focused window.
+    expect(route(message, { id: 'ext' }, sendResponse)).toBe(true);
+    await flush();
+    expect(captureCard).toHaveBeenLastCalledWith(undefined, message.rect, 1280);
     for (const rect of [
       { x: 0, y: 0, width: 0, height: 10 },
       { x: Number.NaN, y: 0, width: 10, height: 10 },
@@ -154,7 +157,7 @@ describe('message router', () => {
     ]) {
       expect(route({ ...message, rect }, inTab, sendResponse)).toBe(false);
     }
-    expect(captureCard).toHaveBeenCalledTimes(1);
+    expect(captureCard).toHaveBeenCalledTimes(2);
   });
 
   it('reports a failed capture instead of hanging', async () => {

@@ -40,11 +40,14 @@ function base64(bytes: Uint8Array): string {
 
 /** PNG of the card as a data: URL. Throws when the tab can't be captured. */
 export async function captureCard(
-  windowId: number,
+  windowId: number | undefined,
   rect: CardRect,
   viewportWidth: number,
 ): Promise<string> {
-  const shot = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
+  const shot =
+    windowId === undefined
+      ? await chrome.tabs.captureVisibleTab({ format: 'png' })
+      : await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
   const bytes = Uint8Array.from(atob(shot.slice(shot.indexOf(',') + 1)), (c) => c.charCodeAt(0));
   const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
   try {

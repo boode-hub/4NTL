@@ -96,9 +96,18 @@ export function boxInTopWindow(
   }
 }
 
+/** The background didn't answer: it's an older copy than this page's script. */
+export const NO_ANSWER = '4ntl:no-answer';
+
 /** Why a picture of the card couldn't be taken, in words a user can act on. */
 function pictureError(error: unknown): string {
   const message = error instanceof Error ? error.message : '';
+  if (message === NO_ANSWER) {
+    return 'This 4NTL was updated but not reloaded. Open your extensions page, click Reload on 4NTL, then reload this page.';
+  }
+  if (/context invalidated/i.test(message)) {
+    return '4NTL was reloaded since this page opened. Reload this page, then copy again.';
+  }
   if (message === 'frame') {
     return 'No picture inside another site’s embedded frame. Use “Copy details as text”.';
   }

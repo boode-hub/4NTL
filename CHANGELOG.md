@@ -4,6 +4,15 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.7.1] - 2026-11-05
+
+### Fixed
+
+- **Copy card as image** works in windows that aren't regular tabs (app and
+  side windows): it pictures the window you clicked in instead of giving up.
+- When the picture can't be taken because 4NTL was rebuilt but not reloaded,
+  the card says so and what to do ("No screenshot." before).
+
 ## [0.7.0] - 2026-11-05
 
 ### Added
