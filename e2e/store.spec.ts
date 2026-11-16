@@ -60,6 +60,15 @@ test('installed before 15 November: results, no trial notice, and still free lon
   menuClick,
 }) => {
   await setClock(worker, PAID_FROM - 2 * DAY, true);
+  // A fresh install never counts as older than the build itself (no turning the
+  // clock back), so record the early install the way it happened: back then.
+  await worker.evaluate(
+    async (date) => {
+      await chrome.storage.sync.set({ 'firstSeen.v1': date });
+      await chrome.storage.local.remove('license.v1');
+    },
+    PAID_FROM - 2 * DAY,
+  );
   await menuClick('185.220.101.4', 'all');
   const card = page.locator('x-4ntl-card .card');
   await expect(card.locator('[data-verdict]')).toHaveCount(2);

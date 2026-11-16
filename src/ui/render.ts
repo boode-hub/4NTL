@@ -12,6 +12,7 @@ import {
   type LookupOutcome,
 } from '../core/result';
 import { h, icon, ICONS, sharinganEye } from './dom';
+import { providerLogo } from './logos';
 
 export const ERROR_LABELS: Readonly<Record<LookupErrorCode, string>> = {
   no_api_key: 'No API key',
@@ -123,7 +124,7 @@ function sectionHead(provider: ProviderInfo, pill: string): HTMLElement {
   return h(
     'div',
     { class: 'provider-head' },
-    h('span', { class: 'provider-name' }, provider.name),
+    h('span', { class: 'provider-name' }, providerLogo(provider.id), provider.name),
     h('span', { class: 'pill' }, pill),
   );
 }
@@ -304,6 +305,39 @@ export function renderLocked(text: string, actions: LockedActions): HTMLElement 
       link(FREE_EDITION_URL, 'Free version on GitHub'),
     ),
   );
+}
+
+/** "Type an IP or domain…": a box to type (or paste) an indicator into. */
+export function renderAsk(onSubmit: (text: string) => void): {
+  readonly form: HTMLFormElement;
+  readonly input: HTMLInputElement;
+} {
+  const input = h('input', {
+    class: 'ask-input',
+    attrs: {
+      type: 'text',
+      placeholder: 'IP, domain, URL or hash',
+      'aria-label': 'IP, domain, URL or hash to look up',
+      autocomplete: 'off',
+      spellcheck: 'false',
+    },
+  });
+  const submit = h('button', { class: 'btn primary', attrs: { type: 'submit' } }, 'Look up');
+  const form = h(
+    'form',
+    {
+      class: 'ask',
+      on: {
+        submit: (event) => {
+          event.preventDefault();
+          if (input.value.trim()) onSubmit(input.value);
+        },
+      },
+    },
+    input,
+    submit,
+  );
+  return { form, input };
 }
 
 export function renderNotice(text: string): HTMLElement {

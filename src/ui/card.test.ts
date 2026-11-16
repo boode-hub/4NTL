@@ -72,6 +72,7 @@ function client(
     openList: vi.fn(),
     unlock: vi.fn(),
     restore: vi.fn(),
+    resolve: vi.fn<(text: string) => Promise<CardView>>(() => Promise.resolve(LOOKUP_VIEW)),
   };
 }
 
@@ -127,6 +128,20 @@ describe('ResultCard – lookup view', () => {
     expect(link?.getAttribute('target')).toBe('_blank');
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
     expect($('[data-provider="virustotal"]')?.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('puts each vendor’s small logo before its name', () => {
+    const { card, $$ } = mount();
+    card.show(LOOKUP_VIEW);
+    expect(
+      $$('.provider-name').map((name) => [
+        name.firstElementChild?.getAttribute('class'),
+        name.textContent,
+      ]),
+    ).toEqual([
+      ['logo logo-abuseipdb', 'AbuseIPDB'],
+      ['logo logo-virustotal', 'VirusTotal'],
+    ]);
   });
 
   it('renders hostile API strings as inert text', async () => {
@@ -256,6 +271,54 @@ describe('ResultCard – other views', () => {
     const { card, $ } = mount();
     card.show({ kind: 'choose', truncated: true, choices: [{ indicator: IP, providers: [] }] });
     expect($('.notice-text')?.textContent).toContain('first 1');
+  });
+
+  it('typing box: focused, Enter looks the text up in the same card', async () => {
+    const { card, client: c, $ } = mount();
+    card.show({ kind: 'ask' });
+    const input = $('.ask-input') as HTMLInputElement;
+    expect(root?.activeElement).toBe(input);
+    input.value = ' 185.220.101.4 ';
+    $('.ask')?.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect(c.resolve).toHaveBeenCalledWith(' 185.220.101.4 ');
+    expect($('.ioc')?.textContent).toBe('185.220.101.4');
+    expect(c.lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it('typing box: says why under the box when it is not an indicator, and ignores blanks', async () => {
+    const c = client();
+    c.resolve.mockResolvedValue({ kind: 'notice', title: 'No indicator found', text: 'Nope.' });
+    const { card, $ } = mount(c);
+    card.show({ kind: 'ask' });
+    const input = $('.ask-input') as HTMLInputElement;
+    $('.ask')?.dispatchEvent(new Event('submit', { cancelable: true }));
+    expect(c.resolve).not.toHaveBeenCalled();
+    input.value = 'hello';
+    $('.ask')?.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect($('.note')?.textContent).toBe('Nope.');
+    expect($('.ask-input')).toBe(input); // still there to fix
+    c.resolve.mockRejectedValue(new Error('gone'));
+    $('.ask')?.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect(root?.querySelectorAll('.note')).toHaveLength(1);
+    expect($('.note')?.textContent).toContain('Reload on 4NTL');
+  });
+
+  it('typing box: keys stay in the card (no page shortcuts), Escape closes', () => {
+    const { card, $ } = mount();
+    card.show({ kind: 'ask' });
+    const pageKeys = vi.fn();
+    document.addEventListener('keydown', pageKeys);
+    const input = $('.ask-input') as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 's', bubbles: true, composed: true }));
+    expect(pageKeys).not.toHaveBeenCalled();
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }),
+    );
+    expect(card.closed).toBe(true);
+    document.removeEventListener('keydown', pageKeys);
   });
 
   it('shows notices', () => {

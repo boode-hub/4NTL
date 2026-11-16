@@ -30,6 +30,7 @@ const URL_ROUTES: FakeRoute[] = [
 type Hook =
   | 'simulateShortcut'
   | 'simulateElementClick'
+  | 'simulateAskClick'
   | 'simulateLinkClick'
   | 'simulateActionClick'
   | 'simulateOmnibox'
@@ -252,4 +253,22 @@ test('opens ~3 cm beside the point you right-clicked', async ({ page, worker }) 
   expect(Math.abs((box?.x ?? 0) - (point.x + 113))).toBeLessThan(3);
   // Header level with the pointer, but never above the top of the window.
   expect(Math.abs((box?.y ?? 0) - Math.max(8, point.y - 24))).toBeLessThan(3);
+});
+
+test('"Type an IP or domain…": type it in the card, see the verdicts there', async ({
+  page,
+  worker,
+}) => {
+  await page.goto(APP_URL);
+  await hook(worker, 'simulateAskClick', APP_URL);
+  const input = card(page).locator('.ask-input');
+  await expect(input).toBeFocused();
+  await page.keyboard.type('not an ip');
+  await page.keyboard.press('Enter');
+  await expect(card(page).locator('.note')).toContainText('Select an IP address');
+  await input.fill('185.220.101.4');
+  await page.keyboard.press('Enter');
+  await expect(card(page).locator('.ioc')).toHaveText('185.220.101.4');
+  await expect(card(page).locator('[data-provider="abuseipdb"][data-verdict]')).toBeVisible();
+  await expect(card(page).locator('[data-provider="virustotal"] .logo')).toBeVisible();
 });

@@ -19,11 +19,12 @@ import {
   SETTINGS_KEY,
 } from '../core/settings';
 import { refreshBadge } from './badge';
-import { handleLookupRequest, presentView, type ControllerDeps } from './controller';
+import { applyAccess, handleLookupRequest, presentView, type ControllerDeps } from './controller';
 import { checkCaptured, checkLink, type LinkDeps } from './links';
 import { LookupService } from './lookup-service';
 import { Payments } from './payments';
 import {
+  ASK_ITEM_ID,
   ELEMENT_ITEM_ID,
   LINK_ITEM_ID,
   LIST_ITEM_ID,
@@ -42,6 +43,7 @@ import { createMessageRouter } from './router';
 import { captureCard } from './screenshot';
 import { readSelection } from './selection';
 import {
+  ASK_VIEW,
   buildView,
   NO_INDICATOR_NOTICE,
   NOT_A_WEB_PAGE_NOTICE,
@@ -158,6 +160,10 @@ async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): P
     await openList();
     return;
   }
+  if (info.menuItemId === ASK_ITEM_ID) {
+    await presentView(ASK_VIEW, target, deps);
+    return;
+  }
   if (info.menuItemId === LINK_ITEM_ID || info.menuItemId === ELEMENT_ITEM_ID) {
     await checkLink({ target, linkUrl: info.linkUrl, pageUrl: info.pageUrl }, linkDeps);
     return;
@@ -247,6 +253,8 @@ chrome.runtime.onMessage.addListener(
   createMessageRouter({
     extensionId: chrome.runtime.id,
     service,
+    resolve: async (text) =>
+      applyAccess(buildView(text, 'all'), await license.access(false), now()),
     openOptions,
     openList,
     saveCardWidth: async (width) => {
@@ -296,6 +304,9 @@ if (__E2E__) {
       async simulateElementClick(tab: string | number) {
         const found = await tabFor(tab);
         await onMenuClick({ menuItemId: ELEMENT_ITEM_ID, pageUrl: found.url ?? '' }, found);
+      },
+      async simulateAskClick(tab: string | number) {
+        await onMenuClick({ menuItemId: ASK_ITEM_ID }, await tabFor(tab));
       },
       async simulateShortcut(tab: string | number) {
         await lookupFromShortcut((await tabFor(tab)).id ?? -1, 'all');

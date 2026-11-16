@@ -1,5 +1,10 @@
 /** CardClient backed by extension messaging to the service worker (which holds the API keys). */
-import type { BackgroundMessage, CaptureResponse } from '../core/messages';
+import {
+  VIEW_KINDS,
+  type BackgroundMessage,
+  type CaptureResponse,
+  type CardView,
+} from '../core/messages';
 import type { LookupOutcome } from '../core/result';
 import { addToList } from '../core/saved-list';
 import { NO_ANSWER, type CardClient } from './card';
@@ -41,6 +46,14 @@ export const runtimeClient: CardClient = {
     } catch {
       return lostContact();
     }
+  },
+  async resolve(text) {
+    const message: BackgroundMessage = { type: '4ntl:resolve', text };
+    const view: unknown = await chrome.runtime.sendMessage(message);
+    const kind = (view as { kind?: unknown } | undefined)?.kind;
+    // No answer: the running background predates this request (rebuilt but not reloaded).
+    if (!(VIEW_KINDS as readonly unknown[]).includes(kind)) throw new Error(NO_ANSWER);
+    return view as CardView;
   },
   openOptions() {
     const message: BackgroundMessage = { type: '4ntl:open-options' };

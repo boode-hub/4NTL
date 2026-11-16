@@ -162,7 +162,11 @@ export const CARD_CSS = /* css */ `
 .provider { padding: 10px 12px 12px; }
 .provider + .provider { border-top: 1px solid var(--border); }
 .provider-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.provider-name { font-weight: 600; font-size: 12px; color: var(--muted); }
+.provider-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12px; color: var(--muted); }
+.logo { flex: none; width: 14px; height: 14px; }
+.logo-virustotal .logo-fill { fill: light-dark(#0b4dda, #6b8dff); }
+.logo-abuseipdb .logo-ink { fill: var(--fg); }
+.logo-abuseipdb .logo-ring { stroke: light-dark(#e00000, #ff4d4d); }
 
 .pill {
   font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
@@ -245,6 +249,15 @@ export const CARD_CSS = /* css */ `
   background: var(--bg); color: var(--fg); cursor: pointer; text-align: left;
 }
 .choice:hover { background: var(--subtle); }
+
+.ask { display: flex; gap: 6px; padding: 12px; }
+.ask-input {
+  flex: 1; min-width: 0;
+  font: 12.5px/1.4 ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', monospace;
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg);
+}
+.ask-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   .card, .skeleton span, .card:has([aria-busy='true']) .eye svg { animation: none; }

@@ -5,6 +5,7 @@ import {
   isBackgroundMessage,
   type CaptureResponse,
   type CardRect,
+  type CardView,
   type LicenseResponse,
   type LookupResponse,
 } from '../core/messages';
@@ -13,6 +14,8 @@ import type { LookupService } from './lookup-service';
 export interface RouterDeps {
   readonly extensionId: string;
   readonly service: Pick<LookupService, 'lookup'>;
+  /** Typed text → what the card should show (a lookup, a picker, or why not). */
+  readonly resolve: (text: string) => Promise<CardView>;
   readonly openOptions: () => Promise<void>;
   readonly openList: () => Promise<void>;
   /** Stores the card width the user resized to. */
@@ -36,7 +39,7 @@ export interface RouterDeps {
 type Listener = (
   message: unknown,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response: LookupResponse | LicenseResponse | CaptureResponse) => void,
+  sendResponse: (response: LookupResponse | LicenseResponse | CaptureResponse | CardView) => void,
 ) => boolean;
 
 export function createMessageRouter(deps: RouterDeps): Listener {
@@ -73,6 +76,9 @@ export function createMessageRouter(deps: RouterDeps): Listener {
           .then(sendResponse);
         return true; // keep the channel open for the async response
       }
+      case '4ntl:resolve':
+        void deps.resolve(message.text).then(sendResponse);
+        return true;
       case '4ntl:open-options':
         void deps.openOptions();
         return false;

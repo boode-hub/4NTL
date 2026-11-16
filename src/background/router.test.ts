@@ -33,9 +33,13 @@ function setup() {
     restore: vi.fn(() => Promise.resolve()),
   };
   const onCaptured = vi.fn(() => Promise.resolve());
+  const resolve = vi.fn((text: string) =>
+    Promise.resolve({ kind: 'notice' as const, title: 'T', text }),
+  );
   const route = createMessageRouter({
     extensionId: 'ext',
     service: { lookup },
+    resolve,
     openOptions,
     openList,
     saveCardWidth,
@@ -48,6 +52,7 @@ function setup() {
   return {
     route,
     lookup,
+    resolve,
     openOptions,
     openList,
     saveCardWidth,
@@ -189,6 +194,17 @@ describe('message router', () => {
     expect(saveCardWidth).toHaveBeenCalledWith(480);
     route({ type: '4ntl:card-width', width: 'wide' }, fromUs, sendResponse);
     expect(saveCardWidth).toHaveBeenCalledTimes(1);
+  });
+
+  it('answers typed text with the view to show', async () => {
+    const { route, resolve, sendResponse, fromUs } = setup();
+    expect(route({ type: '4ntl:resolve', text: '8.8.8.8' }, fromUs, sendResponse)).toBe(true);
+    await flush();
+    expect(resolve).toHaveBeenCalledWith('8.8.8.8');
+    expect(sendResponse).toHaveBeenCalledWith({ kind: 'notice', title: 'T', text: '8.8.8.8' });
+    route({ type: '4ntl:resolve', text: 'x'.repeat(10_001) }, fromUs, sendResponse);
+    route({ type: '4ntl:resolve', text: 42 }, fromUs, sendResponse);
+    expect(resolve).toHaveBeenCalledTimes(1);
   });
 
   it('ignores other extensions and malformed messages', () => {

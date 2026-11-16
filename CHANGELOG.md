@@ -4,6 +4,16 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-11-16
+
+### Added
+
+- **Type it in**: right-click anywhere → **4NTL** → **Type an IP or domain…**
+  opens the card with a box; type or paste an IP, domain, URL or hash and press
+  Enter. Keys typed there never trigger the page's own shortcuts.
+- **Vendor logos**: a small VirusTotal and AbuseIPDB mark before each name on
+  the card, in colors that follow the theme.
+
 ## [0.7.2] - 2026-11-05
 
 ### Changed

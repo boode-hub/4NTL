@@ -20,6 +20,7 @@ import { h, icon, ICONS } from './dom';
 import { ensureFlagFont } from './flags';
 import { clampToViewport, placeCard, type Point, type Rect } from './position';
 import {
+  renderAsk,
   renderChoices,
   renderBanner,
   renderIndicatorHeader,
@@ -42,6 +43,8 @@ export interface CardClient {
   /** Adds (or refreshes) an entry in the saved list. */
   save(entry: SavedEntry): Promise<void>;
   openList(): void;
+  /** Typed text → what to show. Rejects when the extension can't answer. */
+  resolve?(text: string): Promise<CardView>;
   /** The user resized the card to this width (px). */
   saveWidth?(width: number): void;
   /** A PNG of this box of the visible tab ("Copy card as image"); absent where impossible. */
@@ -98,6 +101,9 @@ export function boxInTopWindow(
 
 /** The background didn't answer: it's an older copy than this page's script. */
 export const NO_ANSWER = '4ntl:no-answer';
+
+const NOT_ANSWERING =
+  '4NTL didn’t answer. If it was just updated, click Reload on 4NTL in your extensions page, then reload this page.';
 
 /** Why a picture of the card couldn't be taken, in words a user can act on. */
 function pictureError(error: unknown): string {
@@ -351,8 +357,45 @@ export class ResultCard {
       case 'notice':
         this.#card.replaceChildren(renderTitleHeader(view.title, close), renderNotice(view.text));
         break;
+      case 'ask':
+        this.#showAsk(viewId, close);
+        return;
     }
     this.#place();
+  }
+
+  #showAsk(viewId: number, close: () => void): void {
+    const { form, input } = renderAsk((text) => {
+      const { client } = this.#options;
+      if (!client.resolve) return;
+      this.#card.querySelector('.note')?.remove();
+      void client.resolve(text).then(
+        (view) => {
+          if (viewId !== this.#viewId) return;
+          // "Not an indicator" and the like: say so under the box and let them fix it.
+          if (view.kind === 'notice') this.#note(form, view.text);
+          else this.show(view);
+        },
+        () => {
+          this.#note(form, NOT_ANSWERING);
+        },
+      );
+    });
+    // Keys typed here are ours: page shortcuts (s, /, j, k…) must not fire while typing.
+    for (const type of ['keydown', 'keyup', 'keypress']) {
+      input.addEventListener(type, (event) => {
+        event.stopPropagation();
+        if (type === 'keydown' && (event as KeyboardEvent).key === 'Escape') close();
+      });
+    }
+    this.#card.replaceChildren(renderTitleHeader('Look up', close), form);
+    this.#place();
+    input.focus({ preventScroll: true });
+  }
+
+  #note(form: HTMLElement, text: string): void {
+    this.#card.querySelector('.note')?.remove();
+    form.after(h('p', { class: 'note', attrs: { role: 'status' } }, text));
   }
 
   close(): void {

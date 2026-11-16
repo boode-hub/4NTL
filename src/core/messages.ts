@@ -3,7 +3,7 @@
  * (in-page card, fallback result window). Every incoming message is validated
  * with the guards below before it is acted on.
  */
-import { isIndicatorType, type Indicator } from './indicator';
+import { isIndicatorType, MAX_SELECTION_LENGTH, type Indicator } from './indicator';
 import { isProviderId, type ProviderId } from './provider-ids';
 import type { LookupOutcome } from './result';
 import type { Access } from './license';
@@ -35,10 +35,18 @@ export type CardView =
       readonly banner?: string;
     }
   | { readonly kind: 'notice'; readonly title: string; readonly text: string }
+  /** "Type an IP or domain…": a box to type what to look up. */
+  | { readonly kind: 'ask' }
   /** Store edition after the free days: the unlock offer instead of results. */
   | { readonly kind: 'locked'; readonly text: string };
 
-export const VIEW_KINDS: readonly CardView['kind'][] = ['lookup', 'choose', 'notice', 'locked'];
+export const VIEW_KINDS: readonly CardView['kind'][] = [
+  'lookup',
+  'choose',
+  'notice',
+  'locked',
+  'ask',
+];
 
 /** Catching where a JavaScript-only button goes: how long to wait for the click. */
 export const CAPTURE_MS = 20_000;
@@ -78,6 +86,8 @@ export type BackgroundMessage =
       /** Bypass the cache (the "Retry" button). */
       readonly force: boolean;
     }
+  /** The user typed this into the card: what should it show? Answered with a CardView. */
+  | { readonly type: '4ntl:resolve'; readonly text: string }
   | { readonly type: '4ntl:open-options' }
   | { readonly type: '4ntl:open-list' }
   /** The user resized the card: remember its width for the next ones. */
@@ -134,6 +144,8 @@ export function isBackgroundMessage(value: unknown): value is BackgroundMessage 
         isIndicator(value.indicator) &&
         typeof value.force === 'boolean'
       );
+    case '4ntl:resolve':
+      return typeof value.text === 'string' && value.text.length <= MAX_SELECTION_LENGTH;
     case '4ntl:open-options':
     case '4ntl:open-list':
     case '4ntl:unlock':

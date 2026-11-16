@@ -45,13 +45,17 @@ describe('registerMenus', () => {
       ['4ntl:lookup:virustotal', '4ntl', 'VirusTotal only', 'normal'],
       ['4ntl:link', '4ntl', 'Check this link', 'normal'],
       ['4ntl:element', '4ntl', 'Check what’s here', 'normal'],
+      ['4ntl:separator-ask', '4ntl', undefined, 'separator'],
+      ['4ntl:ask', '4ntl', 'Type an IP or domain…', 'normal'],
       ['4ntl:saved-list', undefined, 'Saved list', 'normal'],
     ]);
     const element = ['page', 'image', 'frame', 'video', 'audio', 'editable'];
     expect(created[0]?.contexts).toEqual(['selection', 'link', ...element]);
     expect(created.slice(1, 5).every((item) => item.contexts?.join() === 'selection')).toBe(true);
-    expect(created.at(-3)?.contexts).toEqual(['link']);
-    expect(created.at(-2)?.contexts).toEqual(element);
+    expect(created.at(-5)?.contexts).toEqual(['link']);
+    expect(created.at(-4)?.contexts).toEqual(element);
+    // "Type an IP or domain…" wherever 4NTL shows up.
+    expect(created.at(-2)?.contexts).toEqual(created[0]?.contexts);
     expect(created.at(-1)?.contexts).toEqual(['action']);
   });
 

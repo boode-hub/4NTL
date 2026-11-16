@@ -1,8 +1,8 @@
 /**
  * Right-click menu: a single "4NTL" entry. Inside it: on a selection, "Look up “…”"
  * plus one entry per provider; on a link, "Check this link"; anywhere else
- * (buttons, cards, images, text fields), "Check what’s here". On the toolbar
- * icon, "Saved list".
+ * (buttons, cards, images, text fields), "Check what’s here". Everywhere, last:
+ * "Type an IP or domain…". On the toolbar icon, "Saved list".
  */
 import { isProviderId } from '../core/provider-ids';
 import { PROVIDER_LIST } from '../providers/registry';
@@ -12,6 +12,7 @@ const ROOT_ID = '4ntl';
 const ITEM_PREFIX = '4ntl:lookup:';
 export const LINK_ITEM_ID = '4ntl:link';
 export const ELEMENT_ITEM_ID = '4ntl:element';
+export const ASK_ITEM_ID = '4ntl:ask';
 export const LIST_ITEM_ID = '4ntl:saved-list';
 
 export function menuItemId(scope: ProviderScope): string {
@@ -81,6 +82,22 @@ export async function registerMenus(): Promise<void> {
     parentId: ROOT_ID,
     title: 'Check what’s here',
     contexts: ELEMENT_CONTEXTS,
+  });
+  const everywhere: [
+    `${chrome.contextMenus.ContextType}`,
+    ...`${chrome.contextMenus.ContextType}`[],
+  ] = ['selection', 'link', ...ELEMENT_CONTEXTS];
+  await create({
+    id: `${ROOT_ID}:separator-ask`,
+    parentId: ROOT_ID,
+    type: 'separator',
+    contexts: everywhere,
+  });
+  await create({
+    id: ASK_ITEM_ID,
+    parentId: ROOT_ID,
+    title: 'Type an IP or domain…',
+    contexts: everywhere,
   });
   // Right-click the toolbar icon.
   await create({ id: LIST_ITEM_ID, title: 'Saved list', contexts: ['action'] });

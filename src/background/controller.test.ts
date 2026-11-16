@@ -47,6 +47,12 @@ describe('applyAccess (store edition)', () => {
     expect(applyAccess(notice, { status: 'locked' }, 0)).toBe(notice);
   });
 
+  it('the typing box: the unlock offer once locked, no banner otherwise', () => {
+    const ask: CardView = { kind: 'ask' };
+    expect(applyAccess(ask, { status: 'locked' }, 0).kind).toBe('locked');
+    expect(applyAccess(ask, { status: 'trial', until: PAID_FROM + 1 }, PAID_FROM)).toBe(ask);
+  });
+
   it('starts no lookups (no API quota, no requests) for a locked user', async () => {
     const d = deps(true);
     const locked: ControllerDeps = {

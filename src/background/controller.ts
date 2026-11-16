@@ -30,6 +30,7 @@ export function applyAccess(view: CardView, access: Access, now: number): CardVi
   if (view.kind === 'notice' || view.kind === 'locked') return view;
   const text = describeAccess(access, now);
   if (access.status === 'locked') return { kind: 'locked', text };
+  if (view.kind === 'ask') return view;
   return text ? { ...view, banner: text } : view;
 }
 

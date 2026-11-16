@@ -27,6 +27,9 @@ export const CAPTURE_NOTICE: CardView = {
   text: 'This button has no address until it’s clicked. Click it now: 4NTL will catch where it goes and stop it from opening. (Waiting 20 seconds.)',
 };
 
+/** "Type an IP or domain…" in the right-click menu. */
+export const ASK_VIEW: CardView = { kind: 'ask' };
+
 /** Toolbar / address-bar check of a page that isn't a web address (browser pages, files…). */
 export const NOT_A_WEB_PAGE_NOTICE: CardView = {
   kind: 'notice',

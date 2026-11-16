@@ -119,6 +119,7 @@ Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups
 | A button, card, image or cell  | Right-click it → **4NTL** → **Check what’s here** (click it if asked)  |
 | The page you're on             | Click the **4NTL** toolbar icon                                        |
 | Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**           |
+| Something you'll type in       | Right-click anywhere → **4NTL** → **Type an IP or domain…**            |
 
 Read the verdict. **Full report ↗** opens the provider's page; **Esc** or a click
 elsewhere closes the card. The copy button copies the indicator, the card as a
