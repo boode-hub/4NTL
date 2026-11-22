@@ -53,22 +53,31 @@ function svgChild(tag: string, className: string, attrs: Record<string, string>)
   return element;
 }
 
-/** Comma-shaped tomoe, drawn at the top of the ring and rotated into place. */
-const TOMOE = 'M12 4.3a1.7 1.7 0 1 1-1.3 2.8C9.6 6 9.3 4.9 8.4 4.4c1.2-.5 2.4-.4 3.6-.1z';
+/** The logo's Mangekyo: three curved blades and three long points (same as scripts/make-icons.mjs). */
+const BLADE = 'M8.80 10.15C6.91 6.91 10.47 3.33 19.20 5.96C13.58 4.57 13.92 6.74 13.74 8.73Z';
+const POINT = 'M14.17 9.01Q16.42 7.10 19.97 7.02Q16.98 7.67 14.92 9.72Z';
 
-/** The Sharingan eye (theme decoration). Colors come from the card's CSS. */
+/** The 4NTL eye (Sharingan theme decoration): the logo without its hieroglyphs. Colors come from the card's CSS. */
 export function sharinganEye(): HTMLElement {
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('width', '20');
   svg.setAttribute('height', '20');
+  const mangekyo = document.createElementNS(SVG_NS, 'g');
+  mangekyo.setAttribute('transform', 'translate(12 12) scale(.78) translate(-12 -12)');
+  mangekyo.append(
+    ...[0, 120, 240].flatMap((angle) => [
+      svgChild('path', 'blade', { d: BLADE, transform: `rotate(${angle} 12 12)` }),
+      svgChild('path', 'blade', { d: POINT, transform: `rotate(${angle} 12 12)` }),
+    ]),
+    svgChild('circle', 'pupil', { cx: '12', cy: '12', r: '3.9' }),
+    svgChild('circle', 'ring', { cx: '12', cy: '12', r: '2.75' }),
+    svgChild('circle', 'pupil', { cx: '12', cy: '12', r: '1.5' }),
+  );
   svg.append(
     svgChild('circle', 'iris', { cx: '12', cy: '12', r: '11' }),
-    svgChild('circle', 'ring', { cx: '12', cy: '12', r: '6' }),
-    ...[0, 120, 240].map((angle) =>
-      svgChild('path', 'tomoe', { d: TOMOE, transform: `rotate(${angle} 12 12)` }),
-    ),
-    svgChild('circle', 'pupil', { cx: '12', cy: '12', r: '2.4' }),
+    svgChild('circle', 'band', { cx: '12', cy: '12', r: '8.55' }),
+    mangekyo,
   );
   const wrapper = document.createElement('span');
   wrapper.className = 'eye';

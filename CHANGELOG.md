@@ -4,6 +4,16 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-11-22
+
+### Changed
+
+- **New logo**: an Eternal-style Mangekyo sealed inside a band of Egyptian
+  hieroglyphs (ankh, eye, water, sun, djed, feather, shen, reed). The toolbar
+  icon drops the tiny glyphs at small sizes so it stays sharp, and the eye in
+  the Sharingan card header matches it (in your accent color). README
+  screenshots refreshed.
+
 ## [0.9.0] - 2026-11-22
 
 ### Changed

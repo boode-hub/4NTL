@@ -100,12 +100,13 @@ export const CARD_CSS = /* css */ `
   --subtle: color-mix(in srgb, #f1f5f9 8%, var(--bg));
 }
 
-/* The Sharingan: shown only in that theme; it spins while anything is loading. */
+/* The 4NTL eye: shown only in the Sharingan theme; it spins while anything is loading. */
 .eye { display: none; flex: none; width: 20px; height: 20px; }
 .card[data-theme='sharingan'] .eye { display: block; }
 .eye .iris { fill: var(--accent); stroke: #000; stroke-width: 1; }
-.eye .ring { fill: none; stroke: rgba(0, 0, 0, 0.55); stroke-width: 0.8; }
-.eye .pupil, .eye .tomoe { fill: #0a0506; }
+.eye .band { fill: none; stroke: #0a0506; stroke-width: 2.3; }
+.eye .ring { fill: none; stroke: var(--accent); stroke-width: 0.8; }
+.eye .pupil, .eye .blade { fill: #0a0506; }
 .card:has([aria-busy='true']) .eye svg { animation: spin 0.9s linear infinite; }
 
 @keyframes enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
