@@ -105,7 +105,6 @@ export const CARD_CSS = /* css */ `
 .card[data-theme='sharingan'] .eye { display: block; }
 .eye .iris { fill: var(--accent); stroke: #000; stroke-width: 1; }
 .eye .band { fill: none; stroke: #0a0506; stroke-width: 2.3; }
-.eye .ring { fill: none; stroke: var(--accent); stroke-width: 0.8; }
 .eye .pupil, .eye .blade { fill: #0a0506; }
 .card:has([aria-busy='true']) .eye svg { animation: spin 0.9s linear infinite; }
 

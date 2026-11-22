@@ -687,7 +687,7 @@ describe('ResultCard – appearance', () => {
     const card = themed({ theme: 'sharingan', accent: '', background: '', width: 0 });
     const eye = card?.querySelector('.header .eye');
     expect(eye?.getAttribute('aria-hidden')).toBe('true');
-    expect(eye?.querySelectorAll('.blade')).toHaveLength(6); // the logo's Mangekyo
+    expect(eye?.querySelectorAll('.blade')).toHaveLength(3); // the logo's Mangekyo
   });
 
   it('can render inline without filling the container (settings preview)', () => {

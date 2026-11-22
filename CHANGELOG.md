@@ -4,6 +4,15 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] - 2026-11-22
+
+### Changed
+
+- **Logo, final form**: the sealed eye's centre is now three crescent blades
+  that grow out of the hieroglyph band and curl into needle-thin tails around
+  the pupil. Same shape in the toolbar icon and the Sharingan card's eye; a test
+  keeps the two in sync.
+
 ## [0.10.0] - 2026-11-22
 
 ### Changed
