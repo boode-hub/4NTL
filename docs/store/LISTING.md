@@ -42,7 +42,7 @@ BUILT FOR ANALYSTS
 • Understands analyst text: defanged indicators such as 1.2.3[.]4 or hxxps://evil[.]com, addresses with ports, and log fields. Select a whole log line and pick the indicator you want.
 • Checks where links and buttons really go, even when a site hides the address in JavaScript. For buttons that only get an address when clicked, click once: 4NTL catches the destination and stops the page from going there.
 • Sees through the protected and redirect links that email security tools and social sites add, and checks the real destination.
-• Check the page you're on from the toolbar icon, or type "4ntl" and a space in the address bar and paste anything.
+• Click the toolbar icon and type or paste an IP, domain or hash, or type "4ntl" and a space in the address bar and paste anything.
 • Copy just the indicator, the card as a picture, or the details as text for a ticket.
 • Saved list: keep the indicators you find during an investigation, then copy them all at once or download a CSV.
 • Country flags at a glance.

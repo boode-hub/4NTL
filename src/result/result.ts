@@ -1,5 +1,6 @@
 /**
- * Fallback window for pages that can't host the in-page card (browser pages,
+ * The toolbar popup (a box to type an IP, domain, URL or hash), and the
+ * fallback window for pages that can't host the in-page card (browser pages,
  * the PDF viewer, the Web Store…). Renders the same card, inline.
  */
 import { VIEW_KINDS, type CardView } from '../core/messages';
@@ -16,11 +17,8 @@ function viewFromHash(): CardView {
   } catch {
     // fall through
   }
-  return {
-    kind: 'notice',
-    title: 'Nothing to show',
-    text: 'Start a lookup from the right-click menu.',
-  };
+  // Nothing passed in: the toolbar popup.
+  return { kind: 'ask' };
 }
 
 void loadSettings().then(({ appearance }) => {

@@ -45,7 +45,12 @@ export function createManifest({ version, e2e = false, store = false }) {
       gecko_android: { strict_min_version: '142.0' },
     },
     icons: ICONS,
-    action: { default_title: '4NTL – settings', default_icon: ICONS },
+    // Toolbar icon: a popup to type (or paste) an IP, domain, URL or hash.
+    action: {
+      default_title: '4NTL – look up an IP, domain or hash',
+      default_icon: ICONS,
+      default_popup: 'result.html',
+    },
     // Chromium runs the service worker and ignores "scripts" (121+); Firefox runs
     // "scripts" as an event page and ignores "service_worker".
     background: { service_worker: 'background.js', scripts: ['background.js'], type: 'module' },

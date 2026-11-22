@@ -6,7 +6,7 @@
  */
 import ExtPay from 'extpay';
 import { REPORT_CACHE, TtlCache } from '../core/cache';
-import { INDICATOR_LABELS, parseIndicator, resolveSelection } from '../core/indicator';
+import { INDICATOR_LABELS, resolveSelection } from '../core/indicator';
 import { EXTPAY_ID, type Access } from '../core/license';
 import type { CardView } from '../core/messages';
 import type { Report } from '../core/result';
@@ -42,14 +42,7 @@ import {
 import { createMessageRouter } from './router';
 import { captureCard } from './screenshot';
 import { readSelection } from './selection';
-import {
-  ASK_VIEW,
-  buildView,
-  NO_INDICATOR_NOTICE,
-  NOT_A_WEB_PAGE_NOTICE,
-  viewForIndicators,
-  type ProviderScope,
-} from './view';
+import { ASK_VIEW, buildView, NO_INDICATOR_NOTICE, type ProviderScope } from './view';
 
 const cache = new TtlCache<Report>(chrome.storage.session, REPORT_CACHE);
 
@@ -200,22 +193,6 @@ chrome.commands.onCommand.addListener((command, tab) => {
   void lookupFromShortcut(tab.id, 'all').catch(report);
 });
 
-/** Toolbar icon: check the page you're on (or open settings until a key is set). */
-async function onActionClick(tab: chrome.tabs.Tab): Promise<void> {
-  if (!hasAnyApiKey(await loadSettings())) {
-    await openOptions();
-    return;
-  }
-  const indicator = tab.url ? parseIndicator(tab.url) : null;
-  const view =
-    indicator?.type === 'url' ? viewForIndicators([indicator], 'all') : NOT_A_WEB_PAGE_NOTICE;
-  await presentView(view, frameOf(tab), deps, true);
-}
-
-chrome.action.onClicked.addListener((tab) => {
-  void onActionClick(tab).catch(report);
-});
-
 /** Omnibox descriptions are XML: user text must be escaped. */
 function xml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -310,9 +287,6 @@ if (__E2E__) {
       },
       async simulateShortcut(tab: string | number) {
         await lookupFromShortcut((await tabFor(tab)).id ?? -1, 'all');
-      },
-      async simulateActionClick(tab: string | number) {
-        await onActionClick(await tabFor(tab));
       },
       simulateOmnibox: lookupFromOmnibox,
       setClock(ms: number) {

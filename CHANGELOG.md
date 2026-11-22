@@ -4,6 +4,15 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-11-22
+
+### Changed
+
+- **Toolbar icon → look-up box**: click the 4NTL icon, type or paste an IP,
+  domain, URL or hash, press Enter. An IP is checked on VirusTotal and
+  AbuseIPDB; a hash, domain or URL on VirusTotal. (The icon used to check the
+  page you were on; right-click → 4NTL → Check what's here still checks links.)
+
 ## [0.8.0] - 2026-11-16
 
 ### Added

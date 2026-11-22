@@ -5,7 +5,6 @@ import {
   expect,
   fixture,
   PAGE_URL,
-  PHISH_URL,
   SAFE_LINK,
   test,
   VT_KEY,
@@ -32,7 +31,6 @@ type Hook =
   | 'simulateElementClick'
   | 'simulateAskClick'
   | 'simulateLinkClick'
-  | 'simulateActionClick'
   | 'simulateOmnibox'
   | 'simulateMenuClick'
   | 'describeOmnibox';
@@ -151,15 +149,38 @@ test.describe('links that are not plain links', () => {
 });
 
 test.describe('toolbar icon and address bar', () => {
-  test('the toolbar icon checks the page you are on, top-right', async ({ page, worker }) => {
-    await page.goto(PHISH_URL);
-    await hook(worker, 'simulateActionClick', PHISH_URL);
-    await expect(card(page).locator('.ioc')).toHaveText(PHISH_URL);
-    await page.waitForTimeout(200); // let the 120 ms entrance animation finish
-    const box = await card(page).boundingBox();
-    const width = page.viewportSize()?.width ?? 0;
-    expect(Math.abs((box?.x ?? 0) + (box?.width ?? 0) - (width - 8))).toBeLessThan(4);
-    expect(Math.abs((box?.y ?? 0) - 8)).toBeLessThan(2);
+  test('the toolbar popup: an IP goes to both, a hash or domain to VirusTotal only', async ({
+    page,
+    api,
+    extensionId,
+  }) => {
+    await api.routes([
+      ...URL_ROUTES,
+      {
+        prefix: 'https://www.virustotal.com/api/v3/files/',
+        responses: [{ status: 200, body: fixture('virustotal/file.json') }],
+      },
+      {
+        prefix: 'https://www.virustotal.com/api/v3/domains/',
+        responses: [{ status: 200, body: fixture('virustotal/domain.json') }],
+      },
+    ]);
+    const popup = page.locator('x-4ntl-card .card');
+    const providers = () => popup.locator('[data-provider]');
+    for (const [typed, expected] of [
+      ['185.220.101.4', ['abuseipdb', 'virustotal']],
+      ['44d88612fea8a8f36de82e1278abb02f', ['virustotal']],
+      ['evil[.]com', ['virustotal']],
+    ] as const) {
+      await page.goto(`chrome-extension://${extensionId}/result.html`);
+      await expect(popup.locator('.ask-input')).toBeFocused();
+      await page.keyboard.type(typed);
+      await page.keyboard.press('Enter');
+      await expect(popup.locator('[data-verdict]')).toHaveCount(expected.length);
+      expect(
+        await providers().evaluateAll((all) => all.map((el) => el.getAttribute('data-provider'))),
+      ).toEqual(expected);
+    }
   });
 
   test('"4ntl <link>" in the address bar looks it up in the current tab', async ({

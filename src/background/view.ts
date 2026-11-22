@@ -30,13 +30,6 @@ export const CAPTURE_NOTICE: CardView = {
 /** "Type an IP or domain…" in the right-click menu. */
 export const ASK_VIEW: CardView = { kind: 'ask' };
 
-/** Toolbar / address-bar check of a page that isn't a web address (browser pages, files…). */
-export const NOT_A_WEB_PAGE_NOTICE: CardView = {
-  kind: 'notice',
-  title: 'Not a web address',
-  text: 'Only http(s) pages can be looked up.',
-};
-
 function providersForScope(indicator: Indicator, scope: ProviderScope): ProviderInfo[] {
   // An explicitly chosen provider is kept even if it can't handle the indicator,
   // so the card can explain why instead of silently showing nothing.

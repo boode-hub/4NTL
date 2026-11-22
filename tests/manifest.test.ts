@@ -27,6 +27,13 @@ describe('manifest', () => {
     expect(GECKO_ID).toMatch(/^[\w.-]+@[\w.-]+$/);
   });
 
+  it('the toolbar icon opens the typing popup', () => {
+    expect(manifest.action).toMatchObject({
+      default_popup: 'result.html',
+      default_title: '4NTL – look up an IP, domain or hash',
+    });
+  });
+
   it('asks for exactly the minimal access', () => {
     expect(manifest.permissions).toEqual(['contextMenus', 'storage', 'activeTab', 'scripting']);
     expect(manifest.host_permissions).toEqual(API_HOSTS);

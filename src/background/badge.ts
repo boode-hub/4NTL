@@ -7,7 +7,9 @@ export async function refreshBadge(settings: Settings): Promise<void> {
     chrome.action.setBadgeText({ text: ready ? '' : '!' }),
     chrome.action.setBadgeBackgroundColor({ color: '#d97706' }),
     chrome.action.setTitle({
-      title: ready ? '4NTL – settings' : '4NTL – add your API keys to get started',
+      title: ready
+        ? '4NTL – look up an IP, domain or hash'
+        : '4NTL – add your API keys to get started',
     }),
   ]);
 }

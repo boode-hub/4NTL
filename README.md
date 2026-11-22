@@ -117,7 +117,7 @@ Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups
 | The same, faster               | Select it, or just point at it, → **Alt+Shift+L**                      |
 | A link                         | Right-click it → **4NTL** → **Check this link**                        |
 | A button, card, image or cell  | Right-click it → **4NTL** → **Check what’s here** (click it if asked)  |
-| The page you're on             | Click the **4NTL** toolbar icon                                        |
+| Anything you type or paste     | Click the **4NTL** toolbar icon, type it, press **Enter**              |
 | Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**           |
 | Something you'll type in       | Right-click anywhere → **4NTL** → **Type an IP or domain…**            |
 
