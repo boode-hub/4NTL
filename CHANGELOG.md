@@ -4,6 +4,16 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] - 2026-11-22
+
+### Added
+
+- **More defanged forms look up as they are**: spaced dots (`evil [dot] com`,
+  `8.8.8 (.) 8`) and half-bracketed dots (`evil[.com`, `evil.]com`), on top of
+  `1.2.3[.]4`, `evil(dot)com`, `hxxps[://]…` and the rest. Works everywhere you
+  can look something up: right-click, the typing box, the toolbar popup and the
+  address bar.
+
 ## [0.11.0] - 2026-11-22
 
 ### Changed

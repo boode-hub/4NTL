@@ -35,9 +35,28 @@ describe('refang', () => {
     ['hxxps[://]evil.com', 'https://evil.com'],
     ['hxxp[:]//evil.com', 'http://evil.com'],
     ['evil.com[/]path', 'evil.com/path'],
+    ['evil [dot] com', 'evil.com'],
+    ['evil [.] com', 'evil.com'],
+    ['8.8.8 (.) 8', '8.8.8.8'],
+    ['evil[.com', 'evil.com'],
+    ['evil.]com', 'evil.com'],
+    ['hxxps://evil[.com/x', 'https://evil.com/x'],
     ['plain text', 'plain text'],
+    ['[2001:db8::1]', '[2001:db8::1]'],
   ])('%s → %s', (input, expected) => {
     expect(refang(input)).toBe(expected);
+  });
+});
+
+describe('defanged indicators look up without refanging by hand', () => {
+  it.each([
+    ['evil [dot] com', 'domain', 'evil.com'],
+    ['evil[.com', 'domain', 'evil.com'],
+    ['185.220.101 [.] 4', 'ipv4', '185.220.101.4'],
+    ['hxxp[:]//1.2.3[.]4:8080/x', 'url', 'http://1.2.3.4:8080/x'],
+    ['hXXps[://]evil.]com/login', 'url', 'https://evil.com/login'],
+  ])('%s → %s %s', (input, type, value) => {
+    expect(resolveSelection(input)).toMatchObject({ kind: 'single', indicator: { type, value } });
   });
 });
 

@@ -44,9 +44,10 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
   destination.
 - **Toolbar and address bar.** Click the 4NTL icon to check the page you're on, or
   type `4ntl` + space in the address bar followed by any link or indicator.
-- **Reads analyst text.** Defanged IOCs (`1.2.3[.]4`, `hxxps://evil[.]com`),
-  `ip:port`, `[IPv6]:port`, `src=1.2.3.4` log fields, quotes and brackets.
-  Select a whole log line and it lets you pick the indicator.
+- **Reads analyst text.** Defanged IOCs (`1.2.3[.]4`, `hxxps://evil[.]com`,
+  `evil [dot] com`, `evil[.com`) look up as they are, with no refanging by
+  hand. So do `ip:port`, `[IPv6]:port`, `src=1.2.3.4` log fields, quotes and
+  brackets. Select a whole log line and it lets you pick the indicator.
 - **IPv4, IPv6, domains, URLs, MD5, SHA-1, SHA-256.** AbuseIPDB checks IPs;
   VirusTotal checks everything.
 - **Copy what you need.** The copy button offers the indicator alone, **the card

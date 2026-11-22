@@ -33,10 +33,24 @@ const LOG =
   '2026-10-27 09:14:02 DENY src=10.0.0.5 dst=185.220.101.4 sha256=275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f';
 
 /** A page with a caption band on top (what the screenshot shows) and an incident report. */
+/**
+ * The browser's own right-click menu can't be captured, so the "type it in"
+ * screenshot draws a look-alike (dark Chrome style) with 4NTL's submenu open.
+ */
+const MENU = `<div class="cm" style="left:150px;top:330px">
+    <div class="it">Back</div><div class="it">Forward</div><div class="it">Reload</div><div class="sp"></div>
+    <div class="it on"><img src="data:image/png;base64,${icon}" alt="">4NTL<span class="ar">▸</span></div><div class="sp"></div>
+    <div class="it">Save as…</div><div class="it">Print…</div><div class="sp"></div><div class="it">Inspect</div></div>
+  <div class="cm" style="left:392px;top:430px">
+    <div class="it">Check what’s here</div><div class="sp"></div>
+    <div class="it on">Type an IP or domain…</div></div>
+  <svg class="cursor" style="left:560px;top:494px" viewBox="0 0 22 22"><path d="M3 2l0 16 4.2-3.9 2.7 6.1 2.6-1.1-2.7-6 5.7-.3z" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
+
 const page = (
   caption,
   dark,
   popup = '',
+  menu = false,
 ) => `<!doctype html><html><head><meta charset="utf-8"><style>
   body { margin: 0; font: 17px/1.65 'Segoe UI', system-ui, sans-serif;
     background: ${dark ? '#0b0f17' : '#ffffff'}; color: ${dark ? '#e2e8f0' : '#1e293b'}; }
@@ -59,9 +73,16 @@ const page = (
   .popup { position: absolute; right: 12px; top: 136px; width: 380px; border-radius: 10px;
     box-shadow: 0 14px 40px rgba(0, 0, 0, .6); border: 1px solid #3c4043; background: #0d0a0b; z-index: 2; }
   .dim { opacity: .45; }
+  .cm { position: absolute; z-index: 3; min-width: 230px; padding: 6px 0; border-radius: 8px; background: #292a2d;
+    color: #e8eaed; font: 15px/1 'Segoe UI', system-ui; box-shadow: 0 8px 24px rgba(0, 0, 0, .55); border: 1px solid #3c4043; }
+  .cm .it { display: flex; align-items: center; gap: 10px; padding: 9px 18px; white-space: nowrap; }
+  .cm .it.on { background: #3c4043; } .cm .it img { width: 18px; height: 18px; } .cm .ar { margin-left: auto; padding-left: 24px; }
+  .cm .sp { height: 1px; background: #3c4043; margin: 5px 0; }
+  .cursor { position: absolute; z-index: 4; width: 24px; height: 24px; }
 </style></head><body>
   <div class="band"><img src="data:image/png;base64,${icon}" alt="">${caption}</div>
   ${popup ? `<div class="toolbar"><div class="address">4ntl.demo/incident-2026-1027</div><span class="ext"><img src="data:image/png;base64,${icon}" alt="" style="opacity:.35;filter:grayscale(1)"></span><span class="ext on"><img src="data:image/png;base64,${icon}" alt=""></span></div><img class="popup" src="${popup}" alt="">` : ''}
+  ${menu ? MENU : ''}
   <main class="${popup ? 'dim' : ''}">
     <span class="tlp">TLP:AMBER</span>
     <h1>Incident 2026-1027 · Suspicious outbound traffic</h1>
@@ -99,6 +120,12 @@ const scenes = [
     'Copy the indicator, a picture of the card, or the details; save it to your list',
     false,
   ],
+  [
+    'screenshot-6.png',
+    'Nothing to select? Right-click, 4NTL, Type an IP or domain… and paste it',
+    true,
+  ],
+  ['screenshot-7.png', 'Or click the 4NTL icon: type or paste an IP, domain or hash', true],
 ];
 
 const context = await chromium.launchPersistentContext('', {
@@ -107,7 +134,10 @@ const context = await chromium.launchPersistentContext('', {
   args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
 });
 const bodies = new Map(
-  scenes.map(([file, caption, dark]) => [`${URL_BASE}${file}`, page(caption, dark)]),
+  scenes.map(([file, caption, dark]) => [
+    `${URL_BASE}${file}`,
+    page(caption, dark, '', file === 'screenshot-6.png'),
+  ]),
 );
 await context.route(`${URL_BASE}**`, (route) =>
   route.fulfill({ contentType: 'text/html', body: bodies.get(route.request().url()) ?? '' }),
@@ -159,19 +189,28 @@ for (const [file, , dark] of scenes) {
   await hook('simulateMenuClick', url, '8.8.8.8', 'virustotal');
   await tab.keyboard.press('Escape');
 
-  if (file === 'screenshot-2.png') {
-    // The toolbar popup is the real popup page, pictured under a drawn browser toolbar.
+  if (file === 'screenshot-2.png' || file === 'screenshot-7.png') {
+    // The toolbar popup is the real popup page, pictured under a drawn browser toolbar:
+    // with results (2), or while the indicator is being typed (7).
+    const typing = file === 'screenshot-7.png';
     const popup = await context.newPage();
     await popup.emulateMedia({ colorScheme: 'dark' });
     await popup.setViewportSize({ width: 380, height: 600 });
     await popup.goto(`chrome-extension://${new URL(worker.url()).host}/result.html`);
-    await popup.locator('x-4ntl-card .ask-input').pressSequentially('185.220.101.4');
-    await popup.keyboard.press('Enter');
-    await popup.locator('x-4ntl-card [data-provider="virustotal"][data-verdict]').waitFor();
+    await popup
+      .locator('x-4ntl-card .ask-input')
+      .pressSequentially(typing ? 'evil-login-verify[.]com' : '185.220.101.4');
+    if (!typing) {
+      await popup.keyboard.press('Enter');
+      await popup.locator('x-4ntl-card [data-provider="virustotal"][data-verdict]').waitFor();
+    }
     await popup.waitForTimeout(300);
-    const height = await popup.evaluate(() => document.documentElement.scrollHeight);
+    const height = await popup.evaluate(() =>
+      Math.ceil(document.querySelector('x-4ntl-card')?.getBoundingClientRect().height ?? 600),
+    );
     await popup.setViewportSize({ width: 380, height: Math.min(height, 600) });
-    bodies.set(url, page(scenes[1][1], true, pngData(await popup.screenshot())));
+    const caption = scenes.find(([name]) => name === file)?.[1] ?? '';
+    bodies.set(url, page(caption, true, pngData(await popup.screenshot())));
     await popup.close();
     await tab.goto(url);
   } else if (file === 'screenshot-3.png') {
@@ -181,6 +220,12 @@ for (const [file, , dark] of scenes) {
     await card.locator('.title').waitFor();
     await tab.locator('#cta').click();
     await card.locator('[data-provider="virustotal"][data-verdict]').waitFor();
+  } else if (file === 'screenshot-6.png') {
+    // The card opens where the right-click was; the drawn menu sits to its left.
+    await tab.mouse.click(700, 260, { button: 'right' });
+    await hook('simulateAskClick', url);
+    await card.locator('.ask-input').waitFor();
+    await tab.keyboard.type('45.155.205[.]233');
   } else if (file === 'screenshot-4.png') {
     await tab.locator('#ip').selectText();
     await rightClickOn('#ip');

@@ -39,7 +39,7 @@ Select an IP address, domain, URL or file hash on any page, right-click, and 4NT
 
 BUILT FOR ANALYSTS
 • One click from the right-click menu, or select and press Alt+Shift+L.
-• Understands analyst text: defanged indicators such as 1.2.3[.]4 or hxxps://evil[.]com, addresses with ports, and log fields. Select a whole log line and pick the indicator you want.
+• Understands analyst text: defanged indicators such as 1.2.3[.]4, hxxps://evil[.]com or evil [dot] com, looked up as they are, addresses with ports, and log fields. Select a whole log line and pick the indicator you want.
 • Checks where links and buttons really go, even when a site hides the address in JavaScript. For buttons that only get an address when clicked, click once: 4NTL catches the destination and stops the page from going there.
 • Sees through the protected and redirect links that email security tools and social sites add, and checks the real destination.
 • Click the toolbar icon and type or paste an IP, domain or hash, or type "4ntl" and a space in the address bar and paste anything.
@@ -73,12 +73,12 @@ Phase 2: replace the ★ line with:
 
 **Graphic assets** (this folder):
 
-| Field                                   | File                                    |
-| --------------------------------------- | --------------------------------------- |
-| Store icon (128×128)                    | `../../public/icons/icon-128.png`       |
-| Screenshots (1280×800)                  | `screenshot-1.png` … `screenshot-5.png` |
-| Small promo tile (440×280)              | `promo-small.png`                       |
-| Marquee promo tile (1400×560, optional) | `promo-marquee.png`                     |
+| Field                                   | File                                                                                                  |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Store icon (128×128)                    | `../../public/icons/icon-128.png`                                                                     |
+| Screenshots (1280×800, at most 5)       | `screenshot-1.png`, `-6`, `-7`, `-2`, `-3` in that order; spares: `-4` (copy menu), `-5` (saved list) |
+| Small promo tile (440×280)              | `promo-small.png`                                                                                     |
+| Marquee promo tile (1400×560, optional) | `promo-marquee.png`                                                                                   |
 
 **Additional fields:**
 

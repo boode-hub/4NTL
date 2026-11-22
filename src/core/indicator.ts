@@ -39,7 +39,10 @@ export function indicatorKey(indicator: Indicator): string {
 }
 
 const REFANG_RULES: readonly (readonly [RegExp, string])[] = [
-  [/\[\s*(?:\.|dot)\s*\]|\(\s*(?:\.|dot)\s*\)|\{\s*(?:\.|dot)\s*\}/gi, '.'],
+  // A bracketed dot takes the spaces around it too: `evil [dot] com`.
+  [/\s*(?:\[\s*(?:\.|dot)\s*\]|\(\s*(?:\.|dot)\s*\)|\{\s*(?:\.|dot)\s*\})\s*/gi, '.'],
+  // Half-bracketed dots: `evil[.com`, `evil.]com`.
+  [/\[\.(?=[\w-])|(?<=[\w-])\.\]/g, '.'],
   [/\\\./g, '.'],
   [/\[\s*:\/\/\s*\]/g, '://'],
   [/\[\s*:\s*\]/g, ':'],
@@ -47,7 +50,7 @@ const REFANG_RULES: readonly (readonly [RegExp, string])[] = [
   [/\bh[x*]{2}p(s?)\b/gi, 'http$1'],
 ];
 
-/** Reverses common IOC "defanging": `1.2.3[.]4`, `evil(dot)com`, `hxxps[:]//…`. */
+/** Reverses common IOC "defanging": `1.2.3[.]4`, `evil [dot] com`, `evil[.com`, `hxxps[:]//…`. */
 export function refang(text: string): string {
   return REFANG_RULES.reduce(
     (acc, [pattern, replacement]) => acc.replace(pattern, replacement),

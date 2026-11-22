@@ -2,18 +2,21 @@
  * Renders the extension icons to public/icons/*.png by drawing an SVG in
  * Chromium, so the logo matches the eye in the card. The logo: a Mangekyo of
  * three crescent blades that grow out of the ring and curl into needle tails
- * around the pupil, sealed inside a band of hieroglyphs. Below 48 px the glyphs would only blur, so they're left out;
- * at 16 px the band goes too, so the Mangekyo can fill the eye.
+ * around the pupil, sealed inside a band of hieroglyphs. Below 48 px the
+ * glyphs would only blur, so they're left out; at 16 px the band goes too, so
+ * the Mangekyo can fill the eye.
  *
  *   npm run icons
- *   node scripts/make-icons.mjs <dir> <size>…   (previews, e.g. a 512 px one)
+ *   node scripts/make-icons.mjs <dir> <size>…         (previews, e.g. a 512 px one)
+ *   node scripts/make-icons.mjs <dir> --svg <size>…   (the vector logo, e.g. for D:\SS\4N-HQ)
  */
-import { chromium } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const [dirArg, ...sizeArgs] = process.argv.slice(2);
+const [dirArg, ...rest] = process.argv.slice(2);
+const svgOnly = rest.includes('--svg');
+const sizeArgs = rest.filter((arg) => arg !== '--svg');
 const SIZES = sizeArgs.length > 0 ? sizeArgs.map(Number) : [16, 32, 48, 128];
 const outDir =
   dirArg ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'icons');
@@ -62,6 +65,17 @@ function logo(size) {
 }
 
 await mkdir(outDir, { recursive: true });
+if (svgOnly) {
+  for (const size of SIZES)
+    await writeFile(
+      path.join(outDir, `icon-${size}.svg`),
+      `${logo(size)}
+`,
+    );
+  console.log(`Wrote ${SIZES.length} SVG logos to ${outDir}`);
+  process.exit(0);
+}
+const { chromium } = await import('@playwright/test');
 const browser = await chromium.launch({ channel: 'chromium' });
 for (const size of SIZES) {
   const page = await browser.newPage({ viewport: { width: size, height: size } });
