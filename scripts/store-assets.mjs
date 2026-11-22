@@ -1,7 +1,8 @@
 /**
  * Generates the Chrome Web Store images in docs/store: five 1280×800
  * screenshots of the real extension (e2e build, recorded API responses) and
- * the 440×280 / 1400×560 promo tiles.
+ * the 440×280 / 1400×560 promo tiles. The logo is drawn at each size it's
+ * shown at (scripts/make-icons.mjs → .cache/store-logo), so it stays sharp.
  *
  *   npm run store
  */
@@ -18,9 +19,10 @@ const SIZE = { width: 1280, height: 800 };
 
 const fixture = async (name) =>
   JSON.parse(await readFile(path.join(root, 'tests', 'fixtures', name), 'utf8'));
-const icon = (await readFile(path.join(root, 'public', 'icons', 'icon-128.png'))).toString(
-  'base64',
-);
+const logo = async (size) =>
+  (await readFile(path.join(root, '.cache', 'store-logo', `icon-${size}.png`))).toString('base64');
+const icon = await logo(48);
+const pngData = (buffer) => `data:image/png;base64,${buffer.toString('base64')}`;
 const ROUTES = [
   ['https://api.abuseipdb.com/', await fixture('abuseipdb/check.json')],
   ['https://www.virustotal.com/api/v3/ip_addresses/', await fixture('virustotal/ip.json')],
@@ -31,7 +33,11 @@ const LOG =
   '2026-10-27 09:14:02 DENY src=10.0.0.5 dst=185.220.101.4 sha256=275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f';
 
 /** A page with a caption band on top (what the screenshot shows) and an incident report. */
-const page = (caption, dark) => `<!doctype html><html><head><meta charset="utf-8"><style>
+const page = (
+  caption,
+  dark,
+  popup = '',
+) => `<!doctype html><html><head><meta charset="utf-8"><style>
   body { margin: 0; font: 17px/1.65 'Segoe UI', system-ui, sans-serif;
     background: ${dark ? '#0b0f17' : '#ffffff'}; color: ${dark ? '#e2e8f0' : '#1e293b'}; }
   .band { background: #0d0a0b; color: #fff; padding: 22px 48px; display: flex; align-items: center; gap: 18px;
@@ -45,9 +51,18 @@ const page = (caption, dark) => `<!doctype html><html><head><meta charset="utf-8
   code { padding: 1px 6px; } pre { padding: 12px 14px; white-space: pre-wrap; word-break: break-all; }
   a { color: #2563eb; }
   button { font: 600 15px system-ui; padding: 9px 18px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; }
+  .toolbar { display: flex; align-items: center; gap: 14px; padding: 8px 16px; background: #202124; }
+  .address { flex: 1; background: #303134; color: #bdc1c6; border-radius: 16px; padding: 6px 16px; font: 15px system-ui; }
+  .ext { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; }
+  .ext.on { background: #3c4043; outline: 2px solid #ff2d3d; }
+  .ext img { width: 20px; height: 20px; }
+  .popup { position: absolute; right: 12px; top: 136px; width: 380px; border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, .6); border: 1px solid #3c4043; background: #0d0a0b; z-index: 2; }
+  .dim { opacity: .45; }
 </style></head><body>
   <div class="band"><img src="data:image/png;base64,${icon}" alt="">${caption}</div>
-  <main>
+  ${popup ? `<div class="toolbar"><div class="address">4ntl.demo/incident-2026-1027</div><span class="ext"><img src="data:image/png;base64,${icon}" alt="" style="opacity:.35;filter:grayscale(1)"></span><span class="ext on"><img src="data:image/png;base64,${icon}" alt=""></span></div><img class="popup" src="${popup}" alt="">` : ''}
+  <main class="${popup ? 'dim' : ''}">
     <span class="tlp">TLP:AMBER</span>
     <h1>Incident 2026-1027 · Suspicious outbound traffic</h1>
     <p class="meta">SOC analyst notes · workstation WS-0442</p>
@@ -69,7 +84,11 @@ const scenes = [
     'Right-click any IP, hash, domain or URL: verdicts appear next to your cursor',
     true,
   ],
-  ['screenshot-2.png', 'Select a whole log line and pick the indicator to check', true],
+  [
+    'screenshot-2.png',
+    'Click the 4NTL icon, type or paste any IP, domain or hash, press Enter',
+    true,
+  ],
   [
     'screenshot-3.png',
     'Buttons with no link: click once, 4NTL catches where it goes and blocks it',
@@ -129,6 +148,8 @@ const rightClickOn = async (selector) => {
 };
 
 await mkdir(out, { recursive: true });
+/** The result card from the first screenshot, reused on the marquee tile. */
+let cardShot = '';
 for (const [file, , dark] of scenes) {
   const url = `${URL_BASE}${file}`;
   await settings(dark ? 'sharingan' : 'light');
@@ -139,10 +160,20 @@ for (const [file, , dark] of scenes) {
   await tab.keyboard.press('Escape');
 
   if (file === 'screenshot-2.png') {
-    await tab.locator('#log').selectText();
-    await rightClickOn('#log');
-    await hook('simulateMenuClick', url, LOG, 'all');
-    await card.locator('.choice').first().waitFor();
+    // The toolbar popup is the real popup page, pictured under a drawn browser toolbar.
+    const popup = await context.newPage();
+    await popup.emulateMedia({ colorScheme: 'dark' });
+    await popup.setViewportSize({ width: 380, height: 600 });
+    await popup.goto(`chrome-extension://${new URL(worker.url()).host}/result.html`);
+    await popup.locator('x-4ntl-card .ask-input').pressSequentially('185.220.101.4');
+    await popup.keyboard.press('Enter');
+    await popup.locator('x-4ntl-card [data-provider="virustotal"][data-verdict]').waitFor();
+    await popup.waitForTimeout(300);
+    const height = await popup.evaluate(() => document.documentElement.scrollHeight);
+    await popup.setViewportSize({ width: 380, height: Math.min(height, 600) });
+    bodies.set(url, page(scenes[1][1], true, pngData(await popup.screenshot())));
+    await popup.close();
+    await tab.goto(url);
   } else if (file === 'screenshot-3.png') {
     await tab.locator('#cta').hover();
     await rightClickOn('#cta');
@@ -162,6 +193,8 @@ for (const [file, , dark] of scenes) {
     await rightClickOn('#ip');
     await hook('simulateMenuClick', url, '185.220.101.4', 'all');
     await card.locator('[data-provider="virustotal"][data-verdict]').waitFor();
+    await settle();
+    cardShot = pngData(await card.screenshot());
   }
   await settle();
   await tab.screenshot({ path: path.join(out, file) });
@@ -230,15 +263,21 @@ await listPage.locator('#rows tr').nth(5).waitFor();
 await listPage.waitForTimeout(300);
 await listPage.screenshot({ path: path.join(out, 'screenshot-5.png') });
 
-// Promo tiles.
-const tile = (w, h, big) => `<!doctype html><html><body style="margin:0;width:${w}px;height:${h}px;
+// Promo tiles: the logo drawn at full size; the marquee also shows a real result card.
+const [logo110, logo200] = [await logo(110), await logo(200)];
+const tile = (
+  w,
+  h,
+  big,
+) => `<!doctype html><html><body style="margin:0;width:${w}px;height:${h}px;overflow:hidden;
   display:flex;align-items:center;justify-content:center;gap:${big ? 48 : 20}px;
   background:radial-gradient(70% 90% at 25% 30%, #3a0a10, #0d0a0b 70%);font-family:'Segoe UI',system-ui;color:#fff">
-  <img src="data:image/png;base64,${icon}" style="width:${big ? 220 : 110}px;height:${big ? 220 : 110}px">
-  <div><div style="font:700 ${big ? 96 : 52}px/1 'Segoe UI',system-ui;letter-spacing:.02em">4NTL</div>
-  <div style="font:500 ${big ? 30 : 17}px/1.35 'Segoe UI',system-ui;color:#f5c2c7;max-width:${big ? 700 : 230}px;margin-top:${big ? 18 : 10}px">
-  Threat-intel verdicts from the right-click menu</div>
-  ${big ? '<div style="font:400 22px/1.4 system-ui;color:#a99ea0;margin-top:16px">VirusTotal · AbuseIPDB · IPs, hashes, domains, URLs, links</div>' : ''}</div>
+  <img src="data:image/png;base64,${big ? logo200 : logo110}" style="width:${big ? 200 : 110}px;height:${big ? 200 : 110}px">
+  <div><div style="font:700 ${big ? 92 : 52}px/1 'Segoe UI',system-ui;letter-spacing:.02em">4NTL</div>
+  <div style="font:500 ${big ? 28 : 17}px/1.35 'Segoe UI',system-ui;color:#f5c2c7;max-width:${big ? 620 : 230}px;margin-top:${big ? 18 : 10}px">
+  Threat-intel verdicts from the <span style="white-space:nowrap">right-click</span> menu</div>
+  ${big ? '<div style="font:400 21px/1.5 system-ui;color:#a99ea0;margin-top:16px;max-width:520px">VirusTotal · AbuseIPDB<br>IPs, hashes, domains, URLs, links</div>' : ''}</div>
+  ${big && cardShot ? `<img src="${cardShot}" style="height:470px;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.65);transform:rotate(3deg)">` : ''}
 </body></html>`;
 for (const [file, w, h, big] of [
   ['promo-small.png', 440, 280, false],
