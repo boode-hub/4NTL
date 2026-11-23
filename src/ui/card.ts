@@ -156,6 +156,8 @@ export class ResultCard {
   readonly #host: HTMLElement;
   readonly #card: HTMLElement;
   readonly #cleanup: (() => void)[] = [];
+  /** Pending short timers (copy feedback), cleared on close. */
+  readonly #timers = new Set<ReturnType<typeof setTimeout>>();
   /** Bumped on every show(); responses for an older view are dropped. */
   #viewId = 0;
   #closed = false;
@@ -248,11 +250,21 @@ export class ResultCard {
     if (typeof ResizeObserver !== 'function') return;
     let last = Math.round(this.#card.getBoundingClientRect().width);
     let timer: ReturnType<typeof setTimeout> | undefined;
+    // Only a width the user drags to is kept: a narrow window or embedded frame also
+    // squeezes the card (max-width), and that must not shrink every later card.
+    let pressed = false;
+    this.#card.addEventListener('pointerdown', () => {
+      pressed = true;
+    });
+    this.#listen(window, 'pointerup', () => {
+      pressed = false;
+    });
     const observer = new ResizeObserver(() => {
       const width = Math.round(this.#card.getBoundingClientRect().width);
       // Only the width: the height follows the content as results arrive.
       if (!width || Math.abs(width - last) < 2) return;
       last = width;
+      if (!pressed) return;
       clearTimeout(timer);
       timer = setTimeout(() => {
         this.#options.client.saveWidth?.(width);
@@ -409,6 +421,8 @@ export class ResultCard {
     if (this.#closed) return;
     this.#closed = true;
     for (const dispose of this.#cleanup.splice(0)) dispose();
+    for (const timer of this.#timers) clearTimeout(timer);
+    this.#timers.clear();
     this.#host.remove();
     this.#options.onClose?.();
   }
@@ -587,12 +601,9 @@ export class ResultCard {
       this.#card.querySelector('.note')?.remove();
       const line = h('p', { class: 'note', attrs: { role: 'status' } }, note);
       this.#card.append(line);
-      const noteTimer = setTimeout(() => {
+      this.#later(() => {
         line.remove();
       }, NOTE_MS);
-      this.#cleanup.push(() => {
-        clearTimeout(noteTimer);
-      });
     }
     button.replaceChildren(icon(text === 'Copy failed' ? ICONS.copy : ICONS.check));
     const label = (value: string) => {
@@ -600,13 +611,19 @@ export class ResultCard {
       button.setAttribute('aria-label', value);
     };
     label(text);
-    const timer = setTimeout(() => {
+    this.#later(() => {
       button.replaceChildren(icon(ICONS.copy));
       label('Copy…');
     }, COPY_FEEDBACK_MS);
-    this.#cleanup.push(() => {
-      clearTimeout(timer);
-    });
+  }
+
+  /** A timer that's cancelled if the card closes first, and forgotten once it has run. */
+  #later(run: () => void, ms: number): void {
+    const timer = setTimeout(() => {
+      this.#timers.delete(timer);
+      run();
+    }, ms);
+    this.#timers.add(timer);
   }
 
   #place(): void {

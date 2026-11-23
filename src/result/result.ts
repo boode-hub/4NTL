@@ -5,7 +5,7 @@
  */
 import { VIEW_KINDS, type CardView } from '../core/messages';
 import { loadSettings } from '../core/settings';
-import { ResultCard } from '../ui/card';
+import { ResultCard, type CardClient } from '../ui/card';
 import { runtimeClient } from '../ui/runtime-client';
 
 function viewFromHash(): CardView {
@@ -24,7 +24,7 @@ function viewFromHash(): CardView {
 void loadSettings().then(({ appearance }) => {
   document.documentElement.dataset.theme = appearance.theme;
   new ResultCard({
-    client: runtimeClient,
+    client: location.hash ? runtimeClient : popupClient(runtimeClient),
     placement: { mode: 'inline', container: document.body },
     appearance,
     onClose: () => {
@@ -32,6 +32,16 @@ void loadSettings().then(({ appearance }) => {
     },
   }).show(viewFromHash());
 });
+
+/**
+ * No hash: this is the toolbar popup. A popup isn't part of the tab's screenshot
+ * (that would picture the page under it), so "Copy card as image" isn't offered.
+ */
+function popupClient(client: CardClient): CardClient {
+  const copy: CardClient = { ...client };
+  delete copy.captureCard;
+  return copy;
+}
 
 // Behave like a popup: go away once the user moves on.
 window.addEventListener('blur', () => {

@@ -657,6 +657,58 @@ describe('ResultCard – appearance', () => {
     ).toBe('');
   });
 
+  it('keeps a width the user drags to, never one a narrow page forces on it', () => {
+    vi.useFakeTimers();
+    let resized: () => void = () => undefined;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resized = callback;
+        }
+        observe(): void {}
+        disconnect(): void {}
+      },
+    );
+    let width = 320;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      () => ({ width, height: 200, top: 0, left: 0, right: width, bottom: 200 }) as DOMRect,
+    );
+    const c = { ...client(), saveWidth: vi.fn() };
+    const { card, $ } = mount(c);
+    card.show(LOOKUP_VIEW);
+
+    width = 300; // squeezed by a narrow frame
+    resized();
+    vi.advanceTimersByTime(1000);
+    expect(c.saveWidth).not.toHaveBeenCalled();
+
+    $('.card')?.dispatchEvent(new Event('pointerdown')); // the user grabs the corner…
+    width = 480;
+    resized();
+    window.dispatchEvent(new Event('pointerup'));
+    vi.advanceTimersByTime(1000);
+    expect(c.saveWidth).toHaveBeenCalledWith(480);
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('copy feedback timers are cleared when the card closes', async () => {
+    vi.useFakeTimers();
+    const { card, $ } = mount();
+    card.show(LOOKUP_VIEW);
+    const copy = $('[aria-label="Copy…"]');
+    copy?.click();
+    $('.menu-item')?.click(); // Copy indicator
+    await vi.waitFor(() => {
+      expect(copy?.getAttribute('aria-label')).toBe('Copied');
+    });
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    card.close();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
   it('uses the automatic theme with its own accent by default', () => {
     const card = themed();
     expect(card?.dataset.theme).toBe('auto');

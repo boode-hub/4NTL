@@ -112,6 +112,10 @@ test.describe('toolbar icon and address bar', () => {
         await providers().evaluateAll((all) => all.map((el) => el.getAttribute('data-provider'))),
       ).toEqual(expected);
     }
+    // A popup isn't in the tab's screenshot, so no "picture of the card" there.
+    await popup.getByRole('button', { name: 'Copy…' }).click();
+    await expect(popup.getByRole('menuitem', { name: 'Copy details as text' })).toBeVisible();
+    await expect(popup.getByRole('menuitem', { name: 'Copy card as image' })).toHaveCount(0);
   });
 
   test('"4ntl <link>" in the address bar looks it up in the current tab', async ({

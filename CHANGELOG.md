@@ -4,6 +4,19 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.1] - 2026-11-24
+
+### Fixed
+
+- **Copy card as image in the toolbar popup** pictured the web page under the
+  popup instead of the card (a popup isn't part of the tab's screenshot). The
+  popup no longer offers it; "Copy details as text" works there as before.
+- **Card width**: a narrow window or embedded frame that squeezed the card was
+  remembered as your chosen width, so later cards opened narrow everywhere. Only
+  a width you drag the corner to is kept now.
+- **Memory**: the card no longer keeps a small closure for every copy or save
+  feedback until it closes; each timer forgets itself once it has run.
+
 ## [0.13.0] - 2026-11-24
 
 ### Added
