@@ -25,7 +25,6 @@ import { LookupService } from './lookup-service';
 import { Payments } from './payments';
 import {
   ASK_ITEM_ID,
-  ELEMENT_ITEM_ID,
   LINK_ITEM_ID,
   LIST_ITEM_ID,
   menuItemId,
@@ -157,7 +156,7 @@ async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): P
     await presentView(ASK_VIEW, target, deps);
     return;
   }
-  if (info.menuItemId === LINK_ITEM_ID || info.menuItemId === ELEMENT_ITEM_ID) {
+  if (info.menuItemId === LINK_ITEM_ID) {
     await checkLink({ target, linkUrl: info.linkUrl, pageUrl: info.pageUrl }, linkDeps);
     return;
   }
@@ -277,10 +276,6 @@ if (__E2E__) {
       async simulateLinkClick(tab: string | number, linkUrl: string) {
         const found = await tabFor(tab);
         await onMenuClick({ menuItemId: LINK_ITEM_ID, linkUrl, pageUrl: found.url ?? '' }, found);
-      },
-      async simulateElementClick(tab: string | number) {
-        const found = await tabFor(tab);
-        await onMenuClick({ menuItemId: ELEMENT_ITEM_ID, pageUrl: found.url ?? '' }, found);
       },
       async simulateAskClick(tab: string | number) {
         await onMenuClick({ menuItemId: ASK_ITEM_ID }, await tabFor(tab));

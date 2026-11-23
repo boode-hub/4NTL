@@ -69,6 +69,8 @@ function link(url: string | undefined, label: string): HTMLAnchorElement | null 
 }
 
 export interface HeaderActions {
+  /** Back to the typing box to look up something else (where the card can resolve typed text). */
+  readonly another?: (() => void) | undefined;
   readonly save: (event: MouseEvent) => void;
   /** Opens the copy menu. */
   readonly copy: (event: MouseEvent) => void;
@@ -85,6 +87,7 @@ export function renderIndicatorHeader(indicator: Indicator, actions: HeaderActio
     sharinganEye(),
     h('span', { class: 'ioc', attrs: { title: indicator.value } }, indicator.value),
     h('span', { class: 'type' }, INDICATOR_LABELS[indicator.type]),
+    actions.another && iconButton('Look up another', ICONS.search, actions.another),
     iconButton('Save to list', ICONS.save, actions.save),
     copy,
     iconButton('Close', ICONS.close, actions.close),
@@ -308,7 +311,10 @@ export function renderLocked(text: string, actions: LockedActions): HTMLElement 
 }
 
 /** "Type an IP or domain…": a box to type (or paste) an indicator into. */
-export function renderAsk(onSubmit: (text: string) => void): {
+export function renderAsk(
+  onSubmit: (text: string) => void,
+  value = '',
+): {
   readonly form: HTMLFormElement;
   readonly input: HTMLInputElement;
 } {
@@ -322,6 +328,7 @@ export function renderAsk(onSubmit: (text: string) => void): {
       spellcheck: 'false',
     },
   });
+  input.value = value;
   const submit = h('button', { class: 'btn primary', attrs: { type: 'submit' } }, 'Look up');
   const form = h(
     'form',

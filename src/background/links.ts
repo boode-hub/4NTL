@@ -1,6 +1,5 @@
 /**
- * "4NTL ▸ Check this link / Check what’s here": works out where a right-clicked
- * link, button or card leads, in order of reliability:
+ * "4NTL ▸ Check this link": works out where a right-clicked link leads, in order of reliability:
  *   1. the browser's own link address, when it's a real one;
  *   2. what the page says (handlers, data attributes, forms…), via the content script;
  *   3. catching the navigation when the user clicks it (JavaScript-only buttons).

@@ -35,8 +35,8 @@ export type CardView =
       readonly banner?: string;
     }
   | { readonly kind: 'notice'; readonly title: string; readonly text: string }
-  /** "Type an IP or domain…": a box to type what to look up. */
-  | { readonly kind: 'ask' }
+  /** "Type an IP or domain…": a box to type what to look up (`value`: start with this, selected). */
+  | { readonly kind: 'ask'; readonly value?: string }
   /** Store edition after the free days: the unlock offer instead of results. */
   | { readonly kind: 'locked'; readonly text: string };
 

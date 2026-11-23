@@ -73,12 +73,12 @@ Phase 2: replace the ★ line with:
 
 **Graphic assets** (this folder):
 
-| Field                                   | File                                                                                                  |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Store icon (128×128)                    | `../../public/icons/icon-128.png`                                                                     |
-| Screenshots (1280×800, at most 5)       | `screenshot-1.png`, `-6`, `-7`, `-2`, `-3` in that order; spares: `-4` (copy menu), `-5` (saved list) |
-| Small promo tile (440×280)              | `promo-small.png`                                                                                     |
-| Marquee promo tile (1400×560, optional) | `promo-marquee.png`                                                                                   |
+| Field                                   | File                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| Store icon (128×128)                    | `../../public/icons/icon-128.png`                                                  |
+| Screenshots (1280×800, at most 5)       | `screenshot-1.png`, `-6`, `-7`, `-2`, `-4` in that order; spare: `-5` (saved list) |
+| Small promo tile (440×280)              | `promo-small.png`                                                                  |
+| Marquee promo tile (1400×560, optional) | `promo-marquee.png`                                                                |
 
 **Additional fields:**
 

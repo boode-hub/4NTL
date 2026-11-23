@@ -1,7 +1,6 @@
 /**
  * Right-click menu: a single "4NTL" entry. Inside it: on a selection, "Look up “…”"
- * plus one entry per provider; on a link, "Check this link"; anywhere else
- * (buttons, cards, images, text fields), "Check what’s here". Everywhere, last:
+ * plus one entry per provider; on a link, "Check this link". Everywhere, last:
  * "Type an IP or domain…". On the toolbar icon, "Saved list".
  */
 import { isProviderId } from '../core/provider-ids';
@@ -11,7 +10,6 @@ import type { ProviderScope } from './view';
 const ROOT_ID = '4ntl';
 const ITEM_PREFIX = '4ntl:lookup:';
 export const LINK_ITEM_ID = '4ntl:link';
-export const ELEMENT_ITEM_ID = '4ntl:element';
 export const ASK_ITEM_ID = '4ntl:ask';
 export const LIST_ITEM_ID = '4ntl:saved-list';
 
@@ -77,21 +75,16 @@ export async function registerMenus(): Promise<void> {
     title: 'Check this link',
     contexts: ['link'],
   });
-  await create({
-    id: ELEMENT_ITEM_ID,
-    parentId: ROOT_ID,
-    title: 'Check what’s here',
-    contexts: ELEMENT_CONTEXTS,
-  });
   const everywhere: [
     `${chrome.contextMenus.ContextType}`,
     ...`${chrome.contextMenus.ContextType}`[],
   ] = ['selection', 'link', ...ELEMENT_CONTEXTS];
+  // Only where entries come before it (on the page itself it's the only entry).
   await create({
     id: `${ROOT_ID}:separator-ask`,
     parentId: ROOT_ID,
     type: 'separator',
-    contexts: everywhere,
+    contexts: ['selection', 'link'],
   });
   await create({
     id: ASK_ITEM_ID,

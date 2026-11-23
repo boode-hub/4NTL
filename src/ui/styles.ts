@@ -100,23 +100,26 @@ export const CARD_CSS = /* css */ `
   --subtle: color-mix(in srgb, #f1f5f9 8%, var(--bg));
 }
 
-/* The 4NTL eye: shown only in the Sharingan theme; it spins while anything is loading. */
+/* The 4NTL eye: shown only in the Sharingan theme. It turns once anticlockwise as the card
+   appears, and keeps turning (same way) while anything is loading. */
 .eye { display: none; flex: none; width: 20px; height: 20px; }
 .card[data-theme='sharingan'] .eye { display: block; }
 .eye .iris { fill: var(--accent); stroke: #000; stroke-width: 1; }
 .eye .band { fill: none; stroke: #0a0506; stroke-width: 2.3; }
 .eye .pupil, .eye .blade { fill: #0a0506; }
+.eye svg { animation: spin 0.8s cubic-bezier(.2, .7, .3, 1); }
 .card:has([aria-busy='true']) .eye svg { animation: spin 0.9s linear infinite; }
 
 @keyframes enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(-360deg); } }
 
 .header {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 8px 8px 12px;
   border-bottom: 1px solid var(--border);
 }
+.header .icon-btn + .icon-btn { margin-left: -4px; } /* buttons sit closer, so the indicator keeps its room */
 .card:not(.inline) .header { cursor: grab; touch-action: none; }
 .card.dragging, .card.dragging .header { cursor: grabbing; user-select: none; }
 .title { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -135,7 +138,7 @@ export const CARD_CSS = /* css */ `
 }
 .icon-btn {
   flex: none; display: inline-grid; place-items: center;
-  width: 26px; height: 26px; padding: 0;
+  width: 24px; height: 24px; padding: 0;
   border: 0; border-radius: 6px; background: transparent; color: var(--muted);
   cursor: pointer;
 }
@@ -260,6 +263,6 @@ export const CARD_CSS = /* css */ `
 .ask-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
-  .card, .skeleton span, .card:has([aria-busy='true']) .eye svg { animation: none; }
+  .card, .skeleton span, .eye svg, .card:has([aria-busy='true']) .eye svg { animation: none; }
 }
 `;

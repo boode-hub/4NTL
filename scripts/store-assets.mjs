@@ -42,9 +42,8 @@ const MENU = `<div class="cm" style="left:150px;top:330px">
     <div class="it on"><img src="data:image/png;base64,${icon}" alt="">4NTL<span class="ar">▸</span></div><div class="sp"></div>
     <div class="it">Save as…</div><div class="it">Print…</div><div class="sp"></div><div class="it">Inspect</div></div>
   <div class="cm" style="left:392px;top:430px">
-    <div class="it">Check what’s here</div><div class="sp"></div>
     <div class="it on">Type an IP or domain…</div></div>
-  <svg class="cursor" style="left:560px;top:494px" viewBox="0 0 22 22"><path d="M3 2l0 16 4.2-3.9 2.7 6.1 2.6-1.1-2.7-6 5.7-.3z" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
+  <svg class="cursor" style="left:560px;top:450px" viewBox="0 0 22 22"><path d="M3 2l0 16 4.2-3.9 2.7 6.1 2.6-1.1-2.7-6 5.7-.3z" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
 
 const page = (
   caption,
@@ -108,11 +107,6 @@ const scenes = [
   [
     'screenshot-2.png',
     'Click the 4NTL icon, type or paste any IP, domain or hash, press Enter',
-    true,
-  ],
-  [
-    'screenshot-3.png',
-    'Buttons with no link: click once, 4NTL catches where it goes and blocks it',
     true,
   ],
   [
@@ -213,13 +207,6 @@ for (const [file, , dark] of scenes) {
     bodies.set(url, page(caption, true, pngData(await popup.screenshot())));
     await popup.close();
     await tab.goto(url);
-  } else if (file === 'screenshot-3.png') {
-    await tab.locator('#cta').hover();
-    await rightClickOn('#cta');
-    await hook('simulateElementClick', url);
-    await card.locator('.title').waitFor();
-    await tab.locator('#cta').click();
-    await card.locator('[data-provider="virustotal"][data-verdict]').waitFor();
   } else if (file === 'screenshot-6.png') {
     // The card opens where the right-click was; the drawn menu sits to its left.
     await tab.mouse.click(700, 260, { button: 'right' });

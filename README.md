@@ -29,21 +29,20 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
 
 - **One menu entry: 4NTL.** Right-click → **4NTL** → **Look up “…”** (all
   providers) or one provider. Or select and press **Alt+Shift+L**.
-- **Any link, button or card.** Right-click → **4NTL** → **Check this link**, or on
-  a button, card, image or table cell → **Check what’s here**. 4NTL finds the
-  destination even when the page hides it in JavaScript or under a transparent
-  layer, or looks inside the card for its link. No link at all? It looks up the
-  IP, domain or hash written there. If a button only gets an address when
-  clicked, click it once: 4NTL catches where it was going and **stops it from
-  opening**.
+- **Any link.** Right-click → **4NTL** → **Check this link**. 4NTL finds the
+  destination even when the page hides it in JavaScript, and unwraps Safe Links
+  and similar wrappers.
+- **Type it in.** Right-click anywhere → **4NTL** → **Type an IP or domain…**, or
+  click the toolbar icon. After a result, the magnifier on the card takes you
+  back to the box to look up another without closing anything.
 - **Works in web apps that fight you.** Console with its own right-click menu, or
   text you can't select? Point at the IP and press **Alt+Shift+L**. Data shown in a
   frame from another site? Turn on **Work inside embedded frames** in the settings.
 - **Unwraps protected links.** Outlook Safe Links, Proofpoint URL Defense, Barracuda,
   Google, Facebook, YouTube, Slack and LinkedIn redirects are looked up as the real
   destination.
-- **Toolbar and address bar.** Click the 4NTL icon to check the page you're on, or
-  type `4ntl` + space in the address bar followed by any link or indicator.
+- **Address bar.** Type `4ntl` + space in the address bar, then any link or
+  indicator.
 - **Reads analyst text.** Defanged IOCs (`1.2.3[.]4`, `hxxps://evil[.]com`,
   `evil [dot] com`, `evil[.com`) look up as they are, with no refanging by
   hand. So do `ip:port`, `[IPv6]:port`, `src=1.2.3.4` log fields, quotes and
@@ -117,7 +116,6 @@ Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups
 | An IP, hash, domain or URL     | Select it → right-click → **4NTL** → **Look up “…”** (or one provider) |
 | The same, faster               | Select it, or just point at it, → **Alt+Shift+L**                      |
 | A link                         | Right-click it → **4NTL** → **Check this link**                        |
-| A button, card, image or cell  | Right-click it → **4NTL** → **Check what’s here** (click it if asked)  |
 | Anything you type or paste     | Click the **4NTL** toolbar icon, type it, press **Enter**              |
 | Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**           |
 | Something you'll type in       | Right-click anywhere → **4NTL** → **Type an IP or domain…**            |

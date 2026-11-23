@@ -4,6 +4,24 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] - 2026-11-24
+
+### Added
+
+- **Look up another**: a magnifier on the result card takes you back to the
+  typing box, with the last value already there and selected, so you can check
+  the next indicator without closing and reopening the card or the popup.
+- **The eye turns as the card appears**: in the Sharingan theme, the 4NTL eye in
+  the card header makes one anticlockwise turn when the card opens, and keeps
+  turning anticlockwise while results load (it used to turn clockwise, and only
+  while loading). Off when the system asks for reduced motion.
+
+### Removed
+
+- **Check what’s here** (right-click a button, card, image or cell): it was
+  unreliable on real pages. Right-click a link → **Check this link**, select the
+  text → **Look up**, or **Type an IP or domain…** instead.
+
 ## [0.12.0] - 2026-11-22
 
 ### Added

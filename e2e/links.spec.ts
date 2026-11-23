@@ -28,7 +28,6 @@ const URL_ROUTES: FakeRoute[] = [
 
 type Hook =
   | 'simulateShortcut'
-  | 'simulateElementClick'
   | 'simulateAskClick'
   | 'simulateLinkClick'
   | 'simulateOmnibox'
@@ -58,40 +57,6 @@ test.describe('links that are not plain links', () => {
     await page.goto(APP_URL);
   });
 
-  test('a card or button with a data-href', async ({ page, worker }) => {
-    await page.locator('#card').hover();
-    await hook(worker, 'simulateElementClick', APP_URL);
-    await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/card');
-    await expect(card(page).locator('[data-provider="virustotal"] .pill')).toHaveText('Suspicious');
-  });
-
-  test('a link hidden under a transparent overlay ("the whole tile is clickable")', async ({
-    page,
-    worker,
-  }) => {
-    // Load 4NTL into the page first, so it sees the right-click itself.
-    await hook(worker, 'simulateMenuClick', APP_URL, '8.8.8.8', 'virustotal');
-    await page.keyboard.press('Escape');
-    const link = await page.locator('#tile-link').boundingBox();
-    if (!link) throw new Error('no tile link');
-    await page.mouse.click(link.x + 5, link.y + link.height / 2, { button: 'right' });
-    await hook(worker, 'simulateElementClick', APP_URL);
-    await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/tile');
-  });
-
-  test('a link inside the box that was right-clicked', async ({ page, worker }) => {
-    await page.locator('#post-body').hover();
-    await hook(worker, 'simulateElementClick', APP_URL);
-    await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/post');
-  });
-
-  test('no link at all: the IP written in a table cell', async ({ page, worker }) => {
-    await page.locator('#cell').hover();
-    await hook(worker, 'simulateElementClick', APP_URL);
-    await expect(card(page).locator('.ioc')).toHaveText('185.220.101.4');
-    await expect(card(page).locator('[data-provider="abuseipdb"][data-verdict]')).toBeVisible();
-  });
-
   test('the shortcut looks up what the pointer is over when nothing is selected', async ({
     page,
     worker,
@@ -111,40 +76,6 @@ test.describe('links that are not plain links', () => {
     await page.locator('#wrapped').hover();
     await hook(worker, 'simulateLinkClick', APP_URL, SAFE_LINK);
     await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/login');
-  });
-
-  test('a JavaScript-only button: catches the click and stops the navigation', async ({
-    page,
-    worker,
-    api,
-  }) => {
-    await page.locator('#js-nav').hover();
-    await hook(worker, 'simulateElementClick', APP_URL);
-    await expect(card(page).locator('.title')).toHaveText('Click it to check where it goes');
-
-    await page.locator('#js-nav').click();
-    await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/next-step');
-    await expect(card(page).locator('[data-provider="virustotal"] .pill')).toHaveText('Suspicious');
-    // The page never went there.
-    expect(page.url()).toBe(APP_URL);
-    expect((await api.calls()).map((call) => call.url)).toEqual([
-      `https://www.virustotal.com/api/v3/urls/${Buffer.from('https://evil.com/next-step').toString('base64url')}`,
-    ]);
-  });
-
-  test('a window.open button: caught without opening a window', async ({
-    page,
-    context,
-    worker,
-  }) => {
-    await page.locator('#js-open').hover();
-    await hook(worker, 'simulateElementClick', APP_URL);
-    await expect(card(page).locator('.title')).toHaveText('Click it to check where it goes');
-
-    const pagesBefore = context.pages().length;
-    await page.locator('#js-open').click();
-    await expect(card(page).locator('.ioc')).toHaveText('https://evil.com/popup');
-    expect(context.pages()).toHaveLength(pagesBefore);
   });
 });
 
@@ -292,4 +223,11 @@ test('"Type an IP or domain…": type it in the card, see the verdicts there', a
   await expect(card(page).locator('.ioc')).toHaveText('185.220.101.4');
   await expect(card(page).locator('[data-provider="abuseipdb"][data-verdict]')).toBeVisible();
   await expect(card(page).locator('[data-provider="virustotal"] .logo')).toBeVisible();
+
+  // Another value without closing and reopening: the last one is there, selected.
+  await card(page).getByRole('button', { name: 'Look up another' }).click();
+  await expect(input).toHaveValue('185.220.101.4');
+  await page.keyboard.type('8.8.8.8');
+  await page.keyboard.press('Enter');
+  await expect(card(page).locator('.ioc')).toHaveText('8.8.8.8');
 });

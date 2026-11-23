@@ -297,6 +297,11 @@ export class ResultCard {
         );
         this.#card.replaceChildren(
           renderIndicatorHeader(indicator, {
+            another: this.#options.client.resolve
+              ? () => {
+                  this.show({ kind: 'ask', value: indicator.value });
+                }
+              : undefined,
             save: (event) => void this.#save(indicator, results, event),
             copy: (event) => {
               const button = event.currentTarget as HTMLElement;
@@ -358,13 +363,13 @@ export class ResultCard {
         this.#card.replaceChildren(renderTitleHeader(view.title, close), renderNotice(view.text));
         break;
       case 'ask':
-        this.#showAsk(viewId, close);
+        this.#showAsk(viewId, close, view.value);
         return;
     }
     this.#place();
   }
 
-  #showAsk(viewId: number, close: () => void): void {
+  #showAsk(viewId: number, close: () => void, value?: string): void {
     const { form, input } = renderAsk((text) => {
       const { client } = this.#options;
       if (!client.resolve) return;
@@ -380,7 +385,7 @@ export class ResultCard {
           this.#note(form, NOT_ANSWERING);
         },
       );
-    });
+    }, value);
     // Keys typed here are ours: page shortcuts (s, /, j, k…) must not fire while typing.
     for (const type of ['keydown', 'keyup', 'keypress']) {
       input.addEventListener(type, (event) => {
@@ -391,6 +396,8 @@ export class ResultCard {
     this.#card.replaceChildren(renderTitleHeader('Look up', close), form);
     this.#place();
     input.focus({ preventScroll: true });
+    // Coming back from a result: the last value is there, selected, so typing replaces it.
+    input.select();
   }
 
   #note(form: HTMLElement, text: string): void {

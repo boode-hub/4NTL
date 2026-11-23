@@ -306,6 +306,19 @@ describe('ResultCard – other views', () => {
     expect($('.note')?.textContent).toContain('Reload on 4NTL');
   });
 
+  it('"Look up another" goes back to the box with the last value selected, then looks up the new one', async () => {
+    const { card, client: c, $ } = mount();
+    card.show(LOOKUP_VIEW);
+    $('[aria-label="Look up another"]')?.click();
+    const input = $('.ask-input') as HTMLInputElement;
+    expect(input.value).toBe(IP.value);
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, IP.value.length]);
+    input.value = '8.8.8.8';
+    $('.ask')?.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect(c.resolve).toHaveBeenCalledWith('8.8.8.8');
+  });
+
   it('typing box: keys stay in the card (no page shortcuts), Escape closes', () => {
     const { card, $ } = mount();
     card.show({ kind: 'ask' });
