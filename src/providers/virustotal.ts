@@ -49,6 +49,9 @@ function apiPath(indicator: Indicator): string {
       return `/files/${value}`;
     case 'url':
       return `/urls/${urlId(value)}`;
+    case 'process':
+      // Never asked (not in SUPPORTED); here only so every type is handled.
+      throw new LookupError('unsupported', `${NAME} doesn't look up process names.`);
   }
 }
 
@@ -64,6 +67,7 @@ function reportUrl(indicator: Indicator, objectId?: string): string {
     case 'sha1':
     case 'sha256':
       return `${GUI}/file/${value}`;
+    case 'process':
     case 'url':
       // URL reports are keyed by a SHA-256 id that only the API response tells us.
       return objectId ? `${GUI}/url/${objectId}` : `${GUI}/search/${encodeURIComponent(value)}`;
@@ -141,6 +145,8 @@ function typeFacts(indicator: Indicator, attrs: Record<string, unknown>, nowMs: 
         ['Last analysis', when(attrs.last_analysis_date, nowMs)],
       );
     }
+    case 'process':
+      return [];
   }
 }
 

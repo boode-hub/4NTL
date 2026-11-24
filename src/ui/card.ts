@@ -4,7 +4,13 @@
  * timer when closed. Used floating in web pages and inline in the fallback window.
  */
 import type { Indicator } from '../core/indicator';
-import type { CardRect, CardView, ProviderInfo } from '../core/messages';
+import {
+  isWideView,
+  WIDE_CARD_PX,
+  type CardRect,
+  type CardView,
+  type ProviderInfo,
+} from '../core/messages';
 import type { ProviderId } from '../core/provider-ids';
 import {
   countryOf,
@@ -156,6 +162,8 @@ export class ResultCard {
   readonly #host: HTMLElement;
   readonly #card: HTMLElement;
   readonly #cleanup: (() => void)[] = [];
+  /** The width the user resized cards to (px), or 0 for the default. */
+  readonly #width: number;
   /** Pending short timers (copy feedback), cleared on close. */
   readonly #timers = new Set<ReturnType<typeof setTimeout>>();
   /** Bumped on every show(); responses for an older view are dropped. */
@@ -171,6 +179,7 @@ export class ResultCard {
 
   constructor(options: CardOptions) {
     this.#options = options;
+    this.#width = options.appearance?.width ?? 0;
     const { placement } = options;
     const fill = placement.mode === 'inline' && placement.fill !== false;
     const { theme, accent, background, width } = options.appearance ?? DEFAULT_SETTINGS.appearance;
@@ -290,6 +299,7 @@ export class ResultCard {
     this.#menu = undefined;
     this.#resave = undefined;
     this.#results = new Map();
+    this.#setWide(isWideView(view));
     const banner =
       'banner' in view && view.banner
         ? [
@@ -415,6 +425,14 @@ export class ResultCard {
   #note(form: HTMLElement, text: string): void {
     this.#card.querySelector('.note')?.remove();
     form.after(h('p', { class: 'note', attrs: { role: 'status' } }, text));
+  }
+
+  /** Wider for EchoTrail's ancestry lists; every other card keeps its usual width. */
+  #setWide(wide: boolean): void {
+    this.#card.classList.toggle('wide', wide);
+    if (this.#options.placement.mode !== 'floating') return;
+    const width = wide ? Math.max(this.#width, WIDE_CARD_PX) : this.#width;
+    this.#card.style.width = width ? `${width}px` : '';
   }
 
   close(): void {

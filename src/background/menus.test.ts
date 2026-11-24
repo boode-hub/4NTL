@@ -58,6 +58,16 @@ describe('registerMenus', () => {
     expect(created.at(-1)?.contexts).toEqual(['action']);
   });
 
+  it('"EchoTrail only" appears only while EchoTrail is on', async () => {
+    const off = stubChrome();
+    await registerMenus();
+    expect(off.map((item) => item.title)).not.toContain('EchoTrail only');
+    const on = stubChrome();
+    await registerMenus({ echotrail: true });
+    const entry = on.find((item) => item.title === 'EchoTrail only');
+    expect(entry).toMatchObject({ id: '4ntl:lookup:echotrail', contexts: ['selection'] });
+  });
+
   it('surfaces creation errors', async () => {
     stubChrome({ message: 'duplicate id' });
     await expect(registerMenus()).rejects.toThrow('duplicate id');

@@ -128,8 +128,8 @@ function frameOf(tab: chrome.tabs.Tab | undefined, frameId = 0): FrameTarget | u
 chrome.runtime.onInstalled.addListener((details) => {
   void (async () => {
     await installDate.remember();
-    await registerMenus();
     const settings = await loadSettings();
+    await registerMenus({ echotrail: settings.echotrail });
     await refreshBadge(settings);
     if (details.reason === 'install' && !hasAnyApiKey(settings)) {
       await openOptions();
@@ -161,8 +161,13 @@ async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): P
     return;
   }
   const scope = scopeFromMenuItem(info.menuItemId);
-  if (scope)
-    await handleLookupRequest({ target, selection: info.selectionText ?? '', scope }, deps);
+  if (scope) {
+    const { echotrail } = await loadSettings();
+    await handleLookupRequest(
+      { target, selection: info.selectionText ?? '', scope, processes: echotrail },
+      deps,
+    );
+  }
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -184,7 +189,11 @@ async function lookupFromShortcut(tabId: number, scope: ProviderScope): Promise<
     await presentInPage(selection, NO_INDICATOR_NOTICE);
     return;
   }
-  await handleLookupRequest({ target: selection, selection: selection.text, scope }, deps);
+  const { echotrail } = await loadSettings();
+  await handleLookupRequest(
+    { target: selection, selection: selection.text, scope, processes: echotrail },
+    deps,
+  );
 }
 
 chrome.commands.onCommand.addListener((command, tab) => {
@@ -212,7 +221,8 @@ function describeOmnibox(text: string): string {
 /** Address bar: "4ntl <anything>" → card in the current tab (or a small window). */
 async function lookupFromOmnibox(text: string): Promise<CardView> {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  const view = buildView(text, 'all');
+  const { echotrail } = await loadSettings();
+  const view = buildView(text, 'all', { processes: echotrail });
   await presentView(view, frameOf(tab), deps, true);
   return view;
 }
@@ -229,8 +239,14 @@ chrome.runtime.onMessage.addListener(
   createMessageRouter({
     extensionId: chrome.runtime.id,
     service,
-    resolve: async (text) =>
-      applyAccess(buildView(text, 'all'), await license.access(false), now()),
+    resolve: async (text) => {
+      const { echotrail } = await loadSettings();
+      return applyAccess(
+        buildView(text, 'all', { processes: echotrail }),
+        await license.access(false),
+        now(),
+      );
+    },
     openOptions,
     openList,
     saveCardWidth: async (width) => {
@@ -249,8 +265,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
   const change = changes[SETTINGS_KEY];
   if (area !== 'local' || !change) return;
   const after = normalizeSettings(change.newValue);
+  const before = normalizeSettings(change.oldValue);
+  // EchoTrail switched on or off: its "EchoTrail only" menu entry comes or goes.
+  if (before.echotrail !== after.echotrail) {
+    void registerMenus({ echotrail: after.echotrail }).catch(report);
+  }
   // New keys or report window: cached results are stale. (A theme change isn't.)
-  if (affectsResults(normalizeSettings(change.oldValue), after)) void cache.clear().catch(report);
+  if (affectsResults(before, after)) void cache.clear().catch(report);
   void refreshBadge(after).catch(report);
 });
 

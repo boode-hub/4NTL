@@ -1,6 +1,6 @@
 # 4NTL privacy policy
 
-_Last updated: 31 October 2026_
+_Last updated: 24 November 2026_
 
 4NTL is a browser extension that looks up IP addresses, domains, URLs and file
 hashes on VirusTotal and AbuseIPDB when you ask it to. This policy explains
@@ -14,7 +14,11 @@ icon or address-bar keyword), the indicator you selected or the link you
 right-clicked is sent to:
 
 - **VirusTotal** (`www.virustotal.com`, operated by Google), and/or
-- **AbuseIPDB** (`api.abuseipdb.com`),
+- **AbuseIPDB** (`api.abuseipdb.com`), and/or
+- **EchoTrail** (`api.echotrail.io`), only if you switched on "Look up Windows
+  processes on EchoTrail" in the settings and allowed it: the Windows process
+  or service name you look up (for example `svchost.exe`), never a path's
+  folders or anything else,
 
 depending on the provider you picked, together with **your own API key** for
 that service. The request goes directly from your browser to that service.
@@ -30,8 +34,9 @@ Nothing passes through any server of ours; 4NTL has no server.
   anything to VirusTotal.
 
 Those services handle the requests under their own privacy policies:
-[VirusTotal](https://support.virustotal.com/hc/en-us/articles/115002168385-Privacy-Policy)
-and [AbuseIPDB](https://www.abuseipdb.com/privacy-policy).
+[VirusTotal](https://support.virustotal.com/hc/en-us/articles/115002168385-Privacy-Policy),
+[AbuseIPDB](https://www.abuseipdb.com/privacy-policy) and
+[EchoTrail](https://echotrail.io/privacy/).
 
 ## Paying for the store edition (Chrome Web Store / Firefox Add-ons only)
 

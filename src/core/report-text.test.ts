@@ -68,3 +68,32 @@ describe('report text', () => {
     expect(countryOf([])).toBe('');
   });
 });
+
+describe('EchoTrail in the copied details', () => {
+  it('uses its own badge word and lists the ancestry', () => {
+    const text = formatReportText(
+      { type: 'process', value: 'putty.exe' },
+      [
+        {
+          name: 'EchoTrail',
+          outcome: report({
+            verdict: 'unknown',
+            pill: 'Known',
+            headline: '82%',
+            caption: 'of runs started by explorer.exe',
+            tags: [],
+            facts: [],
+            lists: [{ label: 'Top parents', items: [{ name: 'explorer.exe', detail: '82%' }] }],
+            note: 'Top grandparents come with a Team key.',
+            reportUrl: 'https://echotrail.io/insights/putty.exe/',
+          }),
+        },
+      ],
+      0,
+    );
+    expect(text).toContain('putty.exe (Process)');
+    expect(text).toContain('EchoTrail: Known, 82% of runs started by explorer.exe');
+    expect(text).toContain('  Top parents: explorer.exe 82%');
+    expect(text).toContain('  Top grandparents come with a Team key.');
+  });
+});

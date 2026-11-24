@@ -22,7 +22,7 @@ describe('normalizeSettings', () => {
     expect(
       normalizeSettings({ apiKeys: { virustotal: '  abc \n', abuseipdb: 42, shodan: 'x' } })
         .apiKeys,
-    ).toEqual({ virustotal: 'abc', abuseipdb: '' });
+    ).toEqual({ virustotal: 'abc', abuseipdb: '', echotrail: '' });
   });
 
   it('clamps, rounds and parses numeric options', () => {
@@ -41,6 +41,16 @@ describe('normalizeSettings', () => {
       cacheTtlMinutes: DEFAULT_SETTINGS.cacheTtlMinutes,
     });
     expect(normalizeSettings({ cacheTtlMinutes: 0 }).cacheTtlMinutes).toBe(0);
+  });
+});
+
+describe('EchoTrail switch', () => {
+  it('is off unless explicitly turned on', () => {
+    expect(DEFAULT_SETTINGS.echotrail).toBe(false);
+    for (const raw of [undefined, 'yes', 1, {}]) {
+      expect(normalizeSettings({ echotrail: raw }).echotrail).toBe(false);
+    }
+    expect(normalizeSettings({ echotrail: true }).echotrail).toBe(true);
   });
 });
 

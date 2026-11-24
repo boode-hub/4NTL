@@ -191,7 +191,10 @@ interface Fixtures {
     calls: () => Promise<RecordedCall[]>;
   };
   settings: (value: object) => Promise<void>;
-  menuClick: (selection: string, scope: 'all' | 'virustotal' | 'abuseipdb') => Promise<void>;
+  menuClick: (
+    selection: string,
+    scope: 'all' | 'virustotal' | 'abuseipdb' | 'echotrail',
+  ) => Promise<void>;
 }
 
 export const test = base.extend<Fixtures & Options>({

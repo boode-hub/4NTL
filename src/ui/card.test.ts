@@ -709,6 +709,49 @@ describe('ResultCard – appearance', () => {
     vi.useRealTimers();
   });
 
+  it('is wider only while it shows EchoTrail, and shows its ancestry lists', async () => {
+    const echo = { id: 'echotrail', name: 'EchoTrail' } as const;
+    const c = client(() =>
+      Promise.resolve({
+        ok: true,
+        fetchedAt: NOW,
+        cached: false,
+        report: {
+          verdict: 'unknown',
+          pill: 'Known',
+          headline: '82%',
+          caption: 'of runs started by explorer.exe',
+          tags: [],
+          facts: [],
+          lists: [{ label: 'Top parents', items: [{ name: 'explorer.exe', detail: '82%' }] }],
+          note: 'Team key note',
+          reportUrl: 'https://echotrail.io/insights/putty.exe/',
+        },
+      }),
+    );
+    const { card, $ } = mount(c);
+    card.show(LOOKUP_VIEW);
+    expect($('.card')?.classList.contains('wide')).toBe(false);
+    expect($('.card')?.style.width).toBe('');
+
+    card.show({
+      kind: 'lookup',
+      indicator: { type: 'process', value: 'putty.exe' },
+      providers: [echo],
+    });
+    expect($('.card')?.classList.contains('wide')).toBe(true);
+    expect($('.card')?.style.width).toBe('460px');
+    await flush();
+    expect($('[data-provider="echotrail"] .pill')?.textContent).toBe('Known');
+    expect($('.list-label')?.textContent).toBe('Top parents');
+    expect($('.list-name')?.textContent).toBe('explorer.exe');
+    expect($('.report-note')?.textContent).toBe('Team key note');
+
+    card.show({ kind: 'ask' }); // back to normal for anything else
+    expect($('.card')?.classList.contains('wide')).toBe(false);
+    expect($('.card')?.style.width).toBe('');
+  });
+
   it('uses the automatic theme with its own accent by default', () => {
     const card = themed();
     expect(card?.dataset.theme).toBe('auto');

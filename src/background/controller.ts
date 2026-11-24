@@ -10,6 +10,8 @@ export interface LookupRequest {
   readonly target: FrameTarget | undefined;
   readonly selection: string;
   readonly scope: ProviderScope;
+  /** EchoTrail is on: Windows executable names count as process indicators. */
+  readonly processes?: boolean | undefined;
 }
 
 export interface ControllerDeps {
@@ -64,7 +66,7 @@ export async function handleLookupRequest(
   request: LookupRequest,
   deps: ControllerDeps,
 ): Promise<CardView> {
-  const view = buildView(request.selection, request.scope);
+  const view = buildView(request.selection, request.scope, { processes: request.processes });
   await presentView(view, request.target, deps);
   return view;
 }

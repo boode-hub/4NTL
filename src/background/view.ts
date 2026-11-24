@@ -1,5 +1,13 @@
 /** Pure translation from "what the user selected + which providers" to what the card shows. */
-import { INDICATOR_LABELS, MAX_CHOICES, resolveSelection, type Indicator } from '../core/indicator';
+import {
+  INDICATOR_LABELS,
+  MAX_CHOICES,
+  parseIndicator,
+  processFromText,
+  resolveSelection,
+  type Indicator,
+  type ParseOptions,
+} from '../core/indicator';
 import type { CardView, ProviderInfo } from '../core/messages';
 import type { ProviderId } from '../core/provider-ids';
 import { getProvider, providersFor, toInfo } from '../providers/registry';
@@ -65,8 +73,17 @@ export function viewForIndicators(
   };
 }
 
-export function buildView(selection: string, scope: ProviderScope): CardView {
-  const resolution = resolveSelection(selection);
+export function buildView(
+  selection: string,
+  scope: ProviderScope,
+  options: ParseOptions = {},
+): CardView {
+  // "EchoTrail only": the selection is a process or service name, whatever it looks like.
+  if (scope === 'echotrail') {
+    const indicator = parseIndicator(selection, { processes: true }) ?? processFromText(selection);
+    return indicator ? viewForIndicators([indicator], scope) : NO_INDICATOR_NOTICE;
+  }
+  const resolution = resolveSelection(selection, options);
   switch (resolution.kind) {
     case 'none':
       return NO_INDICATOR_NOTICE;

@@ -4,7 +4,7 @@
  * saved list.
  */
 import { INDICATOR_LABELS, type Indicator } from './indicator';
-import { VERDICT_LABELS, VERDICTS, type LookupOutcome, type Verdict } from './result';
+import { pillLabel, VERDICTS, type LookupOutcome, type Verdict } from './result';
 
 export interface ProviderResult {
   readonly name: string;
@@ -17,9 +17,14 @@ function providerLines({ name, outcome }: ProviderResult): string[] {
   if (!outcome.ok) return [`${name}: ${outcome.error.message}`];
   const { report } = outcome;
   return [
-    `${name}: ${VERDICT_LABELS[report.verdict]}, ${report.headline} ${report.caption}`,
+    `${name}: ${pillLabel(report)}, ${report.headline} ${report.caption}`,
     ...(report.tags.length > 0 ? [`  Tags: ${report.tags.join(', ')}`] : []),
     ...report.facts.map((fact) => `  ${fact.label}: ${fact.value}`),
+    ...(report.lists ?? []).map(
+      (list) =>
+        `  ${list.label}: ${list.items.map((item) => `${item.name} ${item.detail}`.trim()).join(', ')}`,
+    ),
+    ...(report.note ? [`  ${report.note}`] : []),
     `  ${report.reportUrl}`,
   ];
 }
@@ -46,9 +51,7 @@ export function worstVerdict(results: readonly ProviderResult[]): Verdict | unde
 export function summarize(results: readonly ProviderResult[]): string {
   return results
     .flatMap(({ name, outcome }) =>
-      outcome?.ok
-        ? [`${name}: ${VERDICT_LABELS[outcome.report.verdict]} ${outcome.report.headline}`]
-        : [],
+      outcome?.ok ? [`${name}: ${pillLabel(outcome.report)} ${outcome.report.headline}`] : [],
     )
     .join(' · ');
 }

@@ -119,6 +119,9 @@ export class LookupService {
         );
       }
       const settings = await loadSettings();
+      if (provider.id === 'echotrail' && !settings.echotrail) {
+        throw new LookupError('unsupported', 'EchoTrail is turned off in 4NTL’s settings.');
+      }
       const apiKey = settings.apiKeys[provider.id];
       if (!apiKey) {
         throw new LookupError('no_api_key', `Add your ${provider.name} API key to look this up.`);

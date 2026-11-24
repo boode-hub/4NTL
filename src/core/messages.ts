@@ -40,6 +40,13 @@ export type CardView =
   /** Store edition after the free days: the unlock offer instead of results. */
   | { readonly kind: 'locked'; readonly text: string };
 
+/** The card is wider for EchoTrail's ancestry lists, and only then. */
+export const WIDE_CARD_PX = 460;
+
+export function isWideView(view: CardView): boolean {
+  return view.kind === 'lookup' && view.providers.some((provider) => provider.id === 'echotrail');
+}
+
 export const VIEW_KINDS: readonly CardView['kind'][] = [
   'lookup',
   'choose',

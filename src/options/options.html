@@ -31,6 +31,25 @@
         <div id="providers"></div>
       </section>
 
+      <section class="panel" aria-labelledby="echotrail-title">
+        <h2 id="echotrail-title">Windows processes (EchoTrail)</h2>
+        <div class="field switch-field">
+          <label class="switch">
+            <input id="echotrail-on" type="checkbox" />
+            Look up Windows processes on EchoTrail
+          </label>
+          <small>
+            Select a process name such as <code>svchost.exe</code>, or a path to one, and 4NTL shows
+            how it normally behaves: who usually starts it, what it starts and where it lives, from
+            EchoTrail's 300 million+ real executions. For a service or any other name, right-click →
+            <b>4NTL</b> → <b>EchoTrail only</b>. The browser asks you to allow api.echotrail.io.
+            While this is off, 4NTL works exactly as before.
+          </small>
+          <small id="echotrail-status" class="status" role="status"></small>
+        </div>
+        <div id="echotrail-key" hidden></div>
+      </section>
+
       <section class="panel" aria-labelledby="look-title">
         <h2 id="look-title">Appearance</h2>
         <p class="hint">Applies to the result card and this page.</p>

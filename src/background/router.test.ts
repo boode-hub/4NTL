@@ -207,6 +207,22 @@ describe('message router', () => {
     expect(resolve).toHaveBeenCalledTimes(1);
   });
 
+  it('process names are re-checked as names before EchoTrail is asked', async () => {
+    const { route, lookup, sendResponse, fromUs } = setup();
+    route(lookupMessage('svchost.exe', 'process'), fromUs, sendResponse);
+    await flush();
+    expect(lookup).toHaveBeenCalledWith(
+      'virustotal',
+      { type: 'process', value: 'svchost.exe' },
+      { force: false },
+    );
+    route(lookupMessage('two words', 'process'), fromUs, sendResponse);
+    expect(sendResponse).toHaveBeenLastCalledWith({
+      ok: false,
+      error: { code: 'invalid_indicator', message: 'Not a valid indicator.' },
+    });
+  });
+
   it('ignores other extensions and malformed messages', () => {
     const { route, lookup, sendResponse } = setup();
     expect(route(lookupMessage('8.8.8.8'), { id: 'other' }, sendResponse)).toBe(false);

@@ -4,6 +4,32 @@ import { buildView, NO_INDICATOR_NOTICE, viewForIndicators } from './view';
 const VT = { id: 'virustotal', name: 'VirusTotal' };
 const ABUSE = { id: 'abuseipdb', name: 'AbuseIPDB' };
 
+const ECHO = { id: 'echotrail', name: 'EchoTrail' };
+
+describe('buildView with EchoTrail', () => {
+  it('a process goes to EchoTrail only, and only while it is on', () => {
+    expect(buildView('svchost.exe', 'all')).toBe(NO_INDICATOR_NOTICE);
+    expect(buildView('svchost.exe', 'all', { processes: true })).toEqual({
+      kind: 'lookup',
+      indicator: { type: 'process', value: 'svchost.exe' },
+      providers: [ECHO],
+    });
+    // Everything else still goes to the same providers as before.
+    expect(buildView('8.8.8.8', 'all', { processes: true })).toMatchObject({
+      providers: [ABUSE, VT],
+    });
+  });
+
+  it('"EchoTrail only" takes any one name, e.g. a service', () => {
+    expect(buildView('Spooler', 'echotrail')).toEqual({
+      kind: 'lookup',
+      indicator: { type: 'process', value: 'spooler' },
+      providers: [ECHO],
+    });
+    expect(buildView('two words', 'echotrail')).toBe(NO_INDICATOR_NOTICE);
+  });
+});
+
 describe('buildView', () => {
   it('shows every applicable provider for "all"', () => {
     expect(buildView('8.8.8.8', 'all')).toEqual({

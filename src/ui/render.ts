@@ -4,9 +4,9 @@ import { INDICATOR_LABELS, type Indicator } from '../core/indicator';
 import { FREE_EDITION_URL, PRICE, SUPPORT_URL } from '../core/license';
 import type { Choice, ProviderInfo } from '../core/messages';
 import {
+  pillLabel,
   RETRYABLE_ERRORS,
   SETTINGS_ERRORS,
-  VERDICT_LABELS,
   type LookupErrorCode,
   type LookupFailure,
   type LookupOutcome,
@@ -197,7 +197,7 @@ export function renderSection(
       class: `provider v-${report.verdict}`,
       attrs: { 'data-provider': provider.id, 'data-verdict': report.verdict },
     },
-    sectionHead(provider, VERDICT_LABELS[report.verdict]),
+    sectionHead(provider, pillLabel(report)),
     h(
       'div',
       { class: 'headline' },
@@ -213,6 +213,32 @@ export function renderSection(
         { class: 'facts' },
         ...report.facts.flatMap((fact) => [h('dt', {}, fact.label), h('dd', {}, fact.value)]),
       ),
+    report.lists &&
+      report.lists.length > 0 &&
+      h(
+        'div',
+        { class: 'lists' },
+        ...report.lists.map((list) =>
+          h(
+            'div',
+            { class: list.wide ? 'list wide' : 'list' },
+            h('div', { class: 'list-label' }, list.label),
+            h(
+              'ol',
+              {},
+              ...list.items.map((item) =>
+                h(
+                  'li',
+                  {},
+                  h('span', { class: 'list-name', attrs: { title: item.name } }, item.name),
+                  item.detail && h('span', { class: 'list-detail' }, item.detail),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    report.note && h('p', { class: 'report-note' }, report.note),
     h(
       'div',
       { class: 'foot' },

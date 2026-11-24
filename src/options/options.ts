@@ -144,11 +144,11 @@ function renderKeyField(
   return { element, field };
 }
 
-/** Sample results for the live preview: nothing is looked up. */
+/** Sample results for the live preview: nothing is looked up (EchoTrail doesn't check IPs). */
 const PREVIEW_VIEW: CardView = {
   kind: 'lookup',
   indicator: { type: 'ipv4', value: '185.220.101.4' },
-  providers: PROVIDER_LIST.map(toInfo),
+  providers: PROVIDER_LIST.filter((provider) => provider.supports.has('ipv4')).map(toInfo),
 };
 
 const PREVIEW_REPORTS: Record<ProviderId, Report> = {
@@ -172,6 +172,15 @@ const PREVIEW_REPORTS: Record<ProviderId, Report> = {
     tags: ['2 suspicious'],
     facts: [{ label: 'Owner', value: 'Zwiebelfreunde e.V. · AS208294' }],
     reportUrl: 'https://www.virustotal.com/gui/ip-address/185.220.101.4',
+  },
+  echotrail: {
+    verdict: 'unknown',
+    pill: 'Known',
+    headline: '82%',
+    caption: 'of runs started by explorer.exe',
+    tags: ['Productivity'],
+    facts: [{ label: 'Publisher', value: 'Simon Tatham' }],
+    reportUrl: 'https://echotrail.io/insights/putty.exe/',
   },
 };
 
@@ -300,10 +309,13 @@ async function main(): Promise<void> {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => void save(), SAVE_DELAY_MS);
   };
+  // EchoTrail's key lives in its own panel, shown only while EchoTrail is on.
+  const echotrailOn = inputById('echotrail-on');
+  const echotrailKey = byId('echotrail-key');
   for (const provider of PROVIDER_LIST) {
     const { element, field } = renderKeyField(provider, scheduleSave);
     fields[provider.id] = field;
-    byId('providers').append(element);
+    (provider.id === 'echotrail' ? echotrailKey : byId('providers')).append(element);
   }
 
   const showNumbers = (settings: Settings) => {
@@ -320,6 +332,7 @@ async function main(): Promise<void> {
         abuseIpdbMaxAgeDays: maxAge.value,
         cacheTtlMinutes: cacheTtl.value,
         appearance,
+        echotrail: echotrailOn.checked,
       }),
     );
     toast.textContent = 'Saved';
@@ -379,6 +392,44 @@ async function main(): Promise<void> {
   // Don't lose an edit made just before closing the tab.
   window.addEventListener('pagehide', () => {
     if (saveTimer !== undefined) void save();
+  });
+
+  // EchoTrail: off unless switched on; switching on asks the browser for api.echotrail.io.
+  const echotrailStatus = byId('echotrail-status');
+  const echotrailHost = { origins: ['https://api.echotrail.io/*'] };
+  const showEchotrail = (on: boolean) => {
+    echotrailOn.checked = on;
+    echotrailKey.hidden = !on;
+  };
+  showEchotrail(settings.echotrail);
+  if (settings.echotrail && !(await chrome.permissions.contains(echotrailHost))) {
+    setStatus(
+      echotrailStatus,
+      'The browser no longer allows api.echotrail.io: switch this off and on again to allow it.',
+      'warn',
+    );
+  }
+  echotrailOn.addEventListener('change', () => {
+    setStatus(echotrailStatus, '');
+    if (!echotrailOn.checked) {
+      // Off always works: save first; giving the permission back is best effort.
+      showEchotrail(false);
+      void save();
+      chrome.permissions.remove(echotrailHost).catch(() => undefined);
+      return;
+    }
+    void chrome.permissions
+      .request(echotrailHost)
+      .then((granted) => {
+        showEchotrail(granted);
+        if (!granted) setStatus(echotrailStatus, 'Not allowed, so EchoTrail stays off.', 'warn');
+        return save();
+      })
+      .catch((error: unknown) => {
+        showEchotrail(false);
+        setStatus(echotrailStatus, String(error), 'error');
+        return save();
+      });
   });
 
   // "Work inside embedded frames": the optional all-sites permission.

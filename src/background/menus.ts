@@ -39,8 +39,8 @@ const ELEMENT_CONTEXTS: [
   ...`${chrome.contextMenus.ContextType}`[],
 ] = ['page', 'image', 'frame', 'video', 'audio', 'editable'];
 
-/** Idempotent: safe to call on every install/update. */
-export async function registerMenus(): Promise<void> {
+/** Idempotent: safe to call on every install/update and whenever EchoTrail is switched. */
+export async function registerMenus(options: { echotrail?: boolean } = {}): Promise<void> {
   await chrome.contextMenus.removeAll();
   // One entry, "4NTL", wherever you right-click; what's inside depends on what you clicked.
   await create({
@@ -62,6 +62,7 @@ export async function registerMenus(): Promise<void> {
     contexts: selection,
   });
   for (const provider of PROVIDER_LIST) {
+    if (provider.id === 'echotrail' && !options.echotrail) continue;
     await create({
       id: menuItemId(provider.id),
       parentId: ROOT_ID,

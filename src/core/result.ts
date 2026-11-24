@@ -19,8 +19,18 @@ export interface Fact {
   readonly value: string;
 }
 
+/** A short ranked list, e.g. EchoTrail's top parents ("explorer.exe", "82%"). */
+export interface ReportList {
+  readonly label: string;
+  readonly items: readonly { readonly name: string; readonly detail: string }[];
+  /** Long values (paths, hashes): the list takes the card's full width. */
+  readonly wide?: boolean;
+}
+
 export interface Report {
   readonly verdict: Verdict;
+  /** The badge text, when the verdict's own word would mislead ("Known", "LOLBin"). */
+  readonly pill?: string;
   /** The one number that matters, e.g. "87" or "12 / 94". */
   readonly headline: string;
   /** What the headline means, e.g. "abuse confidence" or "vendors flagged it". */
@@ -31,8 +41,17 @@ export interface Report {
   readonly tags: readonly string[];
   /** A handful of already-formatted details. */
   readonly facts: readonly Fact[];
+  /** Ranked lists shown under the details (EchoTrail's process ancestry). */
+  readonly lists?: readonly ReportList[];
+  /** A quiet line under the details, e.g. what a bigger plan would add. */
+  readonly note?: string;
   /** Link to the provider's full report for this indicator. */
   readonly reportUrl: string;
+}
+
+/** The badge text for a report. */
+export function pillLabel(report: Report): string {
+  return report.pill ?? VERDICT_LABELS[report.verdict];
 }
 
 export const ERROR_CODES = [

@@ -48,14 +48,19 @@ describe('manifest', () => {
       { matches: ['https://extensionpay.com/*'], js: ['ExtPay.js'], run_at: 'document_start' },
     ]);
     expect(store.content_security_policy?.extension_pages).toContain(
-      'connect-src https://www.virustotal.com https://api.abuseipdb.com https://extensionpay.com;',
+      'connect-src https://www.virustotal.com https://api.abuseipdb.com https://extensionpay.com https://api.echotrail.io;',
     );
     expect(store.permissions).toEqual(manifest.permissions);
   });
 
   it('broad access is only ever optional (the "embedded frames" switch), never granted at install', () => {
-    expect(manifest.optional_host_permissions).toEqual(['<all_urls>']);
+    // EchoTrail too: asked for only when the user switches it on.
+    expect(manifest.optional_host_permissions).toEqual([
+      '<all_urls>',
+      'https://api.echotrail.io/*',
+    ]);
     expect(manifest.host_permissions).not.toContain('<all_urls>');
+    expect(manifest.host_permissions).not.toContain('https://api.echotrail.io/*');
   });
 
   it('only the test build gets broad host access', () => {

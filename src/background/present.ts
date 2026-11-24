@@ -6,6 +6,7 @@ import {
   CAPTURE_MS,
   CAPTURED_OPEN_EVENT,
   GESTURE_WINDOW_MS,
+  isWideView,
   type CardView,
   type ContentMessage,
   type InspectResponse,
@@ -20,6 +21,8 @@ export interface FrameTarget {
 
 const CONTENT_SCRIPT = 'content.js';
 const WINDOW_SIZE = { width: 380, height: 480 } as const;
+/** EchoTrail's ancestry lists need the wider card. */
+const WIDE_WINDOW_SIZE = { width: 500, height: 600 } as const;
 
 /** Injects the UI script on first use only; it stays until the page navigates. */
 async function ensureContentScript({ tabId, frameId }: FrameTarget): Promise<void> {
@@ -99,10 +102,11 @@ export function resultPageUrl(view: CardView): string {
 export async function presentInWindow(view: CardView): Promise<void> {
   // Open near the top-right of the window the user is looking at.
   const anchor = await chrome.windows.getLastFocused().catch(() => undefined);
+  const size = isWideView(view) ? WIDE_WINDOW_SIZE : WINDOW_SIZE;
   const placement =
     anchor?.left !== undefined && anchor.top !== undefined && anchor.width !== undefined
       ? {
-          left: Math.max(0, anchor.left + anchor.width - WINDOW_SIZE.width - 24),
+          left: Math.max(0, anchor.left + anchor.width - size.width - 24),
           top: anchor.top + 80,
         }
       : {};
@@ -110,7 +114,7 @@ export async function presentInWindow(view: CardView): Promise<void> {
     url: resultPageUrl(view),
     type: 'popup',
     focused: true,
-    ...WINDOW_SIZE,
+    ...size,
   } as const;
   try {
     await chrome.windows.create({ ...window, ...placement });

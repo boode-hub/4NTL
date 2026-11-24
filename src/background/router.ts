@@ -1,5 +1,5 @@
 /** Handles messages from the extension's own UI surfaces. Everything else is ignored. */
-import { parseIndicator } from '../core/indicator';
+import { parseIndicator, processFromText } from '../core/indicator';
 import type { Access } from '../core/license';
 import {
   isBackgroundMessage,
@@ -49,7 +49,10 @@ export function createMessageRouter(deps: RouterDeps): Listener {
     switch (message.type) {
       case '4ntl:lookup': {
         // Re-validate: only canonical indicators produced by our own parser are looked up.
-        const indicator = parseIndicator(message.indicator.value);
+        const indicator =
+          message.indicator.type === 'process'
+            ? processFromText(message.indicator.value)
+            : parseIndicator(message.indicator.value);
         if (
           indicator?.type !== message.indicator.type ||
           indicator.value !== message.indicator.value

@@ -40,12 +40,13 @@ Select an IP address, domain, URL or file hash on any page, right-click, and 4NT
 BUILT FOR ANALYSTS
 • One click from the right-click menu, or select and press Alt+Shift+L.
 • Understands analyst text: defanged indicators such as 1.2.3[.]4, hxxps://evil[.]com or evil [dot] com, looked up as they are, addresses with ports, and log fields. Select a whole log line and pick the indicator you want.
-• Checks where links and buttons really go, even when a site hides the address in JavaScript. For buttons that only get an address when clicked, click once: 4NTL catches the destination and stops the page from going there.
+• Checks where links really go, even when a site hides the address in JavaScript.
 • Sees through the protected and redirect links that email security tools and social sites add, and checks the real destination.
 • Click the toolbar icon and type or paste an IP, domain or hash, or type "4ntl" and a space in the address bar and paste anything.
 • Copy just the indicator, the card as a picture, or the details as text for a ticket.
 • Saved list: keep the indicators you find during an investigation, then copy them all at once or download a CSV.
 • Country flags at a glance.
+• Optional: Windows process names, such as svchost.exe, with EchoTrail: who usually starts a process, what it starts and where it lives. Off until you switch it on.
 
 PRIVATE AND LIGHT
 • Uses your own free API keys, stored only in your browser.
@@ -96,10 +97,11 @@ Phase 2: replace the ★ line with:
 
 | Permission                                                                          | Justification                                                                                                                                                                                                                                        |
 | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contextMenus`                                                                      | Adds the 4NTL entries to the right-click menu (look up a selection, check a link, check what a button opens). This is the main way the extension is used.                                                                                            |
+| `contextMenus`                                                                      | Adds the 4NTL entries to the right-click menu (look up a selection, check a link, type an indicator). This is the main way the extension is used.                                                                                                    |
 | `activeTab`                                                                         | Gives temporary access only to the tab where the user just invoked 4NTL, to show the result card there and read the selection. The extension never has standing access to any website.                                                               |
 | `scripting`                                                                         | Injects the result card, and reads the selection or the right-clicked element, in the tab the user invoked 4NTL on (via activeTab). Injected only on demand; no content scripts run on pages otherwise.                                              |
 | Optional host permission `<all_urls>` (off by default)                              | Only if the user turns on "Work inside embedded frames from other sites" in the settings: some security consoles show data in a frame from another site, where activeTab doesn't reach. 4NTL still only reads a page when the user invokes it there. |
+| Optional host permission `https://api.echotrail.io/*` (off by default)              | Only if the user switches on "Look up Windows processes on EchoTrail" in the settings (the browser asks them then): sends the Windows process or service name they look up to the EchoTrail API with their own API key.                              |
 | `activeTab` (screenshots)                                                           | "Copy card as image": captureVisibleTab of the tab the user is working in, cropped to the result card; the picture stays on the user's computer.                                                                                                     |
 | `storage`                                                                           | Stores the user's own API keys, settings and saved list locally, and keeps recent results in memory so repeat lookups don't use API quota.                                                                                                           |
 | Host permission `https://www.virustotal.com/*`                                      | Sends the user's lookups to the VirusTotal API with the user's own API key.                                                                                                                                                                          |
@@ -110,7 +112,7 @@ Phase 2: replace the ★ line with:
 
 **Data usage**, tick:
 
-- **Website content**: the text the user selects or the link they right-click is sent to the chosen lookup service, only when the user asks for a lookup.
+- **Website content**: the text the user selects or the link they right-click is sent to the chosen lookup service, only when the user asks for a lookup (a Windows process name to EchoTrail, only if the user switched EchoTrail on).
 - **Authentication information**: the user's own API keys, stored locally and sent only to their own service.
 
 Leave every other category unticked. Then certify all three statements:

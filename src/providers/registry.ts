@@ -2,11 +2,16 @@ import type { Indicator } from '../core/indicator';
 import type { ProviderInfo } from '../core/messages';
 import type { ProviderId } from '../core/provider-ids';
 import { abuseipdb } from './abuseipdb';
+import { echotrail } from './echotrail';
 import type { Provider } from './types';
 import { virustotal } from './virustotal';
 
 /** Display/menu order. Adding a provider = implement Provider + list it here. */
-export const PROVIDERS: Readonly<Record<ProviderId, Provider>> = { abuseipdb, virustotal };
+export const PROVIDERS: Readonly<Record<ProviderId, Provider>> = {
+  abuseipdb,
+  virustotal,
+  echotrail,
+};
 
 export const PROVIDER_LIST: readonly Provider[] = Object.values(PROVIDERS);
 

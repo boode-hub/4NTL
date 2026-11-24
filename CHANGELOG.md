@@ -4,6 +4,19 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.14.0] - 2026-11-24
+
+### Added
+
+- **EchoTrail for Windows processes** (off by default; Settings → Windows
+  processes). Select `svchost.exe`, `evil.dll` or a path to one and the card
+  shows how that process normally behaves: who usually starts it, publisher and
+  signature, and with an EchoTrail Team key the top grandparents, parents,
+  children, paths and SHA-256 hashes. Rare values read `<0.1%`, never 0%.
+  Right-click → 4NTL → **EchoTrail only** looks up any one name, such as a
+  service. The card is wider only for EchoTrail. Switching it on asks the
+  browser for api.echotrail.io; while it's off, 4NTL behaves exactly as before.
+
 ## [0.13.1] - 2026-11-24
 
 ### Fixed

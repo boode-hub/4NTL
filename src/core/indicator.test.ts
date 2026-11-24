@@ -7,6 +7,7 @@ import {
   MAX_SELECTION_LENGTH,
   parseIndicator,
   refang,
+  processFromText,
   resolveSelection,
   type Indicator,
 } from './indicator';
@@ -57,6 +58,69 @@ describe('defanged indicators look up without refanging by hand', () => {
     ['hXXps[://]evil.]com/login', 'url', 'https://evil.com/login'],
   ])('%s → %s %s', (input, type, value) => {
     expect(resolveSelection(input)).toMatchObject({ kind: 'single', indicator: { type, value } });
+  });
+});
+
+describe('process names (EchoTrail on)', () => {
+  const on = { processes: true };
+
+  it('with EchoTrail off, nothing changes: executable names are not indicators', () => {
+    for (const text of ['svchost.exe', 'C:\\Windows\\System32\\svchost.exe', 'evil.dll']) {
+      expect(resolveSelection(text)).toEqual({ kind: 'none' });
+    }
+  });
+
+  it.each([
+    ['svchost.exe', 'svchost.exe'],
+    ['SVCHOST.EXE', 'svchost.exe'],
+    ['C:\\Windows\\System32\\svchost.exe', 'svchost.exe'],
+    ['"C:\\Windows\\System32\\rundll32.exe"', 'rundll32.exe'],
+    ['evil.dll', 'evil.dll'],
+    ['run.ps1', 'run.ps1'],
+    ['setup.msi', 'setup.msi'],
+  ])('%s → process %s', (input, value) => {
+    expect(resolveSelection(input, on)).toEqual({
+      kind: 'single',
+      indicator: { type: 'process', value },
+    });
+  });
+
+  it('never steals domains, URLs, IPs or hashes, and leaves prose alone', () => {
+    expect(parseIndicator('evil.exe.com', on)).toEqual({ type: 'domain', value: 'evil.exe.com' });
+    expect(parseIndicator('8.8.8.8', on)?.type).toBe('ipv4');
+    expect(parseIndicator('https://x.com/a.exe', on)?.type).toBe('url');
+    expect(parseIndicator('Node.js', on)).toBeNull();
+    expect(parseIndicator('invoice.zip', on)).toEqual({ type: 'domain', value: 'invoice.zip' });
+  });
+
+  it('finds the process in a log line next to other indicators', () => {
+    expect(resolveSelection('powershell.exe connected to 185.220.101.4', on)).toMatchObject({
+      kind: 'multiple',
+      indicators: [
+        { type: 'process', value: 'powershell.exe' },
+        { type: 'ipv4', value: '185.220.101.4' },
+      ],
+    });
+    // A path with spaces in a folder still gives the process at the end.
+    expect(resolveSelection('C:\\Program Files\\PuTTY\\putty.exe', on)).toMatchObject({
+      kind: 'single',
+      indicator: { type: 'process', value: 'putty.exe' },
+    });
+  });
+});
+
+describe('processFromText ("EchoTrail only")', () => {
+  it.each([
+    ['Spooler', 'spooler'],
+    ['  svchost  ', 'svchost'],
+    ['C:\\Program Files\\PuTTY\\putty.exe', 'putty.exe'],
+    ["'WinDefend'", 'windefend'],
+  ])('%s → %s', (input, value) => {
+    expect(processFromText(input)).toEqual({ type: 'process', value });
+  });
+
+  it.each(['', 'two words', 'a<b', 'x'.repeat(400)])('rejects %j', (input) => {
+    expect(processFromText(input)).toBeNull();
   });
 });
 

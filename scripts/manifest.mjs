@@ -7,6 +7,8 @@
 const API_HOSTS = ['https://www.virustotal.com', 'https://api.abuseipdb.com'];
 /** Store edition: ExtensionPay (Stripe) handles the paid unlock. */
 const PAYMENT_HOST = 'https://extensionpay.com';
+/** EchoTrail (Windows processes): optional, asked for only when the user switches it on. */
+const ECHOTRAIL_HOST = 'https://api.echotrail.io';
 
 const ICONS = {
   16: 'icons/icon-16.png',
@@ -66,7 +68,8 @@ export function createManifest({ version, e2e = false, store = false }) {
     ],
     // Off unless the user turns on "Work inside embedded frames" in the settings:
     // lets 4NTL read selections and links in frames from other sites (some consoles).
-    optional_host_permissions: ['<all_urls>'],
+    // EchoTrail: asked for when "Look up Windows processes on EchoTrail" is switched on.
+    optional_host_permissions: ['<all_urls>', `${ECHOTRAIL_HOST}/*`],
     // Store edition: ExtensionPay's script on its own site tells 4NTL about a purchase.
     ...(store
       ? {
@@ -89,7 +92,7 @@ export function createManifest({ version, e2e = false, store = false }) {
         "script-src 'self'",
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self'",
-        `connect-src ${hosts.join(' ')}`,
+        `connect-src ${[...hosts, ECHOTRAIL_HOST].join(' ')}`,
         "base-uri 'none'",
         "form-action 'none'",
       ].join('; '),

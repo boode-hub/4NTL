@@ -5,7 +5,16 @@
  */
 import { unwrapRedirect } from './redirects';
 
-export const INDICATOR_TYPES = ['ipv4', 'ipv6', 'md5', 'sha1', 'sha256', 'domain', 'url'] as const;
+export const INDICATOR_TYPES = [
+  'ipv4',
+  'ipv6',
+  'md5',
+  'sha1',
+  'sha256',
+  'domain',
+  'url',
+  'process',
+] as const;
 export type IndicatorType = (typeof INDICATOR_TYPES)[number];
 
 export interface Indicator {
@@ -22,7 +31,17 @@ export const INDICATOR_LABELS: Readonly<Record<IndicatorType, string>> = {
   sha256: 'SHA-256',
   domain: 'Domain',
   url: 'URL',
+  process: 'Process',
 };
+
+/**
+ * What a selection may mean. `processes`: also read Windows executable names
+ * (`svchost.exe`, `C:\Windows\…\evil.dll`) as processes; only when EchoTrail
+ * is turned on, so with it off nothing changes.
+ */
+export interface ParseOptions {
+  readonly processes?: boolean | undefined;
+}
 
 /** Selections longer than this are truncated before scanning. */
 export const MAX_SELECTION_LENGTH = 10_000;
@@ -169,6 +188,43 @@ function parseDomain(token: string): Indicator | null {
   return NON_TLD_EXTENSIONS.has(tld) ? null : { type: 'domain', value: domain };
 }
 
+/**
+ * Executable and script endings that make a word a Windows process name. None is
+ * a real TLD (.com is, so it isn't here), so they never clash with domains; .js is left
+ * out so prose like "Node.js" stays plain text.
+ */
+const PROCESS_EXTENSIONS = new Set(
+  'exe dll sys scr cpl drv ocx msi ps1 bat cmd vbs hta'.split(' '),
+);
+/** A Windows file name, without the folder: letters, digits and a few safe signs. */
+const PROCESS_NAME = /^[\w$~+()-][\w.$~+() -]{0,127}$/;
+
+/** The file name at the end of a Windows or Unix path (`C:\Windows\svchost.exe` → `svchost.exe`). */
+function baseName(token: string): string {
+  return token.slice(Math.max(token.lastIndexOf('\\'), token.lastIndexOf('/')) + 1);
+}
+
+/** `svchost.exe` or a path ending in one → a process, by its executable or script ending. */
+function parseProcess(token: string): Indicator | null {
+  const name = baseName(token).toLowerCase();
+  const dot = name.lastIndexOf('.');
+  if (dot <= 0 || !PROCESS_EXTENSIONS.has(name.slice(dot + 1))) return null;
+  return PROCESS_NAME.test(name) ? { type: 'process', value: name } : null;
+}
+
+/**
+ * "EchoTrail only": the selection is a process or service name whatever it looks
+ * like (`Spooler`, `svchost`, `svchost.exe`, a full path). One word, or a path.
+ */
+export function processFromText(text: string): Indicator | null {
+  const trimmed = text.trim().replace(/^["'`]+|["'`]+$/g, '');
+  if (!trimmed || trimmed.length > 300) return null;
+  const name = baseName(trimmed).toLowerCase();
+  // A path may have spaces in its folders (C:\Program Files\…), never in the name we keep.
+  if (/\s/.test(name) || !PROCESS_NAME.test(name)) return null;
+  return { type: 'process', value: name };
+}
+
 const CIDR_SUFFIX = /^\/\d{1,3}$/;
 
 function parseUrl(token: string): Indicator | null {
@@ -195,41 +251,47 @@ function parseUrl(token: string): Indicator | null {
 /** Cleaning only trims a little punctuation; anything far longer can never become valid. */
 const MAX_RAW_TOKEN_LENGTH = MAX_TOKEN_LENGTH + 64;
 
-function parseToken(raw: string): Indicator | null {
+function parseToken(raw: string, options: ParseOptions = {}): Indicator | null {
   // Reject before cleaning: keeps worst-case inputs (10k chars of junk) cheap.
   if (raw.length > MAX_RAW_TOKEN_LENGTH) return null;
   const token = cleanToken(raw);
   if (!token || token.length > MAX_TOKEN_LENGTH || /\s/.test(token)) return null;
-  // Order matters: an IPv4 or hash must never fall through to the domain/URL rules.
+  // Order matters: an IPv4 or hash must never fall through to the domain/URL rules,
+  // and a process name is only considered once nothing else matched.
   return (
     parseIPv4(token) ??
     parseIPv6(token) ??
     parseHash(token) ??
     parseUrl(token) ??
     parseDomain(token) ??
-    parseBracketedOther(token)
+    parseBracketedOther(token, options) ??
+    (options.processes ? parseProcess(token) : null)
   );
 }
 
 /** `[1.2.3.4]` or `[evil.com]` (bracket-wrapped in reports) → the inner indicator. */
-function parseBracketedOther(token: string): Indicator | null {
+function parseBracketedOther(token: string, options: ParseOptions): Indicator | null {
   const inner = BRACKETED.exec(token)?.[1];
-  return inner ? parseToken(inner) : null;
+  return inner ? parseToken(inner, options) : null;
 }
 
 /** Parses the whole text as exactly one indicator, or returns null. */
-export function parseIndicator(text: string): Indicator | null {
-  return parseToken(refang(text));
+export function parseIndicator(text: string, options: ParseOptions = {}): Indicator | null {
+  return parseToken(refang(text), options);
 }
 
 const TOKEN_SEPARATORS = /[\s,;|"'`<>{}]+/;
 
 /** Finds distinct indicators in free text (log lines, report paragraphs), in order of appearance. */
-export function extractIndicators(text: string, limit = MAX_CHOICES + 1): Indicator[] {
+export function extractIndicators(
+  text: string,
+  limit = MAX_CHOICES + 1,
+  options: ParseOptions = {},
+): Indicator[] {
   const seen = new Set<string>();
   const found: Indicator[] = [];
   for (const token of refang(text).split(TOKEN_SEPARATORS)) {
-    const indicator = parseToken(token);
+    const indicator = parseToken(token, options);
     if (!indicator || seen.has(indicatorKey(indicator))) continue;
     seen.add(indicatorKey(indicator));
     found.push(indicator);
@@ -248,12 +310,12 @@ export type SelectionResolution =
   | { readonly kind: 'none' };
 
 /** Decides what a selection means: one indicator, a choice between several, or nothing usable. */
-export function resolveSelection(text: string): SelectionResolution {
+export function resolveSelection(text: string, options: ParseOptions = {}): SelectionResolution {
   const capped = text.slice(0, MAX_SELECTION_LENGTH);
-  const whole = parseIndicator(capped);
+  const whole = parseIndicator(capped, options);
   if (whole) return { kind: 'single', indicator: whole };
 
-  const found = extractIndicators(capped, MAX_CHOICES + 1);
+  const found = extractIndicators(capped, MAX_CHOICES + 1, options);
   const [first] = found;
   if (!first) return { kind: 'none' };
   if (found.length === 1) return { kind: 'single', indicator: first };

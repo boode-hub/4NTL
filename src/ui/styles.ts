@@ -170,6 +170,7 @@ export const CARD_CSS = /* css */ `
 .logo-virustotal .logo-fill { fill: light-dark(#0b4dda, #6b8dff); }
 .logo-abuseipdb .logo-ink { fill: var(--fg); }
 .logo-abuseipdb .logo-ring { stroke: light-dark(#e00000, #ff4d4d); }
+.logo-echotrail .logo-stroke { fill: none; stroke: light-dark(#1f94d2, #4fb3ea); stroke-width: 1.4; stroke-linecap: round; }
 
 .pill {
   font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
@@ -199,6 +200,20 @@ export const CARD_CSS = /* css */ `
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 8px 0 0; font-size: 12px; }
 .facts dt { color: var(--muted); white-space: nowrap; }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
+
+/* EchoTrail's ancestry: three short ranked lists side by side (the card is wider then). */
+.lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px 14px; margin-top: 10px; }
+.list-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.list ol { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; font-size: 12px; }
+.list li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.list-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 12px/1.4 ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', monospace; }
+.list-detail { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.list.wide { grid-column: 1 / -1; } /* paths and hashes: long, so a full-width row each */
+/* …and shown whole (wrapping), so a hash can be read, compared and selected for a lookup. */
+.list.wide .list-name { white-space: normal; overflow-wrap: anywhere; }
+.report-note { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); }
+.card.inline.wide { min-width: 460px; }
 
 .message { margin: 6px 0 0; font-size: 12.5px; }
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; min-height: 22px; }

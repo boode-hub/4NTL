@@ -48,6 +48,17 @@ function setup(options: { settings?: Settings; lookup?: Provider['lookup'] } = {
   };
 }
 
+describe('LookupService and EchoTrail', () => {
+  it('never asks EchoTrail while it is switched off', async () => {
+    const { service } = setup();
+    const outcome = await service.lookup('echotrail', { type: 'process', value: 'svchost.exe' });
+    expect(outcome).toEqual({
+      ok: false,
+      error: { code: 'unsupported', message: 'EchoTrail is turned off in 4NTL’s settings.' },
+    });
+  });
+});
+
 describe('LookupService', () => {
   it('calls the provider with the key, settings and injected dependencies', async () => {
     const { service, lookup } = setup();

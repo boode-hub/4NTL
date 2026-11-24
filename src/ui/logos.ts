@@ -31,6 +31,17 @@ const LOGOS: Readonly<Record<ProviderId, Logo>> = {
       ],
     ],
   },
+  // EchoTrail: an "e" inside echoing arcs.
+  echotrail: {
+    viewBox: '0 0 16 16',
+    parts: [
+      ['path', 'logo-stroke', { d: 'M10.7 8.72A2.8 2.8 0 1 1 10.7 7.28M8 8h2.9' }],
+      ['path', 'logo-stroke', { d: 'M3.08 8.87A5 5 0 0 1 10.5 3.67' }],
+      ['path', 'logo-stroke', { d: 'M12.92 8.87A5 5 0 0 1 5.5 12.33' }],
+      ['path', 'logo-stroke', { d: 'M1.42 5.61A7 7 0 0 1 6.78 1.11' }],
+      ['path', 'logo-stroke', { d: 'M14.58 10.39A7 7 0 0 1 9.22 14.89' }],
+    ],
+  },
   // A hat inside a "no" sign.
   abuseipdb: {
     viewBox: '0 0 16 16',

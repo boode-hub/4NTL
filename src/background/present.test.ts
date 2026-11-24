@@ -108,6 +108,20 @@ describe('presentInWindow', () => {
   });
 });
 
+describe('presentInWindow for EchoTrail', () => {
+  it('opens wider for an EchoTrail card, and only then', async () => {
+    const { create } = stubChrome();
+    await presentInWindow({
+      kind: 'lookup',
+      indicator: { type: 'process', value: 'putty.exe' },
+      providers: [{ id: 'echotrail', name: 'EchoTrail' }],
+    });
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ width: 500, height: 600 }));
+    await presentInWindow(VIEW);
+    expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ width: 380, height: 480 }));
+  });
+});
+
 describe('presentInWindow bounds', () => {
   it('retries without a position when the browser rejects the bounds', async () => {
     const { create } = stubChrome({ window: { left: 0, top: 0, width: 5000 } });
