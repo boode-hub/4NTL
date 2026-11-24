@@ -31,23 +31,54 @@
         <div id="providers"></div>
       </section>
 
-      <section class="panel" aria-labelledby="echotrail-title">
-        <h2 id="echotrail-title">Windows processes (EchoTrail)</h2>
+      <section class="panel" aria-labelledby="processes-title">
+        <h2 id="processes-title">Windows processes</h2>
         <div class="field switch-field">
           <label class="switch">
-            <input id="echotrail-on" type="checkbox" />
-            Look up Windows processes on EchoTrail
+            <input id="processes-on" type="checkbox" />
+            Look up Windows processes and services
           </label>
           <small>
-            Select a process name such as <code>svchost.exe</code>, or a path to one, and 4NTL shows
-            how it normally behaves: who usually starts it, what it starts and where it lives, from
-            EchoTrail's 300 million+ real executions. For a service or any other name, right-click →
-            <b>4NTL</b> → <b>EchoTrail only</b>. The browser asks you to allow api.echotrail.io.
-            While this is off, 4NTL works exactly as before.
+            Select a process name such as <code>svchost.exe</code>, or a path to one, and 4NTL
+            checks it against a free local library (LOLBAS, LOLDrivers, HijackLibs, Winbindex and
+            the core Windows baseline) and, if you add a key, EchoTrail. For a service or any other
+            name, right-click → <b>4NTL</b> → <b>Look up as a process or service</b>. The browser
+            asks you to allow those sites. While this is off, 4NTL works exactly as before and keeps
+            no library.
           </small>
-          <small id="echotrail-status" class="status" role="status"></small>
+          <small id="processes-status" class="status" role="status"></small>
+          <p id="processes-access" class="banner" hidden>
+            4NTL isn't allowed to contact these sites, so their lookups can't run.
+            <button id="processes-allow" class="btn" type="button">Allow</button>
+          </p>
         </div>
-        <div id="echotrail-key" hidden></div>
+        <div id="processes-details" hidden>
+          <div class="field">
+            <div class="field-head"><span class="label">Local library</span></div>
+            <p id="library-status" class="hint">Not downloaded yet.</p>
+            <div class="input-row">
+              <button id="library-update" class="btn" type="button">Update now</button>
+              <small id="library-update-status" class="status" role="status"></small>
+            </div>
+            <small>
+              Checked for updates at most once a day, only when you use it. From
+              <a href="https://lolbas-project.github.io/" target="_blank" rel="noopener noreferrer"
+                >LOLBAS</a
+              >,
+              <a href="https://www.loldrivers.io/" target="_blank" rel="noopener noreferrer"
+                >LOLDrivers</a
+              >,
+              <a href="https://hijacklibs.net/" target="_blank" rel="noopener noreferrer"
+                >HijackLibs</a
+              >
+              and
+              <a href="https://winbindex.m417z.com/" target="_blank" rel="noopener noreferrer"
+                >Winbindex</a
+              >, downloaded by your browser from those projects.
+            </small>
+          </div>
+          <div id="echotrail-key"></div>
+        </div>
       </section>
 
       <section class="panel" aria-labelledby="look-title">

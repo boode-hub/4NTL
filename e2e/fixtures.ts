@@ -193,7 +193,7 @@ interface Fixtures {
   settings: (value: object) => Promise<void>;
   menuClick: (
     selection: string,
-    scope: 'all' | 'virustotal' | 'abuseipdb' | 'echotrail',
+    scope: 'all' | 'virustotal' | 'abuseipdb' | 'process',
   ) => Promise<void>;
 }
 
@@ -202,8 +202,10 @@ export const test = base.extend<Fixtures & Options>({
 
   context: async ({ edition }, use) => {
     const extension = EXTENSIONS[edition];
+    // E2E_BROWSER=<path to brave.exe, msedge.exe…> runs the suite in that Chromium browser.
+    const browser = process.env.E2E_BROWSER;
     const context = await chromium.launchPersistentContext('', {
-      channel: 'chromium',
+      ...(browser ? { executablePath: browser } : { channel: 'chromium' }),
       args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
     });
     // Never reach the real ExtensionPay: hand out a test key, serve blank pages.

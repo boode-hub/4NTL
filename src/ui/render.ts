@@ -28,6 +28,7 @@ export const ERROR_LABELS: Readonly<Record<LookupErrorCode, string>> = {
   bad_response: 'Bad response',
   internal: 'Error',
   payment_required: 'Locked',
+  no_permission: 'Not allowed',
 };
 
 export type SectionState =
@@ -221,7 +222,9 @@ export function renderSection(
         ...report.lists.map((list) =>
           h(
             'div',
-            { class: list.wide ? 'list wide' : 'list' },
+            {
+              class: ['list', list.wide && 'wide', list.prose && 'prose'].filter(Boolean).join(' '),
+            },
             h('div', { class: 'list-label' }, list.label),
             h(
               'ol',
@@ -247,7 +250,12 @@ export function renderSection(
         { class: 'meta' },
         outcome.cached ? `Cached · ${formatAgo(outcome.fetchedAt, nowMs)}` : '',
       ),
-      h('div', { class: 'actions' }, link(report.reportUrl, 'Full report')),
+      h(
+        'div',
+        { class: 'actions' },
+        ...(report.links ?? []).map((source) => link(source.url, source.label)),
+        link(report.reportUrl, 'Full report'),
+      ),
     ),
   );
 }
@@ -340,6 +348,7 @@ export function renderLocked(text: string, actions: LockedActions): HTMLElement 
 export function renderAsk(
   onSubmit: (text: string) => void,
   value = '',
+  processes = false,
 ): {
   readonly form: HTMLFormElement;
   readonly input: HTMLInputElement;
@@ -348,8 +357,10 @@ export function renderAsk(
     class: 'ask-input',
     attrs: {
       type: 'text',
-      placeholder: 'IP, domain, URL or hash',
-      'aria-label': 'IP, domain, URL or hash to look up',
+      placeholder: processes ? 'IP, domain, URL, hash or process name' : 'IP, domain, URL or hash',
+      'aria-label': processes
+        ? 'IP, domain, URL, hash, or process or service name to look up'
+        : 'IP, domain, URL or hash to look up',
       autocomplete: 'off',
       spellcheck: 'false',
     },

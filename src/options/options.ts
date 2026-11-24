@@ -5,6 +5,7 @@ import ExtPay from 'extpay';
 import { describeAccess, EXTPAY_ID, PAID_FROM_LABEL, type Access } from '../core/license';
 import type { BackgroundMessage, CardView, LicenseResponse } from '../core/messages';
 import { PROVIDER_IDS, type ProviderId } from '../core/provider-ids';
+import { LIBRARY_META_KEY, LIBRARY_SOURCES, type LibraryStatus } from '../background/library-store';
 import type { Report } from '../core/result';
 import {
   loadSettings,
@@ -69,6 +70,16 @@ async function checkKey(
   button.disabled = true;
   setStatus(field.status, 'Checking…');
   try {
+    // Sites granted with a switch: the browser blocks them until allowed, so ask now
+    // (this click counts as the user's go-ahead) instead of failing as if offline.
+    if (provider.hosts) {
+      // request() first, straight from the click: Firefox refuses it after an await.
+      // (Already allowed: it resolves at once, with no prompt.)
+      if (!(await chrome.permissions.request({ origins: [...provider.hosts] }))) {
+        setStatus(field.status, `Not allowed: 4NTL can’t contact ${provider.name}.`, 'error');
+        return;
+      }
+    }
     const message = await provider.checkKey({
       apiKey,
       fetch: (input, init) => fetch(input, init),
@@ -172,6 +183,15 @@ const PREVIEW_REPORTS: Record<ProviderId, Report> = {
     tags: ['2 suspicious'],
     facts: [{ label: 'Owner', value: 'Zwiebelfreunde e.V. · AS208294' }],
     reportUrl: 'https://www.virustotal.com/gui/ip-address/185.220.101.4',
+  },
+  library: {
+    verdict: 'unknown',
+    pill: 'LOLBin',
+    headline: '6',
+    caption: 'abuse techniques on LOLBAS',
+    tags: [],
+    facts: [],
+    reportUrl: '',
   },
   echotrail: {
     verdict: 'unknown',
@@ -304,18 +324,19 @@ async function main(): Promise<void> {
   const backgroundInput = inputById('background');
   const themeInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="theme"]')];
   const renderPreview = createPreview(byId('preview'));
-  const fields = {} as Record<ProviderId, KeyField>;
+  const fields: Partial<Record<ProviderId, KeyField>> = {};
   const scheduleSave = () => {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => void save(), SAVE_DELAY_MS);
   };
-  // EchoTrail's key lives in its own panel, shown only while EchoTrail is on.
-  const echotrailOn = inputById('echotrail-on');
-  const echotrailKey = byId('echotrail-key');
+  // EchoTrail's key lives in the Windows processes panel; the local library needs none.
+  const processesOn = inputById('processes-on');
+  const processesDetails = byId('processes-details');
   for (const provider of PROVIDER_LIST) {
+    if (provider.keyless) continue;
     const { element, field } = renderKeyField(provider, scheduleSave);
     fields[provider.id] = field;
-    (provider.id === 'echotrail' ? echotrailKey : byId('providers')).append(element);
+    (provider.id === 'echotrail' ? byId('echotrail-key') : byId('providers')).append(element);
   }
 
   const showNumbers = (settings: Settings) => {
@@ -328,11 +349,11 @@ async function main(): Promise<void> {
     saveTimer = undefined;
     const saved = await saveSettings(
       normalizeSettings({
-        apiKeys: Object.fromEntries(PROVIDER_IDS.map((id) => [id, fields[id].input.value])),
+        apiKeys: Object.fromEntries(PROVIDER_IDS.map((id) => [id, fields[id]?.input.value ?? ''])),
         abuseIpdbMaxAgeDays: maxAge.value,
         cacheTtlMinutes: cacheTtl.value,
         appearance,
-        echotrail: echotrailOn.checked,
+        processes: processesOn.checked,
       }),
     );
     toast.textContent = 'Saved';
@@ -347,6 +368,7 @@ async function main(): Promise<void> {
   const settings = await loadSettings();
   for (const provider of PROVIDER_LIST) {
     const field = fields[provider.id];
+    if (!field) continue;
     field.input.value = settings.apiKeys[provider.id];
     setStatus(field.status, keyFormatWarning(provider, field.input.value), 'warn');
   }
@@ -394,41 +416,124 @@ async function main(): Promise<void> {
     if (saveTimer !== undefined) void save();
   });
 
-  // EchoTrail: off unless switched on; switching on asks the browser for api.echotrail.io.
-  const echotrailStatus = byId('echotrail-status');
-  const echotrailHost = { origins: ['https://api.echotrail.io/*'] };
-  const showEchotrail = (on: boolean) => {
-    echotrailOn.checked = on;
-    echotrailKey.hidden = !on;
+  // Windows processes: off unless switched on; switching on asks the browser for the
+  // sources' sites (EchoTrail and the library's), and the background downloads the library.
+  const processesStatus = byId('processes-status');
+  const processHosts = {
+    origins:
+      (chrome.runtime.getManifest() as chrome.runtime.ManifestV3).optional_host_permissions?.filter(
+        (origin) => origin !== '<all_urls>',
+      ) ?? [],
   };
-  showEchotrail(settings.echotrail);
-  if (settings.echotrail && !(await chrome.permissions.contains(echotrailHost))) {
-    setStatus(
-      echotrailStatus,
-      'The browser no longer allows api.echotrail.io: switch this off and on again to allow it.',
-      'warn',
-    );
-  }
-  echotrailOn.addEventListener('change', () => {
-    setStatus(echotrailStatus, '');
-    if (!echotrailOn.checked) {
-      // Off always works: save first; giving the permission back is best effort.
-      showEchotrail(false);
+  const showProcesses = (on: boolean) => {
+    processesOn.checked = on;
+    processesDetails.hidden = !on;
+  };
+  showProcesses(settings.processes);
+  // On, but the browser isn't allowing the sites (never granted, withdrawn, or held
+  // back by the browser's site-access setting): offer Allow right here.
+  const processesAccess = byId('processes-access');
+  const checkProcessAccess = async () => {
+    processesAccess.hidden =
+      !processesOn.checked || (await chrome.permissions.contains(processHosts));
+  };
+  byId('processes-allow').addEventListener('click', () => {
+    void chrome.permissions
+      .request(processHosts)
+      .then(async (granted) => {
+        await checkProcessAccess();
+        if (granted)
+          await chrome.runtime.sendMessage({
+            type: '4ntl:library-update',
+          } satisfies BackgroundMessage);
+      })
+      .catch((error: unknown) => {
+        setStatus(processesStatus, String(error), 'error');
+      });
+  });
+  await checkProcessAccess();
+  processesOn.addEventListener('change', () => {
+    setStatus(processesStatus, '');
+    if (!processesOn.checked) {
+      // Off always works: save first (the library is deleted); giving permissions back is best effort.
+      showProcesses(false);
       void save();
-      chrome.permissions.remove(echotrailHost).catch(() => undefined);
+      chrome.permissions.remove(processHosts).catch(() => undefined);
       return;
     }
     void chrome.permissions
-      .request(echotrailHost)
-      .then((granted) => {
-        showEchotrail(granted);
-        if (!granted) setStatus(echotrailStatus, 'Not allowed, so EchoTrail stays off.', 'warn');
+      .request(processHosts)
+      .then(async (granted) => {
+        showProcesses(granted);
+        if (!granted) setStatus(processesStatus, 'Not allowed, so this stays off.', 'warn');
+        else showLibrary({}, 'Downloading the local library…');
+        await checkProcessAccess();
         return save();
       })
       .catch((error: unknown) => {
-        showEchotrail(false);
-        setStatus(echotrailStatus, String(error), 'error');
+        showProcesses(false);
+        setStatus(processesStatus, String(error), 'error');
         return save();
+      });
+  });
+
+  // The local library: what's downloaded, and "Update now".
+  const libraryStatus = byId('library-status');
+  const libraryUpdateStatus = byId('library-update-status');
+  const showLibrary = (status: LibraryStatus, pending = '') => {
+    const parts = LIBRARY_SOURCES.flatMap(({ id, name }) => {
+      const source = status[id];
+      if (!source?.updatedAt)
+        return source?.error ? [`${name}: not downloaded (${source.error})`] : [];
+      return [
+        `${name} ${source.names.toLocaleString()}${source.error ? ' (last check failed)' : ''}`,
+      ];
+    });
+    const checked = Math.max(0, ...LIBRARY_SOURCES.map(({ id }) => status[id]?.checkedAt ?? 0));
+    libraryStatus.textContent =
+      pending ||
+      (parts.length > 0
+        ? `${parts.join(' · ')} · checked ${new Date(checked).toLocaleString()}`
+        : 'Not downloaded yet: press Update now.');
+  };
+  const readLibrary = async () =>
+    ((await chrome.storage.local.get(LIBRARY_META_KEY))[LIBRARY_META_KEY] ?? {}) as LibraryStatus;
+  showLibrary(await readLibrary());
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && LIBRARY_META_KEY in changes)
+      void readLibrary().then((s) => {
+        showLibrary(s);
+      });
+  });
+  const update = byId('library-update') as HTMLButtonElement;
+  update.addEventListener('click', () => {
+    update.disabled = true;
+    setStatus(libraryUpdateStatus, 'Checking for updates…');
+    // The library's sites must be allowed first (this click counts as the go-ahead).
+    void chrome.permissions
+      .request(processHosts)
+      .then(async (granted) => {
+        await checkProcessAccess();
+        if (!granted) throw new Error('Not allowed to contact the library’s sites.');
+        const response: unknown = await chrome.runtime.sendMessage({
+          type: '4ntl:library-update',
+        } satisfies BackgroundMessage);
+        return response;
+      })
+      .then((response: unknown) => {
+        const status = (response as { status?: LibraryStatus } | undefined)?.status ?? {};
+        const failed = LIBRARY_SOURCES.filter(({ id }) => status[id]?.error).map((s) => s.name);
+        setStatus(
+          libraryUpdateStatus,
+          failed.length > 0 ? `Couldn't reach ${failed.join(', ')}.` : 'Up to date.',
+          failed.length > 0 ? 'warn' : 'ok',
+        );
+      })
+      .catch((error: unknown) => {
+        setStatus(libraryUpdateStatus, String(error), 'error');
+      })
+      .finally(() => {
+        update.disabled = false;
       });
   });
 

@@ -4,7 +4,7 @@
  * "Type an IP or domain…". On the toolbar icon, "Saved list".
  */
 import { isProviderId } from '../core/provider-ids';
-import { PROVIDER_LIST } from '../providers/registry';
+import { isProcessProvider, PROVIDER_LIST } from '../providers/registry';
 import type { ProviderScope } from './view';
 
 const ROOT_ID = '4ntl';
@@ -20,7 +20,7 @@ export function menuItemId(scope: ProviderScope): string {
 export function scopeFromMenuItem(id: string | number): ProviderScope | undefined {
   if (typeof id !== 'string' || !id.startsWith(ITEM_PREFIX)) return undefined;
   const scope = id.slice(ITEM_PREFIX.length);
-  return scope === 'all' || isProviderId(scope) ? scope : undefined;
+  return scope === 'all' || scope === 'process' || isProviderId(scope) ? scope : undefined;
 }
 
 function create(properties: chrome.contextMenus.CreateProperties): Promise<void> {
@@ -40,7 +40,7 @@ const ELEMENT_CONTEXTS: [
 ] = ['page', 'image', 'frame', 'video', 'audio', 'editable'];
 
 /** Idempotent: safe to call on every install/update and whenever EchoTrail is switched. */
-export async function registerMenus(options: { echotrail?: boolean } = {}): Promise<void> {
+export async function registerMenus(options: { processes?: boolean } = {}): Promise<void> {
   await chrome.contextMenus.removeAll();
   // One entry, "4NTL", wherever you right-click; what's inside depends on what you clicked.
   await create({
@@ -62,11 +62,20 @@ export async function registerMenus(options: { echotrail?: boolean } = {}): Prom
     contexts: selection,
   });
   for (const provider of PROVIDER_LIST) {
-    if (provider.id === 'echotrail' && !options.echotrail) continue;
+    // Process-only sources are asked together, from "Look up as a process or service".
+    if (isProcessProvider(provider)) continue;
     await create({
       id: menuItemId(provider.id),
       parentId: ROOT_ID,
       title: `${provider.name} only`,
+      contexts: selection,
+    });
+  }
+  if (options.processes) {
+    await create({
+      id: menuItemId('process'),
+      parentId: ROOT_ID,
+      title: 'Look up as a process or service',
       contexts: selection,
     });
   }

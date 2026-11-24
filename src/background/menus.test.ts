@@ -58,14 +58,20 @@ describe('registerMenus', () => {
     expect(created.at(-1)?.contexts).toEqual(['action']);
   });
 
-  it('"EchoTrail only" appears only while EchoTrail is on', async () => {
+  it('one entry looks up a process or service, only while Windows processes are on', async () => {
     const off = stubChrome();
     await registerMenus();
-    expect(off.map((item) => item.title)).not.toContain('EchoTrail only');
+    const titles = off.map((item) => item.title);
+    expect(titles).not.toContain('Look up as a process or service');
+    expect(titles).not.toContain('EchoTrail only');
+    expect(titles).not.toContain('Local library only');
     const on = stubChrome();
-    await registerMenus({ echotrail: true });
-    const entry = on.find((item) => item.title === 'EchoTrail only');
-    expect(entry).toMatchObject({ id: '4ntl:lookup:echotrail', contexts: ['selection'] });
+    await registerMenus({ processes: true });
+    const entry = on.find((item) => item.title === 'Look up as a process or service');
+    expect(entry).toMatchObject({ id: '4ntl:lookup:process', contexts: ['selection'] });
+    // Its sources are asked together, never one by one.
+    expect(on.map((item) => item.title)).not.toContain('EchoTrail only');
+    expect(scopeFromMenuItem('4ntl:lookup:process')).toBe('process');
   });
 
   it('surfaces creation errors', async () => {

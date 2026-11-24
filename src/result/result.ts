@@ -8,7 +8,7 @@ import { loadSettings } from '../core/settings';
 import { ResultCard, type CardClient } from '../ui/card';
 import { runtimeClient } from '../ui/runtime-client';
 
-function viewFromHash(): CardView {
+function viewFromHash(processes: boolean): CardView {
   try {
     const parsed = JSON.parse(decodeURIComponent(location.hash.slice(1))) as Partial<CardView>;
     if ((VIEW_KINDS as readonly unknown[]).includes(parsed.kind)) {
@@ -18,10 +18,10 @@ function viewFromHash(): CardView {
     // fall through
   }
   // Nothing passed in: the toolbar popup.
-  return { kind: 'ask' };
+  return { kind: 'ask', processes };
 }
 
-void loadSettings().then(({ appearance }) => {
+void loadSettings().then(({ appearance, processes }) => {
   document.documentElement.dataset.theme = appearance.theme;
   new ResultCard({
     client: location.hash ? runtimeClient : popupClient(runtimeClient),
@@ -30,7 +30,7 @@ void loadSettings().then(({ appearance }) => {
     onClose: () => {
       window.close();
     },
-  }).show(viewFromHash());
+  }).show(viewFromHash(processes));
 });
 
 /**

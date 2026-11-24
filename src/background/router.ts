@@ -34,12 +34,16 @@ export interface RouterDeps {
   ) => Promise<string>;
   /** A content script caught where a JavaScript-only button was going. */
   readonly onCaptured: (url: string, sender: chrome.runtime.MessageSender) => Promise<void>;
+  /** "Update now": refresh the local library and answer with its status. */
+  readonly updateLibrary: () => Promise<unknown>;
 }
 
 type Listener = (
   message: unknown,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response: LookupResponse | LicenseResponse | CaptureResponse | CardView) => void,
+  sendResponse: (
+    response: LookupResponse | LicenseResponse | CaptureResponse | CardView | { status: unknown },
+  ) => void,
 ) => boolean;
 
 export function createMessageRouter(deps: RouterDeps): Listener {
@@ -118,6 +122,16 @@ export function createMessageRouter(deps: RouterDeps): Listener {
         // Only content scripts in a tab can catch a click.
         if (sender.tab?.id !== undefined) void deps.onCaptured(message.url, sender);
         return false;
+      case '4ntl:library-update':
+        void deps.updateLibrary().then(
+          (status) => {
+            sendResponse({ status });
+          },
+          () => {
+            sendResponse({ status: {} });
+          },
+        );
+        return true;
     }
   };
 }

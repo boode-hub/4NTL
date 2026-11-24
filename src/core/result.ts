@@ -25,6 +25,14 @@ export interface ReportList {
   readonly items: readonly { readonly name: string; readonly detail: string }[];
   /** Long values (paths, hashes): the list takes the card's full width. */
   readonly wide?: boolean;
+  /** Sentences, not names: shown in the normal text font. */
+  readonly prose?: boolean;
+}
+
+/** A link to one source's own page ("LOLBAS ↗"). */
+export interface ReportLink {
+  readonly label: string;
+  readonly url: string;
 }
 
 export interface Report {
@@ -45,7 +53,9 @@ export interface Report {
   readonly lists?: readonly ReportList[];
   /** A quiet line under the details, e.g. what a bigger plan would add. */
   readonly note?: string;
-  /** Link to the provider's full report for this indicator. */
+  /** Links to each source's own page, when a report draws on several. */
+  readonly links?: readonly ReportLink[];
+  /** Link to the provider's full report for this indicator ('' when it has none). */
   readonly reportUrl: string;
 }
 
@@ -68,6 +78,7 @@ export const ERROR_CODES = [
   'bad_response',
   'internal',
   'payment_required',
+  'no_permission',
 ] as const;
 export type LookupErrorCode = (typeof ERROR_CODES)[number];
 
@@ -86,6 +97,7 @@ export const SETTINGS_ERRORS: ReadonlySet<LookupErrorCode> = new Set([
   'no_api_key',
   'auth',
   'payment_required',
+  'no_permission',
 ]);
 
 export interface LookupFailure {

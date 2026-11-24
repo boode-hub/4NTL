@@ -61,7 +61,7 @@ const percentile = (values: number[], p: number) =>
   [...values].sort((a, b) => a - b)[Math.min(values.length - 1, Math.floor(values.length * p))] ??
   0;
 
-test('time to card, and no memory or listener leaks over 100 lookups', async ({
+test('time to card, and no memory or listener leaks over 200 lookups', async ({
   page,
   worker,
   settings,
@@ -82,11 +82,31 @@ test('time to card, and no memory or listener leaks over 100 lookups', async ({
 
   const firstMs = await timedLookup(page, worker, '185.220.101.1'); // includes injecting the UI
   for (let i = 2; i <= 4; i++) await timedLookup(page, worker, `185.220.101.${i}`);
-  const before = await metrics();
 
+  // A leak raises even the lowest point; a browser that frees closed cards late
+  // (Brave does, even after a forced collection) only adds passing peaks. So each
+  // 100 lookups are sampled every 25, and the lowest points are compared.
+  type Metrics = Awaited<ReturnType<typeof metrics>>;
+  const lowest = (samples: Metrics[]): Metrics =>
+    Object.fromEntries(
+      ['JSHeapUsedSize', 'Nodes', 'JSEventListeners'].map((name) => [
+        name,
+        Math.min(...samples.map((sample) => sample[name] ?? 0)),
+      ]),
+    );
   const times: number[] = [];
-  for (let i = 0; i < 100; i++) times.push(await timedLookup(page, worker, `185.220.102.${i}`));
-  const after = await metrics();
+  const first: Metrics[] = [];
+  for (let i = 0; i < 100; i++) {
+    times.push(await timedLookup(page, worker, `185.220.102.${i}`));
+    if (i % 25 === 24) first.push(await metrics());
+  }
+  const second: Metrics[] = [];
+  for (let i = 0; i < 100; i++) {
+    await timedLookup(page, worker, `185.220.103.${i}`);
+    if (i % 25 === 24) second.push(await metrics());
+  }
+  const before = lowest(first);
+  const after = lowest(second);
 
   const report = {
     firstCardMs: Math.round(firstMs),

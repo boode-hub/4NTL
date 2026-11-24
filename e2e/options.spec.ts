@@ -53,7 +53,7 @@ test.describe('settings page', () => {
 
   test('shows the keyboard shortcut and version', async ({ context, extensionId }) => {
     const page = await openSettings(context, extensionId);
-    await expect(page.locator('#shortcut')).toHaveText(/Alt\+Shift\+L|not set/);
+    await expect(page.locator('#shortcut')).toHaveText(/Alt\+Shift\+L|Shift\+Alt\+L|not set/);
     await expect(page.locator('#version')).toHaveText(/^\d+\.\d+\.\d+$/);
   });
 });

@@ -9,6 +9,7 @@ import { REPORT_CACHE, TtlCache } from '../core/cache';
 import { INDICATOR_LABELS, resolveSelection } from '../core/indicator';
 import { EXTPAY_ID, type Access } from '../core/license';
 import type { CardView } from '../core/messages';
+import type { ProviderId } from '../core/provider-ids';
 import type { Report } from '../core/result';
 import {
   affectsResults,
@@ -21,6 +22,7 @@ import {
 import { refreshBadge } from './badge';
 import { applyAccess, handleLookupRequest, presentView, type ControllerDeps } from './controller';
 import { checkCaptured, checkLink, type LinkDeps } from './links';
+import { LibraryStore } from './library-store';
 import { LookupService } from './lookup-service';
 import { Payments } from './payments';
 import {
@@ -45,12 +47,36 @@ import { ASK_VIEW, buildView, NO_INDICATOR_NOTICE, type ProviderScope } from './
 
 const cache = new TtlCache<Report>(chrome.storage.session, REPORT_CACHE);
 
+/** The local process library (LOLBAS, LOLDrivers, HijackLibs), downloaded when switched on. */
+const library = new LibraryStore({
+  area: chrome.storage.local,
+  fetch: (input, init) => fetch(input, init),
+  // Cards built from the old library would show outdated findings until they expire.
+  onChange: () => cache.removeWhere((key) => key.startsWith('library|')),
+});
+
 const service = new LookupService({
   cache,
   loadSettings: () => loadSettings(),
   // Resolved at call time, so tests can substitute the global fetch.
   fetch: (input, init) => fetch(input, init),
+  library,
+  hasAccess: (origins) => chrome.permissions.contains({ origins: [...origins] }),
 });
+
+/**
+ * How to read selections right now: Windows processes on or off, and which of
+ * their sources can answer (EchoTrail needs a key; the library must be downloaded).
+ */
+async function viewOptions(): Promise<{ processes: boolean; skip: ProviderId[] }> {
+  const settings = await loadSettings();
+  if (!settings.processes) return { processes: false, skip: [] };
+  const skip: ProviderId[] = [];
+  if (!settings.apiKeys.echotrail) skip.push('echotrail');
+  if (!(await library.ready())) skip.push('library');
+  void library.ensure().catch(() => undefined); // retry a failed first download, on use
+  return { processes: true, skip };
+}
 
 /** e2e builds can move the clock (to test the paid period); otherwise always 0. */
 let clockOffset = 0;
@@ -129,7 +155,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   void (async () => {
     await installDate.remember();
     const settings = await loadSettings();
-    await registerMenus({ echotrail: settings.echotrail });
+    await registerMenus({ processes: settings.processes });
     await refreshBadge(settings);
     if (details.reason === 'install' && !hasAnyApiKey(settings)) {
       await openOptions();
@@ -153,7 +179,8 @@ async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): P
     return;
   }
   if (info.menuItemId === ASK_ITEM_ID) {
-    await presentView(ASK_VIEW, target, deps);
+    const { processes } = await loadSettings();
+    await presentView(processes ? { kind: 'ask', processes } : ASK_VIEW, target, deps);
     return;
   }
   if (info.menuItemId === LINK_ITEM_ID) {
@@ -162,9 +189,8 @@ async function onMenuClick(info: MenuClick, tab: chrome.tabs.Tab | undefined): P
   }
   const scope = scopeFromMenuItem(info.menuItemId);
   if (scope) {
-    const { echotrail } = await loadSettings();
     await handleLookupRequest(
-      { target, selection: info.selectionText ?? '', scope, processes: echotrail },
+      { target, selection: info.selectionText ?? '', scope, ...(await viewOptions()) },
       deps,
     );
   }
@@ -189,9 +215,8 @@ async function lookupFromShortcut(tabId: number, scope: ProviderScope): Promise<
     await presentInPage(selection, NO_INDICATOR_NOTICE);
     return;
   }
-  const { echotrail } = await loadSettings();
   await handleLookupRequest(
-    { target: selection, selection: selection.text, scope, processes: echotrail },
+    { target: selection, selection: selection.text, scope, ...(await viewOptions()) },
     deps,
   );
 }
@@ -221,8 +246,7 @@ function describeOmnibox(text: string): string {
 /** Address bar: "4ntl <anything>" → card in the current tab (or a small window). */
 async function lookupFromOmnibox(text: string): Promise<CardView> {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  const { echotrail } = await loadSettings();
-  const view = buildView(text, 'all', { processes: echotrail });
+  const view = buildView(text, 'all', await viewOptions());
   await presentView(view, frameOf(tab), deps, true);
   return view;
 }
@@ -240,12 +264,13 @@ chrome.runtime.onMessage.addListener(
     extensionId: chrome.runtime.id,
     service,
     resolve: async (text) => {
-      const { echotrail } = await loadSettings();
-      return applyAccess(
-        buildView(text, 'all', { processes: echotrail }),
-        await license.access(false),
-        now(),
-      );
+      const options = await viewOptions();
+      // Typed in on purpose: with Windows processes on, a single name that is no IP,
+      // domain, URL or hash is a process or service name (`Spooler`, `WinDefend`).
+      let view = buildView(text, 'all', options);
+      if (options.processes && view === NO_INDICATOR_NOTICE)
+        view = buildView(text, 'process', options);
+      return applyAccess(view, await license.access(false), now());
     },
     openOptions,
     openList,
@@ -258,6 +283,7 @@ chrome.runtime.onMessage.addListener(
     onCaptured: async (url, sender) => {
       await checkCaptured(url, frameOf(sender.tab, sender.frameId), linkDeps.present);
     },
+    updateLibrary: () => library.refresh(true),
   }),
 );
 
@@ -266,9 +292,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local' || !change) return;
   const after = normalizeSettings(change.newValue);
   const before = normalizeSettings(change.oldValue);
-  // EchoTrail switched on or off: its "EchoTrail only" menu entry comes or goes.
-  if (before.echotrail !== after.echotrail) {
-    void registerMenus({ echotrail: after.echotrail }).catch(report);
+  // Windows processes switched on or off: the menu entry comes or goes, and the
+  // local library is downloaded, or deleted as if it had never been added.
+  if (before.processes !== after.processes) {
+    void registerMenus({ processes: after.processes }).catch(report);
+    void (after.processes ? library.refresh() : library.clear()).catch(report);
   }
   // New keys or report window: cached results are stale. (A theme change isn't.)
   if (affectsResults(before, after)) void cache.clear().catch(report);

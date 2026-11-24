@@ -4,6 +4,46 @@ All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.15.0] - 2026-11-24
+
+### Added
+
+- **Local library for Windows processes**, free and keyless: LOLBAS, LOLDrivers,
+  HijackLibs and Winbindex, plus 4NTL's own core-Windows baseline (expected
+  parent, path, instances, account). One lookup asks everything available at
+  once, in one card: the library (once downloaded) and EchoTrail (with a key).
+  The library is downloaded when Windows processes are switched on, checked for
+  updates at most once a day and only when used (unchanged sources cost a tiny
+  "not modified"), and deleted when switched off. Settings show what's
+  downloaded, with Update now.
+- Right-click → 4NTL → **Look up as a process or service** replaces "EchoTrail
+  only" and asks every source together.
+- **Typing it in works for processes too**: in the right-click typing box and
+  the toolbar box, a process name (`svchost.exe`) or a service name
+  (`Spooler`) is looked up when Windows processes are on; the box says so.
+
+### Fixed
+
+- **EchoTrail "Couldn't reach EchoTrail"** when the browser wasn't letting 4NTL
+  contact api.echotrail.io (for example Brave's per-extension site access):
+  Test now asks for the permission first, lookups say "not allowed" with an
+  Open settings button instead of blaming the connection, and the settings show
+  an Allow button whenever a granted site isn't in effect.
+- Review fixes before release: names that are also built-in JavaScript
+  properties (`constructor`, `__proto__`) no longer break the library;
+  switching off during a download leaves nothing behind; a first download that
+  failed (offline) is retried an hour later, on use; cached library cards are
+  dropped when the library updates; Winbindex never holds the card back more
+  than 5 s; permission requests run straight from the click (Firefox needs it).
+- Tests: the leak test compares the lowest point of each batch (Brave frees
+  nodes late), and the shortcut check accepts Brave's "Shift+Alt+L".
+
+### Changed
+
+- The Windows processes switch now covers EchoTrail and the library together
+  (0.14.0's EchoTrail switch carries over). The card is still wider only when
+  EchoTrail is in it.
+
 ## [0.14.0] - 2026-11-24
 
 ### Added

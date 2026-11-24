@@ -82,7 +82,14 @@ export class TtlCache<T> {
   }
 
   async clear(): Promise<void> {
-    const keys = Object.keys(await this.#entries());
+    await this.removeWhere(() => true);
+  }
+
+  /** Drops the entries whose key (as passed to set) passes the test. */
+  async removeWhere(test: (key: string) => boolean): Promise<void> {
+    const keys = Object.keys(await this.#entries()).filter((key) =>
+      test(key.slice(this.#prefix.length)),
+    );
     if (keys.length > 0) await this.#store.remove(keys);
   }
 

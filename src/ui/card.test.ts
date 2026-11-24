@@ -319,6 +319,16 @@ describe('ResultCard – other views', () => {
     expect(c.resolve).toHaveBeenCalledWith('8.8.8.8');
   });
 
+  it('typing box: says it takes process names only while Windows processes are on', () => {
+    const { card, $ } = mount();
+    card.show({ kind: 'ask' });
+    expect($('.ask-input')?.getAttribute('placeholder')).toBe('IP, domain, URL or hash');
+    card.show({ kind: 'ask', processes: true });
+    expect($('.ask-input')?.getAttribute('placeholder')).toBe(
+      'IP, domain, URL, hash or process name',
+    );
+  });
+
   it('typing box: keys stay in the card (no page shortcuts), Escape closes', () => {
     const { card, $ } = mount();
     card.show({ kind: 'ask' });

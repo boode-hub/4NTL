@@ -170,6 +170,7 @@ export const CARD_CSS = /* css */ `
 .logo-virustotal .logo-fill { fill: light-dark(#0b4dda, #6b8dff); }
 .logo-abuseipdb .logo-ink { fill: var(--fg); }
 .logo-abuseipdb .logo-ring { stroke: light-dark(#e00000, #ff4d4d); }
+.logo-library .logo-stroke { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; }
 .logo-echotrail .logo-stroke { fill: none; stroke: light-dark(#1f94d2, #4fb3ea); stroke-width: 1.4; stroke-linecap: round; }
 
 .pill {
@@ -212,6 +213,7 @@ export const CARD_CSS = /* css */ `
 .list.wide { grid-column: 1 / -1; } /* paths and hashes: long, so a full-width row each */
 /* …and shown whole (wrapping), so a hash can be read, compared and selected for a lookup. */
 .list.wide .list-name { white-space: normal; overflow-wrap: anywhere; }
+.list.prose .list-name { font-family: inherit; font-size: 12px; font-weight: 400; }
 .report-note { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); }
 .card.inline.wide { min-width: 460px; }
 

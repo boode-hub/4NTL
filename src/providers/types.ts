@@ -2,6 +2,7 @@ import type { Indicator, IndicatorType } from '../core/indicator';
 import type { ProviderId } from '../core/provider-ids';
 import type { Report } from '../core/result';
 import type { Settings } from '../core/settings';
+import type { LibraryMatch } from './library-data';
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -12,6 +13,12 @@ export interface ProviderContext {
   readonly fetch: FetchLike;
   readonly timeoutMs: number;
   readonly now: () => number;
+  /** The local process library on this computer (only the "Local library" provider uses it). */
+  readonly library?: LibraryReader | undefined;
+}
+
+export interface LibraryReader {
+  find(name: string): Promise<LibraryMatch>;
 }
 
 export type KeyCheckContext = Omit<ProviderContext, 'settings'>;
@@ -24,6 +31,14 @@ export type KeyCheckContext = Omit<ProviderContext, 'settings'>;
 export interface Provider {
   readonly id: ProviderId;
   readonly name: string;
+  /** Needs no API key (the local library). */
+  readonly keyless?: boolean;
+  /**
+   * Sites the user grants when switching it on (optional host permissions). The
+   * browser blocks requests to them otherwise, so 4NTL checks first instead of
+   * failing as if offline.
+   */
+  readonly hosts?: readonly string[];
   readonly supports: ReadonlySet<IndicatorType>;
   /** Plain-language scope, shown when an unsupported indicator is selected. */
   readonly supportsLabel: string;

@@ -11,7 +11,8 @@ import type { ProviderId } from '../core/provider-ids';
 import type { LookupFailure, LookupOutcome, Report } from '../core/result';
 import type { Settings } from '../core/settings';
 import { PROVIDERS } from '../providers/registry';
-import type { FetchLike, Provider } from '../providers/types';
+import { isProcessProvider } from '../providers/registry';
+import type { FetchLike, LibraryReader, Provider } from '../providers/types';
 
 export interface ReportCache {
   get(key: string): Promise<CacheHit<Report> | undefined>;
@@ -25,6 +26,9 @@ export interface LookupServiceDeps {
   readonly providers?: Readonly<Record<ProviderId, Provider>>;
   readonly now?: () => number;
   readonly timeoutMs?: number;
+  readonly library?: LibraryReader | undefined;
+  /** Whether the browser lets 4NTL contact these sites (optional host permissions). */
+  readonly hasAccess?: ((origins: readonly string[]) => Promise<boolean>) | undefined;
 }
 
 export const DEFAULT_TIMEOUT_MS = 15_000;
@@ -59,7 +63,14 @@ export class LookupService {
   readonly #shared = new Map<string, SharedLookup>();
 
   constructor(deps: LookupServiceDeps) {
-    this.#deps = { providers: PROVIDERS, now: Date.now, timeoutMs: DEFAULT_TIMEOUT_MS, ...deps };
+    this.#deps = {
+      providers: PROVIDERS,
+      now: Date.now,
+      timeoutMs: DEFAULT_TIMEOUT_MS,
+      library: undefined,
+      hasAccess: undefined,
+      ...deps,
+    };
   }
 
   /**
@@ -104,7 +115,7 @@ export class LookupService {
     key: string,
     force: boolean,
   ): Promise<LookupOutcome> {
-    const { cache, loadSettings, fetch, now, timeoutMs } = this.#deps;
+    const { cache, loadSettings, fetch, now, timeoutMs, library } = this.#deps;
     try {
       if (!provider.supports.has(indicator.type)) {
         throw new LookupError(
@@ -119,11 +130,22 @@ export class LookupService {
         );
       }
       const settings = await loadSettings();
-      if (provider.id === 'echotrail' && !settings.echotrail) {
-        throw new LookupError('unsupported', 'EchoTrail is turned off in 4NTL’s settings.');
+      if (isProcessProvider(provider) && !settings.processes) {
+        throw new LookupError(
+          'unsupported',
+          'Windows processes are turned off in 4NTL’s settings.',
+        );
       }
-      const apiKey = settings.apiKeys[provider.id];
-      if (!apiKey) {
+      const apiKey = provider.keyless ? '' : settings.apiKeys[provider.id];
+      // Not allowed to contact the provider's site: say so, rather than fail as if offline.
+      const { hasAccess } = this.#deps;
+      if (provider.hosts && hasAccess && !(await hasAccess(provider.hosts))) {
+        throw new LookupError(
+          'no_permission',
+          `4NTL isn’t allowed to contact ${provider.name}. Open the settings and press Allow under Windows processes.`,
+        );
+      }
+      if (!provider.keyless && !apiKey) {
         throw new LookupError('no_api_key', `Add your ${provider.name} API key to look this up.`);
       }
 
@@ -132,7 +154,14 @@ export class LookupService {
         if (hit) return { ok: true, report: hit.value, fetchedAt: hit.storedAt, cached: true };
       }
 
-      const report = await provider.lookup(indicator, { apiKey, settings, fetch, now, timeoutMs });
+      const report = await provider.lookup(indicator, {
+        apiKey,
+        settings,
+        fetch,
+        now,
+        timeoutMs,
+        library,
+      });
       const fetchedAt = now();
       // A cache failure (e.g. quota) must never cost the user a result they already paid for.
       await cache.set(key, report, settings.cacheTtlMinutes * 60_000).catch((error: unknown) => {

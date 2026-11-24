@@ -32,10 +32,11 @@ export interface Settings {
   readonly cacheTtlMinutes: number;
   readonly appearance: Appearance;
   /**
-   * Look up Windows process names on EchoTrail. Off by default; while off, 4NTL
-   * behaves exactly as without EchoTrail (no process detection, no menu entry).
+   * Look up Windows processes and services: the local library and, with a key,
+   * EchoTrail. Off by default; while off, 4NTL behaves exactly as without them
+   * (no process detection, no menu entry, nothing downloaded).
    */
-  readonly echotrail: boolean;
+  readonly processes: boolean;
 }
 
 export const SETTINGS_LIMITS = {
@@ -44,11 +45,11 @@ export const SETTINGS_LIMITS = {
 } as const;
 
 export const DEFAULT_SETTINGS: Settings = {
-  apiKeys: { abuseipdb: '', virustotal: '', echotrail: '' },
+  apiKeys: { abuseipdb: '', virustotal: '', echotrail: '', library: '' },
   abuseIpdbMaxAgeDays: 90,
   cacheTtlMinutes: 30,
   appearance: { theme: 'auto', accent: '', background: '', width: 0 },
-  echotrail: false,
+  processes: false,
 };
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -98,7 +99,8 @@ export function normalizeSettings(raw: unknown): Settings {
       DEFAULT_SETTINGS.cacheTtlMinutes,
     ),
     appearance: normalizeAppearance(input.appearance),
-    echotrail: input.echotrail === true,
+    // `echotrail` is the switch's name in 0.14.0.
+    processes: input.processes === true || input.echotrail === true,
   };
 }
 

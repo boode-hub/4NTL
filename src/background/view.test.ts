@@ -1,18 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { buildView, NO_INDICATOR_NOTICE, viewForIndicators } from './view';
+import {
+  buildView,
+  NO_INDICATOR_NOTICE,
+  NO_PROCESS_SOURCE_NOTICE,
+  viewForIndicators,
+} from './view';
 
 const VT = { id: 'virustotal', name: 'VirusTotal' };
 const ABUSE = { id: 'abuseipdb', name: 'AbuseIPDB' };
 
 const ECHO = { id: 'echotrail', name: 'EchoTrail' };
+const LIBRARY = { id: 'library', name: 'Local library' };
 
-describe('buildView with EchoTrail', () => {
-  it('a process goes to EchoTrail only, and only while it is on', () => {
+describe('buildView for Windows processes', () => {
+  it('a process goes to EchoTrail and the local library together, only while switched on', () => {
     expect(buildView('svchost.exe', 'all')).toBe(NO_INDICATOR_NOTICE);
     expect(buildView('svchost.exe', 'all', { processes: true })).toEqual({
       kind: 'lookup',
       indicator: { type: 'process', value: 'svchost.exe' },
-      providers: [ECHO],
+      providers: [ECHO, LIBRARY],
     });
     // Everything else still goes to the same providers as before.
     expect(buildView('8.8.8.8', 'all', { processes: true })).toMatchObject({
@@ -20,13 +26,25 @@ describe('buildView with EchoTrail', () => {
     });
   });
 
-  it('"EchoTrail only" takes any one name, e.g. a service', () => {
-    expect(buildView('Spooler', 'echotrail')).toEqual({
-      kind: 'lookup',
-      indicator: { type: 'process', value: 'spooler' },
+  it('asks only what can answer: no key → no EchoTrail; no download → no library', () => {
+    expect(buildView('lsass.exe', 'all', { processes: true, skip: ['echotrail'] })).toMatchObject({
+      providers: [LIBRARY],
+    });
+    expect(buildView('lsass.exe', 'all', { processes: true, skip: ['library'] })).toMatchObject({
       providers: [ECHO],
     });
-    expect(buildView('two words', 'echotrail')).toBe(NO_INDICATOR_NOTICE);
+    expect(buildView('lsass.exe', 'all', { processes: true, skip: ['echotrail', 'library'] })).toBe(
+      NO_PROCESS_SOURCE_NOTICE,
+    );
+  });
+
+  it('"Look up as a process or service" takes any one name, e.g. a service', () => {
+    expect(buildView('Spooler', 'process', { skip: ['echotrail'] })).toEqual({
+      kind: 'lookup',
+      indicator: { type: 'process', value: 'spooler' },
+      providers: [LIBRARY],
+    });
+    expect(buildView('two words', 'process')).toBe(NO_INDICATOR_NOTICE);
   });
 });
 

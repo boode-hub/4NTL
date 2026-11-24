@@ -49,13 +49,24 @@ mean: copy, open VirusTotal, paste, enter, read, go back, repeat for AbuseIPDB.
   brackets. Select a whole log line and it lets you pick the indicator.
 - **IPv4, IPv6, domains, URLs, MD5, SHA-1, SHA-256.** AbuseIPDB checks IPs;
   VirusTotal checks everything.
-- **Windows processes, if you want them (EchoTrail).** Off by default: switch it
-  on in the settings, then select `svchost.exe`, `evil.dll` or a path to one. A
-  wider card shows how that process normally behaves: who usually starts it,
-  publisher and signature, and with an EchoTrail Team key the top grandparents,
-  parents, children, paths and SHA-256 hashes. Rare values show as `<0.1%`, never
-  as 0%. For a service or any other name: right-click → **4NTL** → **EchoTrail
-  only**. While it's off, 4NTL works exactly as without it.
+- **Windows processes, if you want them.** Off by default: switch it on in the
+  settings, then select `svchost.exe`, `evil.dll` or a path to one. One lookup
+  asks everything available, in one card:
+  - a free **local library**: [LOLBAS](https://lolbas-project.github.io/) (LOLBins
+    and their abuse, with MITRE IDs), [LOLDrivers](https://www.loldrivers.io/)
+    (vulnerable and malicious drivers), [HijackLibs](https://hijacklibs.net/)
+    (DLL hijacking), [Winbindex](https://winbindex.m417z.com/) (genuine Microsoft
+    builds) and 4NTL's own core-Windows baseline (expected parent, path,
+    instances and account, the classic fake-`lsass.exe` checks);
+  - **EchoTrail**, if you add a key: who usually starts it, and with a Team key
+    the top grandparents, parents, children, paths and SHA-256 hashes. The card
+    is wider only then. Rare values show as `<0.1%`, never as 0%.
+
+  For a service or any other name: right-click → **4NTL** → **Look up as a
+  process or service**, or type it into the typing box (right-click → **Type an
+  IP or domain…**, or the toolbar icon). While it's off, 4NTL works exactly as
+  without it.
+
 - **Copy what you need.** The copy button offers the indicator alone, **the card
   as a picture** (paste it straight into a ticket or chat), or the details as plain
   text.
@@ -117,18 +128,19 @@ Free API keys: [VirusTotal](https://www.virustotal.com/gui/my-apikey) (4 lookups
 500/day) · [AbuseIPDB](https://www.abuseipdb.com/account/api) (1,000 checks/day) ·
 optional [EchoTrail](https://echotrail.io/developers/) (500/month, summaries; its
 free plan is for evaluation and non-commercial use, Team keys get the full record).
+The local process library needs no key.
 
 ## Using it
 
-| To check…                      | Do this                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------- |
-| An IP, hash, domain or URL     | Select it → right-click → **4NTL** → **Look up “…”** (or one provider)    |
-| The same, faster               | Select it, or just point at it, → **Alt+Shift+L**                         |
-| A link                         | Right-click it → **4NTL** → **Check this link**                           |
-| Anything you type or paste     | Click the **4NTL** toolbar icon, type it, press **Enter**                 |
-| Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**              |
-| Something you'll type in       | Right-click anywhere → **4NTL** → **Type an IP or domain…**               |
-| A Windows process (EchoTrail)  | Select `name.exe` or a path → **Look up**; a service → **EchoTrail only** |
+| To check…                      | Do this                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------ |
+| An IP, hash, domain or URL     | Select it → right-click → **4NTL** → **Look up “…”** (or one provider)                     |
+| The same, faster               | Select it, or just point at it, → **Alt+Shift+L**                                          |
+| A link                         | Right-click it → **4NTL** → **Check this link**                                            |
+| Anything you type or paste     | Click the **4NTL** toolbar icon, type it, press **Enter**                                  |
+| Something you copied elsewhere | Address bar: type `4ntl`, a space, paste it, press **Enter**                               |
+| Something you'll type in       | Right-click anywhere → **4NTL** → **Type an IP or domain…**                                |
+| A Windows process or service   | Select `name.exe` or a path → **Look up**; a service → **Look up as a process or service** |
 
 Read the verdict. **Full report ↗** opens the provider's page; **Esc** or a click
 elsewhere closes the card. The copy button copies the indicator, the card as a
@@ -162,9 +174,10 @@ right-click menu with their own:
 
 ## Privacy and security
 
-- Only `virustotal.com` and `abuseipdb.com` can be contacted (plus
-  `api.echotrail.io`, only if you switch EchoTrail on and allow it), enforced by
-  the extension's permissions and its Content-Security-Policy.
+- Only `virustotal.com` and `abuseipdb.com` can be contacted (plus, only if you
+  switch Windows processes on and allow them, `api.echotrail.io` and the local
+  library's sources), enforced by the extension's permissions and its
+  Content-Security-Policy.
 - 4NTL never submits anything for analysis; it only reads existing reports.
 - The page-side card never sees your API keys, and renders API data as plain text only.
 - No analytics, no telemetry, no third-party code.

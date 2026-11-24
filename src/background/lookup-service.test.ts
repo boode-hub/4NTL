@@ -3,7 +3,7 @@ import { MemoryStore, NOW, TEST_SETTINGS } from '../../tests/helpers';
 import { TtlCache } from '../core/cache';
 import { LookupError } from '../core/errors';
 import type { Indicator } from '../core/indicator';
-import type { Report } from '../core/result';
+import { SETTINGS_ERRORS, type Report } from '../core/result';
 import { normalizeSettings, type Settings } from '../core/settings';
 import { PROVIDERS } from '../providers/registry';
 import type { Provider } from '../providers/types';
@@ -48,14 +48,53 @@ function setup(options: { settings?: Settings; lookup?: Provider['lookup'] } = {
   };
 }
 
-describe('LookupService and EchoTrail', () => {
-  it('never asks EchoTrail while it is switched off', async () => {
+describe('LookupService and Windows processes', () => {
+  it('never asks EchoTrail or the library while Windows processes are off', async () => {
     const { service } = setup();
-    const outcome = await service.lookup('echotrail', { type: 'process', value: 'svchost.exe' });
-    expect(outcome).toEqual({
-      ok: false,
-      error: { code: 'unsupported', message: 'EchoTrail is turned off in 4NTL’s settings.' },
+    for (const id of ['echotrail', 'library'] as const) {
+      const outcome = await service.lookup(id, { type: 'process', value: 'svchost.exe' });
+      expect(outcome).toEqual({
+        ok: false,
+        error: {
+          code: 'unsupported',
+          message: 'Windows processes are turned off in 4NTL’s settings.',
+        },
+      });
+    }
+  });
+
+  it('EchoTrail’s site not allowed: says so (with Open settings) and sends nothing', async () => {
+    const fetch = vi.fn();
+    const hasAccess = vi.fn(() => Promise.resolve(false));
+    const service = new LookupService({
+      cache: new TtlCache<Report>(new MemoryStore(), { prefix: 'c:', maxEntries: 5 }),
+      loadSettings: () =>
+        Promise.resolve({
+          ...TEST_SETTINGS,
+          processes: true,
+          apiKeys: { ...TEST_SETTINGS.apiKeys, echotrail: 'et_live_abcdefghij' },
+        }),
+      fetch,
+      hasAccess,
     });
+    const outcome = await service.lookup('echotrail', { type: 'process', value: 'lsass.exe' });
+    expect(outcome).toMatchObject({ ok: false, error: { code: 'no_permission' } });
+    expect(hasAccess).toHaveBeenCalledWith(['https://api.echotrail.io/*']);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(SETTINGS_ERRORS.has('no_permission')).toBe(true);
+  });
+
+  it('the local library needs no key, and gets the library reader', async () => {
+    const find = vi.fn(() => Promise.resolve({ drivers: [], hijack: [] }));
+    const service = new LookupService({
+      cache: new TtlCache<Report>(new MemoryStore(), { prefix: 'c:', maxEntries: 5 }),
+      loadSettings: () => Promise.resolve({ ...TEST_SETTINGS, processes: true }),
+      fetch: vi.fn(() => Promise.resolve(new Response(null, { status: 404 }))),
+      library: { find },
+    });
+    const outcome = await service.lookup('library', { type: 'process', value: 'notepad.exe' });
+    expect(outcome.ok).toBe(true);
+    expect(find).toHaveBeenCalledWith('notepad.exe');
   });
 });
 

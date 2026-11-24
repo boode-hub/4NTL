@@ -33,6 +33,7 @@ function setup() {
     restore: vi.fn(() => Promise.resolve()),
   };
   const onCaptured = vi.fn(() => Promise.resolve());
+  const updateLibrary = vi.fn(() => Promise.resolve({ lolbas: { names: 246 } }));
   const resolve = vi.fn((text: string) =>
     Promise.resolve({ kind: 'notice' as const, title: 'T', text }),
   );
@@ -46,6 +47,7 @@ function setup() {
     license,
     captureCard,
     onCaptured,
+    updateLibrary,
   });
   const sendResponse = vi.fn();
   const fromUs = { id: 'ext' } as chrome.runtime.MessageSender;
@@ -59,6 +61,7 @@ function setup() {
     license,
     captureCard,
     onCaptured,
+    updateLibrary,
     sendResponse,
     fromUs,
   };
@@ -221,6 +224,14 @@ describe('message router', () => {
       ok: false,
       error: { code: 'invalid_indicator', message: 'Not a valid indicator.' },
     });
+  });
+
+  it('"Update now" refreshes the local library and answers with its status', async () => {
+    const { route, updateLibrary, sendResponse, fromUs } = setup();
+    expect(route({ type: '4ntl:library-update' }, fromUs, sendResponse)).toBe(true);
+    await flush();
+    expect(updateLibrary).toHaveBeenCalledTimes(1);
+    expect(sendResponse).toHaveBeenCalledWith({ status: { lolbas: { names: 246 } } });
   });
 
   it('ignores other extensions and malformed messages', () => {

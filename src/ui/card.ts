@@ -162,6 +162,8 @@ export class ResultCard {
   readonly #host: HTMLElement;
   readonly #card: HTMLElement;
   readonly #cleanup: (() => void)[] = [];
+  /** Windows processes are on: the typing box also takes process and service names. */
+  #processes = false;
   /** The width the user resized cards to (px), or 0 for the default. */
   readonly #width: number;
   /** Pending short timers (copy feedback), cleared on close. */
@@ -321,7 +323,11 @@ export class ResultCard {
           renderIndicatorHeader(indicator, {
             another: this.#options.client.resolve
               ? () => {
-                  this.show({ kind: 'ask', value: indicator.value });
+                  this.show({
+                    kind: 'ask',
+                    value: indicator.value,
+                    ...(indicator.type === 'process' ? { processes: true } : {}),
+                  });
                 }
               : undefined,
             save: (event) => void this.#save(indicator, results, event),
@@ -385,6 +391,7 @@ export class ResultCard {
         this.#card.replaceChildren(renderTitleHeader(view.title, close), renderNotice(view.text));
         break;
       case 'ask':
+        if (view.processes) this.#processes = true;
         this.#showAsk(viewId, close, view.value);
         return;
     }
@@ -392,22 +399,27 @@ export class ResultCard {
   }
 
   #showAsk(viewId: number, close: () => void, value?: string): void {
-    const { form, input } = renderAsk((text) => {
-      const { client } = this.#options;
-      if (!client.resolve) return;
-      this.#card.querySelector('.note')?.remove();
-      void client.resolve(text).then(
-        (view) => {
-          if (viewId !== this.#viewId) return;
-          // "Not an indicator" and the like: say so under the box and let them fix it.
-          if (view.kind === 'notice') this.#note(form, view.text);
-          else this.show(view);
-        },
-        () => {
-          this.#note(form, NOT_ANSWERING);
-        },
-      );
-    }, value);
+    const processes = this.#processes;
+    const { form, input } = renderAsk(
+      (text) => {
+        const { client } = this.#options;
+        if (!client.resolve) return;
+        this.#card.querySelector('.note')?.remove();
+        void client.resolve(text).then(
+          (view) => {
+            if (viewId !== this.#viewId) return;
+            // "Not an indicator" and the like: say so under the box and let them fix it.
+            if (view.kind === 'notice') this.#note(form, view.text);
+            else this.show(view);
+          },
+          () => {
+            this.#note(form, NOT_ANSWERING);
+          },
+        );
+      },
+      value,
+      processes,
+    );
     // Keys typed here are ours: page shortcuts (s, /, j, k…) must not fire while typing.
     for (const type of ['keydown', 'keyup', 'keypress']) {
       input.addEventListener(type, (event) => {

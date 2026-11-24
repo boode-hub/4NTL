@@ -22,7 +22,7 @@ describe('normalizeSettings', () => {
     expect(
       normalizeSettings({ apiKeys: { virustotal: '  abc \n', abuseipdb: 42, shodan: 'x' } })
         .apiKeys,
-    ).toEqual({ virustotal: 'abc', abuseipdb: '', echotrail: '' });
+    ).toEqual({ virustotal: 'abc', abuseipdb: '', echotrail: '', library: '' });
   });
 
   it('clamps, rounds and parses numeric options', () => {
@@ -44,13 +44,17 @@ describe('normalizeSettings', () => {
   });
 });
 
-describe('EchoTrail switch', () => {
+describe('Windows processes switch', () => {
   it('is off unless explicitly turned on', () => {
-    expect(DEFAULT_SETTINGS.echotrail).toBe(false);
+    expect(DEFAULT_SETTINGS.processes).toBe(false);
     for (const raw of [undefined, 'yes', 1, {}]) {
-      expect(normalizeSettings({ echotrail: raw }).echotrail).toBe(false);
+      expect(normalizeSettings({ processes: raw }).processes).toBe(false);
     }
-    expect(normalizeSettings({ echotrail: true }).echotrail).toBe(true);
+    expect(normalizeSettings({ processes: true }).processes).toBe(true);
+  });
+
+  it('keeps it on for people who switched EchoTrail on in 0.14.0', () => {
+    expect(normalizeSettings({ echotrail: true }).processes).toBe(true);
   });
 });
 

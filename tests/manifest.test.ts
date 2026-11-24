@@ -48,16 +48,20 @@ describe('manifest', () => {
       { matches: ['https://extensionpay.com/*'], js: ['ExtPay.js'], run_at: 'document_start' },
     ]);
     expect(store.content_security_policy?.extension_pages).toContain(
-      'connect-src https://www.virustotal.com https://api.abuseipdb.com https://extensionpay.com https://api.echotrail.io;',
+      'connect-src https://www.virustotal.com https://api.abuseipdb.com https://extensionpay.com https://api.echotrail.io https://lolbas-project.github.io https://www.loldrivers.io https://hijacklibs.net https://winbindex.m417z.com;',
     );
     expect(store.permissions).toEqual(manifest.permissions);
   });
 
   it('broad access is only ever optional (the "embedded frames" switch), never granted at install', () => {
-    // EchoTrail too: asked for only when the user switches it on.
+    // Windows processes too: asked for only when the user switches them on.
     expect(manifest.optional_host_permissions).toEqual([
       '<all_urls>',
       'https://api.echotrail.io/*',
+      'https://lolbas-project.github.io/*',
+      'https://www.loldrivers.io/*',
+      'https://hijacklibs.net/*',
+      'https://winbindex.m417z.com/*',
     ]);
     expect(manifest.host_permissions).not.toContain('<all_urls>');
     expect(manifest.host_permissions).not.toContain('https://api.echotrail.io/*');

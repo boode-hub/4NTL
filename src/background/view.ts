@@ -12,8 +12,24 @@ import type { CardView, ProviderInfo } from '../core/messages';
 import type { ProviderId } from '../core/provider-ids';
 import { getProvider, providersFor, toInfo } from '../providers/registry';
 
-/** A single provider, or every provider that supports the indicator. */
-export type ProviderScope = ProviderId | 'all';
+/**
+ * A single provider, every provider that supports the indicator, or "process":
+ * the selection is a Windows process or service name, whatever it looks like.
+ */
+export type ProviderScope = ProviderId | 'all' | 'process';
+
+/** How to read a selection, and which providers can't answer right now. */
+export interface ViewOptions extends ParseOptions {
+  /** No EchoTrail key, or the local library isn't downloaded yet. */
+  readonly skip?: readonly ProviderId[];
+}
+
+/** A process with nothing to check it against yet. */
+export const NO_PROCESS_SOURCE_NOTICE: CardView = {
+  kind: 'notice',
+  title: 'Nothing to check this with yet',
+  text: 'Download the local library (Settings → Windows processes → Update now) or add an EchoTrail key.',
+};
 
 export const NO_INDICATOR_NOTICE: CardView = {
   kind: 'notice',
@@ -38,11 +54,17 @@ export const CAPTURE_NOTICE: CardView = {
 /** "Type an IP or domain…" in the right-click menu. */
 export const ASK_VIEW: CardView = { kind: 'ask' };
 
-function providersForScope(indicator: Indicator, scope: ProviderScope): ProviderInfo[] {
+function providersForScope(
+  indicator: Indicator,
+  scope: ProviderScope,
+  skip: readonly ProviderId[] = [],
+): ProviderInfo[] {
   // An explicitly chosen provider is kept even if it can't handle the indicator,
   // so the card can explain why instead of silently showing nothing.
-  if (scope !== 'all') return [toInfo(getProvider(scope))];
-  return providersFor(indicator).map(toInfo);
+  if (scope !== 'all' && scope !== 'process') return [toInfo(getProvider(scope))];
+  return providersFor(indicator)
+    .filter((provider) => !skip.includes(provider.id))
+    .map(toInfo);
 }
 
 /** One indicator → its lookup; several → a picker (at most MAX_CHOICES). */
@@ -50,11 +72,13 @@ export function viewForIndicators(
   indicators: readonly Indicator[],
   scope: ProviderScope,
   truncated = false,
+  skip: readonly ProviderId[] = [],
 ): CardView {
   const [first] = indicators;
   if (!first) return NO_INDICATOR_NOTICE;
   if (indicators.length === 1) {
-    const providers = providersForScope(first, scope);
+    const providers = providersForScope(first, scope, skip);
+    if (providers.length === 0 && first.type === 'process') return NO_PROCESS_SOURCE_NOTICE;
     if (providers.length === 0) {
       return {
         kind: 'notice',
@@ -68,7 +92,7 @@ export function viewForIndicators(
     kind: 'choose',
     choices: indicators
       .slice(0, MAX_CHOICES)
-      .map((indicator) => ({ indicator, providers: providersForScope(indicator, scope) })),
+      .map((indicator) => ({ indicator, providers: providersForScope(indicator, scope, skip) })),
     truncated: truncated || indicators.length > MAX_CHOICES,
   };
 }
@@ -76,20 +100,21 @@ export function viewForIndicators(
 export function buildView(
   selection: string,
   scope: ProviderScope,
-  options: ParseOptions = {},
+  options: ViewOptions = {},
 ): CardView {
-  // "EchoTrail only": the selection is a process or service name, whatever it looks like.
-  if (scope === 'echotrail') {
+  const skip = options.skip ?? [];
+  // "Look up as a process or service": the selection is a name, whatever it looks like.
+  if (scope === 'process') {
     const indicator = parseIndicator(selection, { processes: true }) ?? processFromText(selection);
-    return indicator ? viewForIndicators([indicator], scope) : NO_INDICATOR_NOTICE;
+    return indicator ? viewForIndicators([indicator], scope, false, skip) : NO_INDICATOR_NOTICE;
   }
   const resolution = resolveSelection(selection, options);
   switch (resolution.kind) {
     case 'none':
       return NO_INDICATOR_NOTICE;
     case 'single':
-      return viewForIndicators([resolution.indicator], scope);
+      return viewForIndicators([resolution.indicator], scope, false, skip);
     case 'multiple':
-      return viewForIndicators(resolution.indicators, scope, resolution.truncated);
+      return viewForIndicators(resolution.indicators, scope, resolution.truncated, skip);
   }
 }

@@ -3,6 +3,7 @@ import { describeAccess, type Access } from '../core/license';
 import type { CardView } from '../core/messages';
 import type { LookupService } from './lookup-service';
 import type { FrameTarget } from './present';
+import type { ProviderId } from '../core/provider-ids';
 import { buildView, type ProviderScope } from './view';
 
 export interface LookupRequest {
@@ -10,8 +11,10 @@ export interface LookupRequest {
   readonly target: FrameTarget | undefined;
   readonly selection: string;
   readonly scope: ProviderScope;
-  /** EchoTrail is on: Windows executable names count as process indicators. */
+  /** Windows processes are on: executable names count as process indicators. */
   readonly processes?: boolean | undefined;
+  /** Providers that can't answer right now (no key, library not downloaded). */
+  readonly skip?: readonly ProviderId[] | undefined;
 }
 
 export interface ControllerDeps {
@@ -66,7 +69,10 @@ export async function handleLookupRequest(
   request: LookupRequest,
   deps: ControllerDeps,
 ): Promise<CardView> {
-  const view = buildView(request.selection, request.scope, { processes: request.processes });
+  const view = buildView(request.selection, request.scope, {
+    processes: request.processes,
+    skip: request.skip ?? [],
+  });
   await presentView(view, request.target, deps);
   return view;
 }

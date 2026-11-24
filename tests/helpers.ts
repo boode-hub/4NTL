@@ -10,11 +10,11 @@ export const VT_KEY = 'a'.repeat(64);
 export const ABUSE_KEY = 'b'.repeat(80);
 
 export const TEST_SETTINGS: Settings = {
-  apiKeys: { abuseipdb: ABUSE_KEY, virustotal: VT_KEY, echotrail: '' },
+  apiKeys: { abuseipdb: ABUSE_KEY, virustotal: VT_KEY, echotrail: '', library: '' },
   abuseIpdbMaxAgeDays: 90,
   cacheTtlMinutes: 30,
   appearance: { theme: 'auto', accent: '', background: '', width: 0 },
-  echotrail: false,
+  processes: false,
 };
 
 export function jsonResponse(

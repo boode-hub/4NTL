@@ -206,6 +206,7 @@ async function checkKey(ctx: KeyCheckContext): Promise<string> {
 export const echotrail: Provider = {
   id: 'echotrail',
   name: NAME,
+  hosts: ['https://api.echotrail.io/*'],
   supports: SUPPORTED,
   supportsLabel: 'Windows process names',
   apiKeyPattern: /^et_live_[A-Za-z0-9_-]{8,}$/,

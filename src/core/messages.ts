@@ -36,7 +36,12 @@ export type CardView =
     }
   | { readonly kind: 'notice'; readonly title: string; readonly text: string }
   /** "Type an IP or domain…": a box to type what to look up (`value`: start with this, selected). */
-  | { readonly kind: 'ask'; readonly value?: string }
+  | {
+      readonly kind: 'ask';
+      readonly value?: string;
+      /** Windows processes are on: process and service names are accepted too. */
+      readonly processes?: boolean;
+    }
   /** Store edition after the free days: the unlock offer instead of results. */
   | { readonly kind: 'locked'; readonly text: string };
 
@@ -107,7 +112,9 @@ export type BackgroundMessage =
   /** "Copy card as image": screenshot the tab, cut out this box (CSS px). Answered with a CaptureResponse. */
   | { readonly type: '4ntl:capture-card'; readonly rect: CardRect; readonly viewportWidth: number }
   /** The content script caught (and stopped) a navigation during capture. */
-  | { readonly type: '4ntl:captured'; readonly url: string };
+  | { readonly type: '4ntl:captured'; readonly url: string }
+  /** Settings → Windows processes → "Update now": refresh the local library (answered with its status). */
+  | { readonly type: '4ntl:library-update' };
 
 export type LookupResponse = LookupOutcome;
 
@@ -171,6 +178,8 @@ export function isBackgroundMessage(value: unknown): value is BackgroundMessage 
       );
     case '4ntl:captured':
       return typeof value.url === 'string' && value.url.length <= MAX_URL_LENGTH;
+    case '4ntl:library-update':
+      return true;
     default:
       return false;
   }

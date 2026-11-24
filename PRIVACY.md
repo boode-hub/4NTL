@@ -16,9 +16,12 @@ right-clicked is sent to:
 - **VirusTotal** (`www.virustotal.com`, operated by Google), and/or
 - **AbuseIPDB** (`api.abuseipdb.com`), and/or
 - **EchoTrail** (`api.echotrail.io`), only if you switched on "Look up Windows
-  processes on EchoTrail" in the settings and allowed it: the Windows process
-  or service name you look up (for example `svchost.exe`), never a path's
-  folders or anything else,
+  processes and services" in the settings, allowed it, and added an EchoTrail
+  key: the Windows process or service name you look up (for example
+  `svchost.exe`), never a path's folders or anything else,
+- **Winbindex** (`winbindex.m417z.com`), only if you switched Windows processes
+  on and allowed it: the file name you look up (for example `lsass.exe`), with
+  no key, to check it against Microsoft's genuine builds,
 
 depending on the provider you picked, together with **your own API key** for
 that service. The request goes directly from your browser to that service.
@@ -29,9 +32,20 @@ Nothing passes through any server of ours; 4NTL has no server.
 - private or reserved IP addresses (for example `10.x`, `192.168.x`, `fe80::`)
   or internal host names (single-word names, `.local`, `.internal`, `.corp`,
   `.lan`, and similar), not even inside links you right-click;
-- anything automatically, in the background, or without you asking;
+- anything about you or what you look up automatically, in the background, or
+  without you asking;
 - files or URLs for analysis: it only reads existing reports and never submits
   anything to VirusTotal.
+
+**The local process library.** If you switch Windows processes on, 4NTL
+downloads public, open-source lists from their projects:
+[LOLBAS](https://lolbas-project.github.io/),
+[LOLDrivers](https://www.loldrivers.io/) and
+[HijackLibs](https://hijacklibs.net/). It does so when you switch it on or press
+"Update now", and then checks for updates at most once a day, only when you use
+it. These requests carry nothing about you or what you look up: they ask for the
+same public files everyone gets. The lists stay in your browser and are deleted
+when you switch Windows processes off.
 
 Those services handle the requests under their own privacy policies:
 [VirusTotal](https://support.virustotal.com/hc/en-us/articles/115002168385-Privacy-Policy),

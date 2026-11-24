@@ -25,7 +25,8 @@ function providerLines({ name, outcome }: ProviderResult): string[] {
         `  ${list.label}: ${list.items.map((item) => `${item.name} ${item.detail}`.trim()).join(', ')}`,
     ),
     ...(report.note ? [`  ${report.note}`] : []),
-    `  ${report.reportUrl}`,
+    ...(report.links ?? []).map((source) => `  ${source.label}: ${source.url}`),
+    ...(report.reportUrl ? [`  ${report.reportUrl}`] : []),
   ];
 }
 

@@ -42,6 +42,11 @@ const LOGOS: Readonly<Record<ProviderId, Logo>> = {
       ['path', 'logo-stroke', { d: 'M14.58 10.39A7 7 0 0 1 9.22 14.89' }],
     ],
   },
+  // The local library: a stack of books.
+  library: {
+    viewBox: '0 0 16 16',
+    parts: [['path', 'logo-stroke', { d: 'M2.5 3v10.5M5 3v10.5M8 4.2l3.2 9.3M13.5 13.5h-11' }]],
+  },
   // A hat inside a "no" sign.
   abuseipdb: {
     viewBox: '0 0 16 16',

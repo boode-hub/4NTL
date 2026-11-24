@@ -83,3 +83,15 @@ describe('TtlCache', () => {
     await cache.clear(); // no-op when empty
   });
 });
+
+describe('removeWhere', () => {
+  it('drops only the matching entries', async () => {
+    const store = new MemoryStore();
+    const cache = new TtlCache<string>(store, { prefix: 'c:', maxEntries: 10 });
+    await cache.set('library|process:a.exe', 'x', 60_000);
+    await cache.set('virustotal|ipv4:8.8.8.8', 'y', 60_000);
+    await cache.removeWhere((key) => key.startsWith('library|'));
+    expect(await cache.get('library|process:a.exe')).toBeUndefined();
+    expect((await cache.get('virustotal|ipv4:8.8.8.8'))?.value).toBe('y');
+  });
+});
